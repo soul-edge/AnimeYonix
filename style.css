@@ -1,3 +1,4 @@
+body { background-color: red !important; }
 :root {
     --primary: #00d2ff;
     --bg-dark: #06090f;
