@@ -3,32 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnimeYonix</title>
+    <title>StreamYonix | Anime Hub</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
-    <header>
-        <div class="logo">ANIME<span>YONIX</span></div>
-        <button class="btn-login">KANÉKI</button>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">STREAM<span>YONIX</span></div>
+            
+            <ul class="nav-links">
+                <li><a href="#" class="active">Home</a></li>
+                <li><a href="#">Movies</a></li>
+                <li><a href="#">Series</a></li>
+                <li><a href="#">Newest</a></li>
+            </ul>
+
+            <div class="nav-actions">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search anime..." onkeyup="searchAnime()">
+                    <i class="fas fa-search"></i>
+                </div>
+                <button class="login-btn" onclick="toggleLogin()">Login</button>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content">
+            <h1>Hunter x Hunter</h1>
+            <p>Gon Freecss aspires to become a Hunter, an exceptional being capable of greatness. With his friends and his potential, he seeks out his father.</p>
+            <div class="hero-btns">
+                <button class="play-btn" onclick="openPlayer()"><i class="fas fa-play"></i> Watch Now</button>
+                <button class="info-btn"><i class="fas fa-info-circle"></i> Info</button>
+            </div>
+        </div>
     </header>
 
-    <div class="anime-grid">
-        <div class="anime-card" onclick="openPlayer()">
-          <img src="717Z9TNbyNL.jpg" alt="HxH Poster" onerror="this.src='https://image.tmdb.org/t/p/w500/8Xv91LpLgH78lS5K2x2NlHlJc1t.jpg'">
-            <p>Hunter x Hunter - Ep 01</p>
+    <main class="container">
+        <h2 class="section-title">Trending Now</h2>
+        <div class="anime-grid" id="animeGrid">
+            <div class="anime-card" data-title="Hunter x Hunter">
+                <div class="card-img">
+                    <img src="7I7Z9TNbyNL.jpg" alt="HxH">
+                    <div class="overlay" onclick="openPlayer()">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <h3>Hunter x Hunter</h3>
+                    <span>2011 • TV Series</span>
+                </div>
+            </div>
+            </div>
+    </main>
+
+    <div id="videoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closePlayer()">&times;</span>
+            <div class="video-wrapper">
+                <video id="mainVideo" controls crossorigin="anonymous">
+                    <source src="" type="video/mp4">
+                    <track label="English" kind="subtitles" srclang="en" src="hxh01.vtt" default>
+                </video>
+            </div>
         </div>
     </div>
 
-    <div id="videoModal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closePlayer()">&times;</span>
-            <video id="mainVideo" controls crossorigin="anonymous">
-               <source src="https://drive.google.com/uc?export=download&id=19le1jpKcASknjXK-iTrJB45RZRvQvCc7&confirm=t" type="video/mp4">
-                <source src="https://drive.google.com/uc?export=open&id=19le1jpKcASknjXK-iTrJB45RZRvQvCc7">
-                
-                <track label="English" kind="subtitles" srclang="en" src="hxh01.vtt" default>
-            </video>
+    <div id="loginModal" class="modal">
+        <div class="login-card">
+            <h2>Welcome Back</h2>
+            <input type="text" placeholder="Username">
+            <input type="password" placeholder="Password">
+            <button class="submit-btn">Login</button>
+            <p onclick="toggleLogin()">Cancel</p>
         </div>
     </div>
 
