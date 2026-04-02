@@ -1,32 +1,67 @@
-/* Previous styles remain same, add these at bottom */
-
-.episode-bar {
-    background: #1a1d24;
-    padding: 15px;
-    display: flex;
-    gap: 10px;
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
-    border-top: 1px solid #30363d;
+:root { 
+    --bg: #0b0e14; 
+    --blue: #00a2ff; 
+    --yellow: #ffcc00; 
+    --card-bg: #161b22; 
 }
 
-.ep-btn {
-    background: #21262d;
-    color: white;
-    border: 1px solid var(--accent-blue);
-    padding: 8px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: 0.2s;
+body { 
+    background: var(--bg); 
+    color: white; 
+    font-family: sans-serif; 
+    margin: 0; 
+    padding: 20px; 
 }
 
-.ep-btn.active {
-    background: var(--accent-yellow);
-    color: black;
-    border-color: var(--accent-yellow);
+header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    border-bottom: 2px solid var(--blue); 
+    padding-bottom: 15px; 
+    margin-bottom: 30px; 
 }
 
-.ep-btn:hover {
-    box-shadow: 0 0 10px var(--accent-blue);
+.logo span { color: var(--yellow); font-size: 28px; font-weight: bold; }
+
+.btn-login { 
+    border: 2px solid var(--yellow); 
+    color: var(--yellow); 
+    background: none; 
+    padding: 8px 20px; 
+    border-radius: 5px; 
+    cursor: pointer; 
+}
+
+.anime-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+
+.anime-card { 
+    background: var(--card-bg); 
+    border-radius: 12px; 
+    overflow: hidden; 
+    border: 1px solid transparent; 
+    cursor: pointer; 
+    transition: 0.3s; 
+}
+
+.anime-card:hover { border-color: var(--yellow); transform: translateY(-5px); }
+
+.anime-card img { width: 100%; height: 280px; object-fit: cover; }
+
+#videoModal { 
+    display: none; 
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.9); z-index: 1000; 
+}
+
+.modal-content { 
+    position: relative; top: 50%; transform: translateY(-50%); 
+    max-width: 900px; margin: auto; border: 2px solid var(--blue); 
+}
+
+video { width: 100%; display: block; }
+
+.close-btn { 
+    position: absolute; top: -45px; right: 0; 
+    color: var(--yellow); font-size: 35px; cursor: pointer; 
 }
