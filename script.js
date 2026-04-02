@@ -42,3 +42,33 @@ window.onclick = function(event) {
         document.getElementById('loginModal').style.display = 'none';
     }
 }
+async function handleLogin() {
+    const email = document.getElementById('userEmail').value;
+    const pass = document.getElementById('userPass').value;
+    const btn = document.querySelector('.submit-btn');
+
+    if(!email || !pass) {
+        alert("Please enter both email and password.");
+        return;
+    }
+
+    btn.innerHTML = "Connecting...";
+    btn.disabled = true;
+
+    try {
+        // Use the bridge we built in index.html
+        await window.signIn(window.auth, email, pass);
+        toggleLogin(); // Close modal on success
+    } catch (error) {
+        alert("Login Error: " + error.message);
+    } finally {
+        btn.innerHTML = "Login";
+        btn.disabled = false;
+    }
+}
+
+// Ensure toggleLogin exists in your script.js
+function toggleLogin() {
+    const modal = document.getElementById('loginModal');
+    modal.style.display = (modal.style.display === 'block') ? 'none' : 'block';
+}
