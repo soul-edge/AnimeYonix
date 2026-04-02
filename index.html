@@ -29,9 +29,11 @@
           const loginBtn = document.querySelector('.login-btn');
           if (user) {
               loginBtn.innerHTML = `<i class="fas fa-user"></i> ${user.email.split('@')[0].toUpperCase()}`;
+              loginBtn.style.background = "#28a745";
               loginBtn.onclick = () => { if(confirm("Logout?")) signOut(auth); };
           } else {
               loginBtn.innerHTML = "Login";
+              loginBtn.style.background = "#00d2ff";
               loginBtn.onclick = () => toggleLogin();
           }
       });
@@ -46,8 +48,13 @@
                 <li><a href="#" class="active">Home</a></li>
                 <li><a href="#">Latest</a></li>
                 <li><a href="#">Genres</a></li>
+                <li><a href="#">Schedule</a></li>
             </ul>
             <div class="nav-actions">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search anime..." onkeyup="searchAnime()">
+                    <i class="fas fa-search"></i>
+                </div>
                 <button class="login-btn" onclick="toggleLogin()">Login</button>
             </div>
         </div>
@@ -55,33 +62,50 @@
 
     <header class="hero">
         <div class="hero-content">
+            <span class="trending-tag">#1 Trending</span>
             <h1>Welcome to AnimeYonix</h1>
-            <p>Experience high-quality anime streaming.</p>
+            <p>Experience high-quality anime streaming with custom subtitles and lightning-fast speeds.</p>
+            <div class="hero-btns">
+                <button class="play-btn"><i class="fas fa-play"></i> Start Watching</button>
+                <button class="info-btn"><i class="fas fa-plus"></i> Add to List</button>
+            </div>
         </div>
     </header>
 
     <main class="container">
         <h2 class="section-title">Popular Series</h2>
         <div class="anime-grid" id="animeGrid">
-            <div class="anime-card">
+            <div class="anime-card" data-title="Your Anime Title">
                 <div class="card-img">
                     <img src="placeholder.jpg" alt="Poster">
-                    <div class="overlay" onclick="alert('Player coming soon!')">
+                    <div class="overlay" onclick="openPlayer('VIDEO_LINK_HERE', 'SUBTITLE_LINK_HERE')">
                         <i class="fas fa-play-circle"></i>
                     </div>
                 </div>
                 <div class="card-info">
-                    <h3>Anime Title</h3>
+                    <h3>Anime Title Here</h3>
                     <span>2026 • Series</span>
                 </div>
             </div>
         </div>
     </main>
 
+    <div id="videoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closePlayer()">&times;</span>
+            <div class="video-wrapper">
+                <video id="mainVideo" controls crossorigin="anonymous">
+                    <source src="" type="video/mp4">
+                    <track label="English" kind="subtitles" srclang="en" src="" default>
+                </video>
+            </div>
+        </div>
+    </div>
+
     <div id="loginModal" class="modal">
         <div class="login-card">
-            <h2>Login</h2>
-            <input type="email" id="userEmail" placeholder="Email">
+            <h2>Kanéki's Lounge</h2>
+            <input type="email" id="userEmail" placeholder="Email Address">
             <input type="password" id="userPass" placeholder="Password">
             <button class="submit-btn" onclick="handleLogin()">Login</button>
             <p class="cancel-link" onclick="toggleLogin()">Cancel</p>
