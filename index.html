@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamYonix | Anime Hub</title>
+    <title>AnimeYonix | Stream Your Favorite Anime</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -11,13 +11,13 @@
 
     <nav class="navbar">
         <div class="nav-container">
-            <div class="logo">STREAM<span>YONIX</span></div>
+            <div class="logo">ANIME<span>YONIX</span></div>
             
             <ul class="nav-links">
                 <li><a href="#" class="active">Home</a></li>
-                <li><a href="#">Movies</a></li>
-                <li><a href="#">Series</a></li>
-                <li><a href="#">Newest</a></li>
+                <li><a href="#">Latest</a></li>
+                <li><a href="#">Genres</a></li>
+                <li><a href="#">Schedule</a></li>
             </ul>
 
             <div class="nav-actions">
@@ -30,25 +30,51 @@
         </div>
     </nav>
 
-    <header class="hero">
+    <header class="hero" id="heroSection">
         <div class="hero-content">
-            <h1>Hunter x Hunter</h1>
-            <p>Gon Freecss aspires to become a Hunter, an exceptional being capable of greatness. With his friends and his potential, he seeks out his father.</p>
+            <span class="trending-tag">#1 Trending</span>
+            <h1>Welcome to AnimeYonix</h1>
+            <p>Experience high-quality anime streaming with custom subtitles and lightning-fast speeds. Your journey into the world of animation starts here.</p>
             <div class="hero-btns">
-                <button class="play-btn" onclick="openPlayer()"><i class="fas fa-play"></i> Watch Now</button>
-                <button class="info-btn"><i class="fas fa-info-circle"></i> Info</button>
+                <button class="play-btn"><i class="fas fa-play"></i> Start Watching</button>
+                <button class="info-btn"><i class="fas fa-plus"></i> Add to List</button>
             </div>
         </div>
     </header>
 
-  
+    <main class="container">
+        <div class="section-header">
+            <h2 class="section-title">Popular Series</h2>
+            <div class="filter-btns">
+                <button class="active">All</button>
+                <button>Action</button>
+                <button>Seinen</button>
+            </div>
+        </div>
+
+        <div class="anime-grid" id="animeGrid">
+            <div class="anime-card" data-title="Your Anime Title">
+                <div class="card-img">
+                    <img src="placeholder.jpg" alt="Poster">
+                    <div class="overlay" onclick="openPlayer('VIDEO_LINK_HERE', 'SUBTITLE_LINK_HERE')">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <h3>Anime Title Here</h3>
+                    <span>2026 • Series</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
     <div id="videoModal" class="modal">
         <div class="modal-content">
             <span class="close-modal" onclick="closePlayer()">&times;</span>
             <div class="video-wrapper">
                 <video id="mainVideo" controls crossorigin="anonymous">
                     <source src="" type="video/mp4">
-                    <track label="English" kind="subtitles" srclang="en" src="hxh01.vtt" default>
+                    <track label="English" kind="subtitles" srclang="en" src="" default>
                 </video>
             </div>
         </div>
@@ -56,11 +82,11 @@
 
     <div id="loginModal" class="modal">
         <div class="login-card">
-            <h2>Welcome Back</h2>
+            <h2>Kanéki's Lounge</h2>
             <input type="text" placeholder="Username">
             <input type="password" placeholder="Password">
             <button class="submit-btn">Login</button>
-            <p onclick="toggleLogin()">Cancel</p>
+            <p class="cancel-link" onclick="toggleLogin()">Cancel</p>
         </div>
     </div>
 
