@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnimeYonix | Hunter x Hunter</title>
+    <style>
+        /* THEME COLORS: Black, Blue, and Yellow */
+        :root { 
+            --bg: #0b0e14; 
+            --blue: #00a2ff; 
+            --yellow: #ffcc00; 
+            --card-bg: #161b22; 
+        }
+
+        body { 
+            background: var(--bg); 
+            color: white; 
+            font-family: 'Poppins', sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+        }
+
+        /* Header Styling */
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 2px solid var(--blue); 
+            padding-bottom: 15px; 
+            margin-bottom: 30px; 
+        }
+
+        .logo { font-size: 28px; font-weight: bold; cursor: pointer; }
+        .logo span { color: var(--yellow); }
+
+        .btn-login { 
+            border: 2px solid var(--yellow); 
+            color: var(--yellow); 
+            background: none; 
+            padding: 8px 20px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            transition: 0.3s;
+        }
+
+        .btn-login:hover { background: var(--yellow); color: black; }
+
+        /* Anime Grid */
+        .anime-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+            gap: 25px; 
+        }
+
+        .anime-card { 
+            background: var(--card-bg); 
+            border-radius: 12px; 
+            overflow: hidden; 
+            border: 1px solid transparent; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .anime-card:hover { 
+            border-color: var(--yellow); 
+            transform: translateY(-8px); 
+            box-shadow: 0 0 20px rgba(0, 162, 255, 0.3);
+        }
+
+        .anime-card img { width: 100%; height: 280px; object-fit: cover; display: block; }
+        .anime-card p { padding: 15px; margin: 0; text-align: center; font-weight: bold; font-size: 14px; }
+
+        /* Video Modal (Popup) */
+        #videoModal { 
+            display: none; 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.95); z-index: 1000; 
+        }
+
+        .modal-content { 
+            position: relative; 
+            top: 50%; 
+            transform: translateY(-50%); 
+            max-width: 1000px; 
+            margin: auto; 
+            border: 2px solid var(--blue); 
+            border-radius: 10px; 
+            background: black; 
+            overflow: hidden;
+        }
+
+        video { width: 100%; display: block; }
+
+        .episode-bar { 
+            background: #1a1d24; 
+            padding: 15px; 
+            display: flex; 
+            gap: 12px; 
+            border-top: 1px solid #333;
+        }
+
+        .ep-btn { 
+            background: var(--yellow); 
+            color: black; 
+            border: none; 
+            padding: 10px 20px; 
+            font-weight: bold; 
+            border-radius: 6px; 
+            cursor: pointer; 
+        }
+
+        .close-btn { 
+            position: absolute; 
+            top: -50px; 
+            right: 0; 
+            color: var(--yellow); 
+            font-size: 40px; 
+            cursor: pointer; 
+            font-weight: bold; 
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo" onclick="location.reload()">ANIME<span>YONIX</span></div>
+        <button class="btn-login" id="loginBtn">LOGIN</button>
+    </header>
+
+    <div class="anime-grid">
+        <div class="anime-card" onclick="openPlayer()">
+            <img src="https://image.tmdb.org/t/p/w500/8Xv91LpLgH78lS5K2x2NlHlJc1t.jpg" alt="Hunter x Hunter">
+            <p>Hunter x Hunter (2011) - Ep 01</p>
+        </div>
+    </div>
+
+    <div id="videoModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closePlayer()">&times;</span>
+            <video id="mainVideo" controls crossorigin="anonymous">
+                <source src="http://127.0.0.1:11470/891d48c4da57a73073f2aa5bc1e58b283b7b1821/0?external=1&download=1" type="video/mp4">
+                <track id="mainTrack" label="English" kind="subtitles" srclang="en" src="subs/hxh01.vtt" default>
+            </video>
+            <div class="episode-bar">
+                <button class="ep-btn">Episode 1</button>
+                </div>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById('videoModal');
+        const video = document.getElementById('mainVideo');
+        const loginBtn = document.getElementById('loginBtn');
+
+        // Function to open the player
+        function openPlayer() {
+            modal.style.display = 'block';
+            video.play().catch(error => {
+                console.log("Auto-play blocked or Stremio server not responding.");
+            });
+        }
+
+        // Function to close the player
+        function closePlayer() {
+            modal.style.display = 'none';
+            video.pause();
+        }
+
+        // Quick Login Greeting
+        loginBtn.onclick = () => {
+            const name = prompt("Enter your name, Hunter:");
+            if(name) {
+                loginBtn.innerText = name.toUpperCase();
+                alert("Welcome back, " + name + "!");
+            }
+        };
+
+        // Close modal if user clicks outside the video box
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closePlayer();
+            }
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+/* Previous styles remain same, add these at bottom */
+
+.episode-bar {
+    background: #1a1d24;
+    padding: 15px;
+    display: flex;
+    gap: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-top: 1px solid #30363d;
+}
+
+.ep-btn {
+    background: #21262d;
+    color: white;
+    border: 1px solid var(--accent-blue);
+    padding: 8px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+.ep-btn.active {
+    background: var(--accent-yellow);
+    color: black;
+    border-color: var(--accent-yellow);
+}
+
+.ep-btn:hover {
+    box-shadow: 0 0 10px var(--accent-blue);
+}
