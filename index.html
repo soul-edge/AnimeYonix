@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnimeYonix</title>
-    <link rel="stylesheet" href="./style.css">
+    <title>AnimeYonix | Stream Your Favorite Anime</title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-      import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+      import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyCVwL4UNX2o564IrcQJ9WZGNwkcxiyNArg",
@@ -24,50 +24,70 @@
       const auth = getAuth(app);
       window.auth = auth;
       window.signIn = signInWithEmailAndPassword;
-      window.signUp = createUserWithEmailAndPassword;
 
       onAuthStateChanged(auth, (user) => {
-          const btn = document.querySelector('.login-btn');
+          const loginBtn = document.querySelector('.login-btn');
           if (user) {
-              btn.innerHTML = `<i class="fas fa-user"></i> ${user.email.split('@')[0].toUpperCase()}`;
-              btn.style.background = "#28a745";
-              btn.onclick = () => { if(confirm("Logout?")) signOut(auth); };
+              loginBtn.innerHTML = `<i class="fas fa-user"></i> ${user.email.split('@')[0].toUpperCase()}`;
+              loginBtn.onclick = () => { if(confirm("Logout?")) signOut(auth); };
           } else {
-              btn.innerHTML = "Login";
-              btn.style.background = "#00d2ff";
-              btn.onclick = () => toggleLogin();
+              loginBtn.innerHTML = "Login";
+              loginBtn.onclick = () => toggleLogin();
           }
       });
     </script>
 </head>
 <body>
+
     <nav class="navbar">
         <div class="nav-container">
             <div class="logo">ANIME<span>YONIX</span></div>
-            <button class="login-btn" onclick="toggleLogin()">Login</button>
+            <ul class="nav-links">
+                <li><a href="#" class="active">Home</a></li>
+                <li><a href="#">Latest</a></li>
+                <li><a href="#">Genres</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="login-btn" onclick="toggleLogin()">Login</button>
+            </div>
         </div>
     </nav>
 
     <header class="hero">
         <div class="hero-content">
             <h1>Welcome to AnimeYonix</h1>
-            <p>Your streaming journey starts here.</p>
+            <p>Experience high-quality anime streaming.</p>
         </div>
     </header>
 
+    <main class="container">
+        <h2 class="section-title">Popular Series</h2>
+        <div class="anime-grid" id="animeGrid">
+            <div class="anime-card">
+                <div class="card-img">
+                    <img src="placeholder.jpg" alt="Poster">
+                    <div class="overlay" onclick="alert('Player coming soon!')">
+                        <i class="fas fa-play-circle"></i>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <h3>Anime Title</h3>
+                    <span>2026 • Series</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
     <div id="loginModal" class="modal">
         <div class="login-card">
-            <h2>Access Lounge</h2>
+            <h2>Login</h2>
             <input type="email" id="userEmail" placeholder="Email">
             <input type="password" id="userPass" placeholder="Password">
-            <div class="auth-buttons">
-                <button class="submit-btn" onclick="handleLogin()">Login</button>
-                <button class="signup-btn" onclick="handleSignUp()">Create Account</button>
-            </div>
+            <button class="submit-btn" onclick="handleLogin()">Login</button>
             <p class="cancel-link" onclick="toggleLogin()">Cancel</p>
         </div>
     </div>
 
-    <script src="./script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
