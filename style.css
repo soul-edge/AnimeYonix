@@ -20,3 +20,38 @@
     background: var(--primary);
     color: black;
 }
+/* Layout for the Login and Sign Up buttons */
+.auth-buttons {
+    display: flex;
+    flex-direction: column; /* Puts buttons on top of each other */
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--primary);
+    border: none;
+    color: black;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.signup-btn {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.signup-btn:hover {
+    background: var(--primary);
+    color: black;
+}
