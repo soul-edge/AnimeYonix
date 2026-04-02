@@ -65,3 +65,10 @@ video { width: 100%; display: block; }
     position: absolute; top: -45px; right: 0; 
     color: var(--yellow); font-size: 35px; cursor: pointer; 
 }
+.anime-card img {
+    width: 100%;
+    height: 280px;
+    object-fit: cover;
+    display: block; /* Ensures the image isn't collapsed */
+    background-color: #222; /* Shows a dark box if image fails */
+}
