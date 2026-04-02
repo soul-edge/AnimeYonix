@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnimeYonix | Hunter x Hunter</title>
+    <title>AnimeYonix</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <header>
-        <div class="logo" onclick="location.reload()">ANIME<span>YONIX</span></div>
-        <button class="btn-login" id="loginBtn">KANÉKI</button>
+        <div class="logo">ANIME<span>YONIX</span></div>
+        <button class="btn-login">KANÉKI</button>
     </header>
 
     <div class="anime-grid">
         <div class="anime-card" onclick="openPlayer()">
-            <img src="7I7Z9TNbyNL.jpg" alt="HxH Poster">
-            <p>Hunter x Hunter (2011) - Ep 01</p>
+            <img src="7I7Z9TNbyNL.jpg" alt="HxH Poster" onerror="this.src='https://image.tmdb.org/t/p/w500/8Xv91LpLgH78lS5K2x2NlHlJc1t.jpg'">
+            <p>Hunter x Hunter - Ep 01</p>
         </div>
     </div>
 
@@ -24,16 +24,11 @@
         <div class="modal-content">
             <span class="close-btn" onclick="closePlayer()">&times;</span>
             <video id="mainVideo" controls crossorigin="anonymous">
-                <source src="https://drive.google.com/uc?export=download&id=19le1jpKcASknjXK-iTrJB45RZRvQvCc7" type="video/x-matroska">
-                <source src="https://drive.google.com/uc?export=download&id=19le1jpKcASknjXK-iTrJB45RZRvQvCc7" type="video/webm">
+                <source src="https://drive.google.com/uc?id=19le1jpKcASknjXK-iTrJB45RZRvQvCc7&export=download" type="video/mp4">
+                <source src="https://drive.google.com/uc?export=open&id=19le1jpKcASknjXK-iTrJB45RZRvQvCc7">
                 
                 <track label="English" kind="subtitles" srclang="en" src="hxh01.vtt" default>
-                
-                Your browser does not support the video tag.
             </video>
-            <div class="episode-bar">
-                <button class="ep-btn">Episode 1</button>
-            </div>
         </div>
     </div>
 
