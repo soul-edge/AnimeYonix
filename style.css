@@ -1,114 +1,72 @@
-/* --- 1. GLOBAL THEME & RESET --- */
 :root {
     --primary: #00d2ff;
     --bg-dark: #06090f;
     --card-bg: #161b22;
-    --border: #30363d;
 }
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
     background-color: var(--bg-dark);
     color: white;
-    font-family: 'Inter', sans-serif;
-    overflow-x: hidden;
+    font-family: sans-serif;
+    margin: 0;
+    padding-top: 80px;
 }
 
-/* --- 2. NAVBAR & HERO --- */
 .navbar {
-    background: rgba(6, 9, 15, 0.95);
+    background: #0b0e14;
     padding: 15px 5%;
     position: fixed;
-    width: 100%;
-    top: 0; z-index: 1000;
-    border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(10px);
+    top: 0; width: 100%;
+    z-index: 100;
+    border-bottom: 1px solid #30363d;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.nav-container { display: flex; justify-content: space-between; align-items: center; }
 .logo span { color: var(--primary); font-weight: bold; }
 
 .login-btn {
     background: var(--primary);
-    border: none; padding: 10px 22px;
-    border-radius: 6px; font-weight: bold;
-    cursor: pointer; transition: 0.3s;
+    border: none; padding: 10px 20px;
+    border-radius: 5px; font-weight: bold;
+    cursor: pointer;
 }
 
-/* --- 3. MODAL & LOGIN CARD FIX --- */
+/* THE CLICK FIX */
 .modal {
-    display: none !important; /* Forces it to be gone when closed */
+    display: none !important; 
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0,0,0,0.85);
     z-index: 9999;
     justify-content: center;
     align-items: center;
 }
 
-/* This is the magic class that opens the modal */
 .modal.show {
     display: flex !important;
 }
 
 .login-card {
     background: var(--card-bg);
-    width: 350px;
     padding: 40px;
-    border-radius: 15px;
-    border: 1px solid var(--border);
+    border-radius: 12px;
+    width: 320px;
     text-align: center;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    border: 1px solid #30363d;
 }
-
-.login-card h2 { margin-bottom: 25px; color: var(--primary); }
 
 .login-card input {
     width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    background: #0d1117;
-    border: 1px solid var(--border);
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #000;
+    border: 1px solid #333;
     color: white;
-    border-radius: 6px;
-    outline: none;
 }
 
-/* --- 4. AUTH BUTTONS GROUP --- */
-.auth-buttons {
-    display: flex;
-    flex-direction: column; /* Stacks Login and Sign Up */
-    gap: 12px;
-    margin-top: 10px;
-}
-
-.submit-btn {
-    background: var(--primary);
-    border: none; padding: 12px;
-    border-radius: 6px; font-weight: bold;
-    cursor: pointer; width: 100%;
-}
-
-.signup-btn {
-    background: transparent;
-    border: 2px solid var(--primary);
-    color: var(--primary);
-    padding: 12px;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    width: 100%;
-    transition: 0.3s;
-}
-
-.signup-btn:hover { background: var(--primary); color: black; }
-.cancel-link { color: #8b949e; cursor: pointer; margin-top: 20px; display: block; }
-
-/* --- 5. GRID FIX --- */
-.container { padding: 100px 8% 50px; }
-.anime-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 25px;
-}
+.auth-buttons { display: flex; flex-direction: column; gap: 10px; }
+.submit-btn { background: var(--primary); border: none; padding: 12px; cursor: pointer; font-weight: bold; }
+.signup-btn { background: none; border: 1px solid var(--primary); color: var(--primary); padding: 12px; cursor: pointer; }
+.cancel-link { cursor: pointer; color: #888; margin-top: 15px; display: block; }
