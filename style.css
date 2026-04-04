@@ -75,3 +75,8 @@ video { position: absolute; inset: 0; width: 100%; height: 100%; background: bla
 .login-card input { width: 100%; padding: 12px; margin: 10px -12px; background: #0b0e14; border: 1px solid #30363d; color: white; border-radius: 5px; }
 .submit-btn { width: 100%; padding: 12px; background: var(--primary); border: none; color: black; font-weight: bold; border-radius: 5px; margin-top: 20px; cursor: pointer; }
 .cancel-link { color: #8b949e; cursor: pointer; margin-top: 15px; font-size: 0.9rem; }
+.anime-card-link {
+    text-decoration: none; /* Removes the underline */
+    color: inherit;       /* Keeps your white text color */
+    display: block;       /* Makes the whole card clickable */
+}
