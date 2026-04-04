@@ -80,3 +80,55 @@ video { position: absolute; inset: 0; width: 100%; height: 100%; background: bla
     color: inherit;       /* Keeps your white text color */
     display: block;       /* Makes the whole card clickable */
 }
+/* WATCH PAGE LAYOUT */
+.watch-container {
+    display: grid;
+    grid-template-columns: 1fr 350px; /* Video on left, Sidebar on right */
+    gap: 20px;
+    padding: 100px 5% 40px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.video-wrapper {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.video-wrapper iframe {
+    position: absolute;
+    width: 100%; height: 100%;
+}
+
+.video-details { margin-top: 20px; }
+.video-details h1 { font-size: 1.8rem; color: var(--primary); }
+
+.player-actions { display: flex; gap: 15px; margin-top: 15px; }
+.player-actions button {
+    background: #161b22;
+    color: white; border: 1px solid #30363d;
+    padding: 10px 20px; border-radius: 5px; cursor: pointer;
+}
+
+.ep-sidebar {
+    background: #161b22;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #30363d;
+    height: fit-content;
+}
+
+.ep-item a {
+    display: block;
+    padding: 12px;
+    color: #8b949e;
+    text-decoration: none;
+    border-bottom: 1px solid #30363d;
+    transition: 0.3s;
+}
+
+.ep-item a:hover { color: var(--primary); background: rgba(0,210,255,0.05); }
