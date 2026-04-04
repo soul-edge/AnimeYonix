@@ -30,3 +30,16 @@
         `;
     }
 </script>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const anime = params.get('anime');
+    const list = document.getElementById('epList');
+
+    if (anime === 'solo-leveling') {
+        document.getElementById('animeTitle').innerText = "Solo Leveling";
+        list.innerHTML = `
+            <li class="ep-item"><a href="watch.html?anime=solo-leveling&ep=1">Episode 01</a></li>
+            <li class="ep-item"><a href="watch.html?anime=solo-leveling&ep=2">Episode 02</a></li>
+        `;
+    }
+</script>
