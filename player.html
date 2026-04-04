@@ -39,6 +39,18 @@
                 <li>Episode 3: It's Like a Game</li>
             `;
         }
+        // Inside your <script> in player.html
+if(anime === 'solo-leveling') {
+    document.getElementById('animeTitle').innerText = "Solo Leveling";
+    const list = document.getElementById('epList');
+    
+    // We add ?anime= and &ep= to the URL so the next page knows what to play
+    list.innerHTML = `
+        <li class="ep-item"><a href="watch.html?anime=solo-leveling&ep=1">Episode 1: I'm Used to It</a></li>
+        <li class="ep-item"><a href="watch.html?anime=solo-leveling&ep=2">Episode 2: If I Had One More Chance</a></li>
+        <li class="ep-item"><a href="watch.html?anime=solo-leveling&ep=3">Episode 3: It's Like a Game</a></li>
+    `;
+}
     </script>
 </body>
 </html>
