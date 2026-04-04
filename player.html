@@ -1,17 +1,25 @@
-const params = new URLSearchParams(window.location.search);
-const anime = params.get('anime');
-const list = document.getElementById('epList');
+<div class="episode-list">
+    <h2>Episodes</h2>
+    <ul id="epList">
+        </ul>
+</div>
 
-if (anime === 'solo-leveling') {
-    document.getElementById('animeTitle').innerText = "Solo Leveling";
-    
-    // CRITICAL: Use backticks (`) for the multi-line HTML string
-    list.innerHTML = `
-        <li class="ep-item">
-            <a href="watch.html?anime=solo-leveling&ep=1">Episode 1: I'm Used to It</a>
-        </li>
-        <li class="ep-item">
-            <a href="watch.html?anime=solo-leveling&ep=2">Episode 2: If I Had One More Chance</a>
-        </li>
-    `;
-}
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const anime = params.get('anime');
+    const list = document.getElementById('epList');
+
+    if (anime === 'solo-leveling') {
+        document.getElementById('animeTitle').innerText = "Solo Leveling";
+        
+        // Using backticks (`) to create the clickable links
+        list.innerHTML = `
+            <li class="ep-item">
+                <a href="watch.html?anime=solo-leveling&ep=1">Episode 1: I'm Used to It</a>
+            </li>
+            <li class="ep-item">
+                <a href="watch.html?anime=solo-leveling&ep=2">Episode 2: If I Had One More Chance</a>
+            </li>
+        `;
+    }
+</script>
