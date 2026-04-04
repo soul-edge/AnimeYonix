@@ -1,56 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Watching - AnimeYonix</title>
-    <link rel="stylesheet" href="./style.css">
-</head>
-<body class="player-page">
-    <nav class="navbar">
-        <div class="logo">ANIME<span>YONIX</span></div>
-    </nav>
+const params = new URLSearchParams(window.location.search);
+const anime = params.get('anime');
+const list = document.getElementById('epList');
 
-    <div class="container">
-        <h1 id="animeTitle">Loading...</h1>
-        
-        <div class="video-container">
-            <div class="video-placeholder">Video Player Area</div>
-        </div>
-
-        <div class="episode-list">
-            <h2>Episodes</h2>
-            <ul id="epList">
-                </ul>
-        </div>
-    </div>
-
-    <script>
-        // This script reads the URL (e.g., ?anime=solo-leveling)
-        const params = new URLSearchParams(window.location.search);
-        const anime = params.get('anime');
-        
-        if(anime === 'solo-leveling') {
-            document.getElementById('animeTitle').innerText = "Solo Leveling";
-            const list = document.getElementById('epList');
-            // Add episodes manually for now
-            list.innerHTML = `
-                <li>Episode 1: I'm Used to It</li>
-                <li>Episode 2: If I Had One More Chance</li>
-                <li>Episode 3: It's Like a Game</li>
-            `;
-        }
-        // Inside your <script> in player.html
-if(anime === 'solo-leveling') {
+if (anime === 'solo-leveling') {
     document.getElementById('animeTitle').innerText = "Solo Leveling";
-    const list = document.getElementById('epList');
     
-    // We add ?anime= and &ep= to the URL so the next page knows what to play
+    // CRITICAL: Use backticks (`) for the multi-line HTML string
     list.innerHTML = `
-        <li class="ep-item"><a href="watch.html?anime=solo-leveling&ep=1">Episode 1: I'm Used to It</a></li>
-        <li class="ep-item"><a href="watch.html?anime=solo-leveling&ep=2">Episode 2: If I Had One More Chance</a></li>
-        <li class="ep-item"><a href="watch.html?anime=solo-leveling&ep=3">Episode 3: It's Like a Game</a></li>
+        <li class="ep-item">
+            <a href="watch.html?anime=solo-leveling&ep=1">Episode 1: I'm Used to It</a>
+        </li>
+        <li class="ep-item">
+            <a href="watch.html?anime=solo-leveling&ep=2">Episode 2: If I Had One More Chance</a>
+        </li>
     `;
 }
-    </script>
-</body>
-</html>
