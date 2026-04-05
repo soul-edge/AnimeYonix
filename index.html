@@ -10,19 +10,25 @@
 <body>
 
     <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo">ANIME<span>YONIX</span></div>
-            
-            <ul class="nav-links">
-                <li><a href="#" class="active">Home</a></li>
-                <li><a href="#">Latest</a></li>
-                <li><a href="#">Genres</a></li>
-                <li><a href="#">Schedule</a></li>
-            </ul>
+       <div class="nav-container">
+    <div class="logo">ANIME<span>YONIX</span></div>
+    
+    <ul class="nav-links">
+        <li><a href="#" class="active">Home</a></li>
+        <li><a href="#">Latest</a></li>
+        <li><a href="#">Genres</a></li>
+        <li><a href="#">Schedule</a></li>
+    </ul>
 
-           
-                <button class="login-btn" onclick="toggleLogin()">Login</button>
-            </div>
+    <div class="nav-actions" style="display: flex; align-items: center; gap: 20px;">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search anime..." onkeyup="searchAnime()">
+            <i class="fas fa-search"></i>
+            <div id="searchResults" class="search-dropdown"></div>
+        </div>
+        <button class="login-btn" onclick="toggleLogin()">Login</button>
+    </div>
+</div>
         </div>
     </nav>
 
