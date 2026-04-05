@@ -3,48 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnimeYonix - Home</title>
-    <link rel="stylesheet" href="./style.css">
+    <title>AnimeYonix | Stream Your Favorite Anime</title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
     <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo">ANIME<span>YONIX</span></div>
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search anime..." onkeyup="searchAnime()">
-                <div id="searchResults" class="search-results"></div>
-            </div>
-            <div class="nav-links">
-                <a href="index.html" class="active">Home</a>
-                <a href="#">Trending</a>
-            </div>
+       <div class="nav-container">
+    <div class="logo">ANIME<span>YONIX</span></div>
+    
+    <ul class="nav-links">
+        <li><a href="#" class="active">Home</a></li>
+        <li><a href="#">Latest</a></li>
+        <li><a href="#">Genres</a></li>
+        <li><a href="#">Schedule</a></li>
+    </ul>
+
+    <div class="nav-actions" style="display: flex; align-items: center; gap: 20px;">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search anime..." onkeyup="searchAnime()">
+            <i class="fas fa-search"></i>
+            <div id="searchResults" class="search-dropdown"></div>
+        </div>
+        <button class="login-btn" onclick="toggleLogin()">Login</button>
+    </div>
+</div>
         </div>
     </nav>
 
-    <div class="container" style="margin-top: 100px;">
-        <div class="hero-section" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('./hero-bg.jpg'); padding: 60px; border-radius: 20px; margin-bottom: 40px;">
-            <h1 style="font-size: 3rem; color: #fff;">Welcome to StreamYonix</h1>
-            <p style="color: #ccc; max-width: 600px; margin: 20px 0;">Watch your favorite anime in high quality without limits. Explore our database below.</p>
+    <header class="hero" id="heroSection">
+        <div class="hero-content">
+            <span class="trending-tag">#1 Trending</span>
+            <h1>Welcome to AnimeYonix</h1>
+            <p>Experience high-quality anime streaming with custom subtitles and lightning-fast speeds. Your journey into the world of animation starts here.</p>
+            <div class="hero-btns">
+                <button class="play-btn"><i class="fas fa-play"></i> Start Watching</button>
+                <button class="info-btn"><i class="fas fa-plus"></i> Add to List</button>
+            </div>
         </div>
+    </header>
 
-        <h2 style="margin-bottom: 20px; color: #fff;">Trending Now</h2>
-        <div class="anime-grid">
-            <a href="player.html?anime=solo-leveling" class="anime-card" style="text-decoration: none;">
-                <img src="./solo.jpg" alt="Solo Leveling" style="width: 100%; border-radius: 12px; margin-bottom: 10px;">
-                <h3 style="color: #fff; font-size: 1rem;">Solo Leveling</h3>
-                <p style="color: #8b949e; font-size: 0.8rem;">2024 • TV</p>
-            </a>
+    <main class="container">
+        <div class="section-header">
+            <h2 class="section-title">Popular Series</h2>
+            <div class="filter-btns">
+                <button class="active">All</button>
+                <button>Action</button>
+                <button>Seinen</button>
+            </div>
+        </div>
+<div class="anime-grid" id="animeGrid">
 
-            <a href="player.html?anime=dragon-ball" class="anime-card" style="text-decoration: none;">
-                <img src="./db.jpg" alt="Dragon Ball" style="width: 100%; border-radius: 12px; margin-bottom: 10px;">
-                <h3 style="color: #fff; font-size: 1rem;">Dragon Ball</h3>
-                <p style="color: #8b949e; font-size: 0.8rem;">1986 • TV</p>
-            </a>
+    <a href="player.html?anime=dragon-ball" class="anime-card-link">
+    <div class="anime-card" data-title="Dragon Ball">
+        <div class="card-img">
+            <img src="./db.jpg" alt="Dragon Ball">
+            <div class="overlay">
+                <i class="fas fa-play-circle"></i>
+            </div>
+        </div>
+        <div class="card-info">
+            <h3>Dragon Ball</h3>
+            <span>2024 • Action / Fantasy</span>
+        </div>
+    </div>
+</a>
+
+   <a href="player.html?anime=solo-leveling" class="anime-card-link">
+    <div class="anime-card" data-title="Solo Leveling">
+        <div class="card-img">
+            <img src="./solo.jpg" alt="Solo Leveling">
+            <div class="overlay">
+                <i class="fas fa-play-circle"></i>
+            </div>
+        </div>
+        <div class="card-info">
+            <h3>Solo Leveling</h3>
+            <span>2024 • Action / Fantasy</span>
+        </div>
+    </div>
+</a>
+
+</div>
+
+    <div id="videoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closePlayer()">&times;</span>
+            <div class="video-wrapper">
+                <video id="mainVideo" controls crossorigin="anonymous">
+                    <source src="" type="video/mp4">
+                    <track label="English" kind="subtitles" srclang="en" src="" default>
+                </video>
+            </div>
         </div>
     </div>
 
-    <script src="./script.js"></script>
+    <div id="loginModal" class="modal">
+        <div class="login-card">
+            <h2>Kanéki's Lounge</h2>
+            <input type="text" placeholder="Username">
+            <input type="password" placeholder="Password">
+            <button class="submit-btn">Login</button>
+            <p class="cancel-link" onclick="toggleLogin()">Cancel</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
