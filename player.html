@@ -43,3 +43,54 @@
         `;
     }
 </script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Episodes - AnimeYonix</title>
+    <link rel="stylesheet" href="./style.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body> <nav class="navbar">
+        <div class="logo">ANIME<span>YONIX</span></div>
+    </nav>
+
+    <div class="container" style="margin-top: 100px;">
+        <h1 id="animeTitle" style="color: var(--primary);">Loading...</h1>
+
+        <div class="episode-list">
+            <h2>Episodes</h2>
+            <ul id="epList">
+                </ul>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const anime = params.get('anime');
+        const list = document.getElementById('epList');
+        const titleElement = document.getElementById('animeTitle');
+
+        if (anime === 'solo-leveling') {
+            titleElement.innerText = "Solo Leveling";
+            
+            list.innerHTML = `
+                <li class="ep-item">
+                    <a href="watch.html?anime=solo-leveling&ep=1">Episode 1: I'm Used to It</a>
+                </li>
+                <li class="ep-item">
+                    <a href="watch.html?anime=solo-leveling&ep=2">Episode 2: If I Had One More Chance</a>
+                </li>
+            `;
+        } else if (anime === 'lies-of-p') {
+            titleElement.innerText = "Lies of P (Cinematics)";
+            list.innerHTML = `
+                <li class="ep-item">
+                    <a href="watch.html?anime=lies-of-p&ep=1">Intro Cinematic</a>
+                </li>
+            `;
+        }
+    </script>
+</body>
+</html>
