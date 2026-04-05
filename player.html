@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Specific styles for the episode list to make it look "Pro" */
+        /* Pro Player Styling */
         .ep-header { margin-bottom: 30px; }
         .ep-header h1 { font-size: 2.5rem; color: #fff; margin-bottom: 10px; }
         .breadcrumb { color: var(--primary); font-size: 0.9rem; margin-bottom: 20px; }
@@ -33,11 +33,36 @@
             transition: 0.3s all ease;
         }
 
-        .ep-link:hover {
+        .ep-link:hover, .ep-link.active {
             background: var(--primary);
             color: #000;
             transform: translateY(-3px);
             border-color: #fff;
+        }
+
+        /* Video Section Styling */
+        .video-container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto 40px;
+            display: none; /* Hidden until episode is clicked */
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            overflow: hidden;
+            background: #000;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border: none;
         }
 
         .no-anime {
@@ -63,6 +88,14 @@
 
     <div class="container" style="margin-top: 100px;">
         <div id="contentArea">
+            
+            <div class="video-container" id="playerSection">
+                <div class="video-wrapper">
+                    <iframe id="mainPlayer" src="" allowfullscreen scrolling="no" sandbox="allow-forms allow-scripts allow-same-origin"></iframe>
+                </div>
+                <h2 id="nowPlayingTitle" style="margin-top: 20px; color: var(--primary); font-size: 1.5rem;"></h2>
+            </div>
+
             <div class="breadcrumb">
                 <a href="index.html" style="color: var(--primary); text-decoration: none;">Home</a> 
                 <i class="fas fa-chevron-right" style="font-size: 0.7rem; margin: 0 10px;"></i> 
@@ -75,7 +108,7 @@
             </div>
 
             <div class="episode-grid" id="epGrid">
-                </div>
+            </div>
         </div>
 
         <div id="errorArea" class="no-anime" style="display: none;">
@@ -87,48 +120,56 @@
     </div>
 
     <script>
-        // Grab the info from the URL
         const params = new URLSearchParams(window.location.search);
         const animeSlug = params.get('anime');
+        const episodeNum = params.get('ep'); // Check if an episode is selected
 
-        // Target elements
-        const mainTitle = document.getElementById('mainTitle');
-        const bName = document.getElementById('b-name');
-        const epGrid = document.getElementById('epGrid');
-        const contentArea = document.getElementById('contentArea');
-        const errorArea = document.getElementById('errorArea');
-
-        // DATA: This is where you add your anime episodes
         const animeData = {
             'solo-leveling': {
                 title: 'Solo Leveling',
-                episodes: 12 // How many episodes to show
+                episodes: 12,
+                links: {
+                    '1': "https://animeyonix.seekplayer.me/e/5u8x6" // YOUR LINK ADDED HERE
+                }
             },
             'dragon-ball': {
                 title: 'Dragon Ball',
-                episodes: 70
+                episodes: 70,
+                links: {}
             }
         };
 
         if (animeData[animeSlug]) {
             const data = animeData[animeSlug];
-            mainTitle.innerText = data.title;
-            bName.innerText = data.title;
+            document.getElementById('mainTitle').innerText = data.title;
+            document.getElementById('b-name').innerText = data.title;
 
-            // Generate Episode Buttons Automatically
+            // CHECK: Should we show the player?
+            if (episodeNum && data.links[episodeNum]) {
+                document.getElementById('playerSection').style.display = 'block';
+                document.getElementById('mainPlayer').src = data.links[episodeNum];
+                document.getElementById('nowPlayingTitle').innerText = `Now Playing: Episode ${episodeNum}`;
+                
+                // Scroll smoothly to player
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            // GENERATE BUTTONS
             let html = '';
             for (let i = 1; i <= data.episodes; i++) {
+                // Highlight the button if it's the current episode
+                const activeClass = (episodeNum == i) ? 'active' : '';
+                
                 html += `
-                    <a href="watch.html?anime=${animeSlug}&ep=${i}" class="ep-link">
+                    <a href="player.html?anime=${animeSlug}&ep=${i}" class="ep-link ${activeClass}">
                         EP ${i < 10 ? '0' + i : i}
                     </a>
                 `;
             }
-            epGrid.innerHTML = html;
+            document.getElementById('epGrid').innerHTML = html;
         } else {
-            // Show error if anime doesn't exist in our data
-            contentArea.style.display = 'none';
-            errorArea.style.display = 'block';
+            document.getElementById('contentArea').style.display = 'none';
+            document.getElementById('errorArea').style.display = 'block';
         }
     </script>
 </body>
