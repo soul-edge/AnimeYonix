@@ -2,7 +2,6 @@
 const animeDatabase = [
     { title: "Solo Leveling", slug: "solo-leveling", img: "./solo.jpg", year: "2024" },
     { title: "Dragon Ball", slug: "dragon-ball", img: "./db.jpg", year: "1986" },
-    { title: "Lies of P", slug: "lies-of-p", img: "./liesofp.jpg", year: "2024" }
 ];
 
 // Professional Dropdown Search
