@@ -1,47 +1,3 @@
-// Search Engine
-function searchAnime() {
-    let input = document.getElementById('searchInput').value.toLowerCase();
-    let cards = document.getElementsByClassName('anime-card');
-
-    for (let card of cards) {
-        let title = card.getAttribute('data-title').toLowerCase();
-        card.style.display = title.includes(input) ? "block" : "none";
-    }
-}
-
-// Global Player
-function openPlayer(videoSrc, subSrc) {
-    const modal = document.getElementById('videoModal');
-    const video = document.getElementById('mainVideo');
-    const track = video.querySelector('track');
-
-    if(videoSrc) video.src = videoSrc;
-    if(subSrc) track.src = subSrc;
-
-    modal.style.display = 'block';
-    video.play();
-}
-
-function closePlayer() {
-    const modal = document.getElementById('videoModal');
-    const video = document.getElementById('mainVideo');
-    modal.style.display = 'none';
-    video.pause();
-}
-
-// Login Toggle
-function toggleLogin() {
-    const loginModal = document.getElementById('loginModal');
-    loginModal.style.display = (loginModal.style.display === 'block') ? 'none' : 'block';
-}
-
-// Close on outside click
-window.onclick = function(event) {
-    if (event.target.classList.contains('modal')) {
-        closePlayer();
-        document.getElementById('loginModal').style.display = 'none';
-    }
-}
 // Database of your anime for the search to look through
 const animeDatabase = [
     { title: "Solo Leveling", slug: "solo-leveling", img: "./solo.jpg", year: "2024" },
@@ -49,10 +5,12 @@ const animeDatabase = [
     { title: "Lies of P", slug: "lies-of-p", img: "./liesofp.jpg", year: "2024" }
 ];
 
+// Professional Dropdown Search
 function searchAnime() {
     const input = document.getElementById('searchInput').value.toLowerCase();
     const dropdown = document.getElementById('searchResults');
     
+    // If search is empty, hide the dropdown
     if (input.length === 0) {
         dropdown.style.display = "none";
         return;
@@ -80,9 +38,22 @@ function searchAnime() {
     }
 }
 
-// Close dropdown if user clicks outside
-document.addEventListener('click', (e) => {
-    if (!e.target.closest('.search-box')) {
-        document.getElementById('searchResults').style.display = "none";
+// Login Toggle
+function toggleLogin() {
+    const loginModal = document.getElementById('loginModal');
+    loginModal.style.display = (loginModal.style.display === 'block') ? 'none' : 'block';
+}
+
+// Close modals or dropdowns if user clicks outside
+window.onclick = function(event) {
+    // Close dropdown
+    if (!event.target.closest('.search-box')) {
+        const dropdown = document.getElementById('searchResults');
+        if (dropdown) dropdown.style.display = "none";
     }
-});
+    
+    // Close Login Modal
+    if (event.target.classList.contains('modal')) {
+        document.getElementById('loginModal').style.display = 'none';
+    }
+}
