@@ -3,47 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnimeYonix - Home</title>
+    <title>AnimeYonix - Premium Streaming</title>
     <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .anime-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 25px; padding: 20px 0; }
-        .anime-card { background: #1a1d21; border-radius: 12px; overflow: hidden; border: 1px solid #30363d; transition: 0.3s all ease; cursor: pointer; text-decoration: none; display: block; }
-        .anime-card:hover { transform: translateY(-10px); border-color: #00d1ff; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        .anime-card img { width: 100%; height: 300px; object-fit: cover; }
-        .card-details { padding: 15px; }
-        .card-details h3 { color: #fff; margin: 0 0 5px 0; font-size: 1.1rem; }
-        .card-details p { color: #8b949e; font-size: 0.85rem; margin: 0; }
+        /* Pro Header & Search */
+        .search-container { position: relative; flex: 1; max-width: 400px; margin: 0 20px; }
+        .search-container input { width: 100%; padding: 10px 40px 10px 15px; border-radius: 20px; border: 1px solid #30363d; background: #0d1117; color: white; outline: none; }
+        .search-container i { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #8b949e; }
+        
+        .login-btn { background: var(--primary); color: #000; padding: 8px 20px; border-radius: 5px; font-weight: bold; text-decoration: none; transition: 0.3s; }
+        .login-btn:hover { opacity: 0.8; transform: scale(1.05); }
+
+        /* Professional Grid */
+        .anime-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 30px; margin-top: 40px; }
+        .anime-card { background: #161b22; border-radius: 15px; overflow: hidden; border: 1px solid #30363d; transition: 0.4s; text-decoration: none; display: block; position: relative; }
+        .anime-card:hover { transform: translateY(-10px); border-color: var(--primary); box-shadow: 0 15px 30px rgba(0,0,0,0.6); }
+        .anime-card img { width: 100%; height: 320px; object-fit: cover; }
+        .badge { position: absolute; top: 10px; left: 10px; background: var(--primary); color: #000; padding: 3px 10px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
+        .card-info { padding: 15px; }
+        .card-info h3 { color: #fff; margin: 0; font-size: 1.1rem; }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="logo">ANIME<span>YONIX</span></div>
+            <div class="logo" onclick="location.href='index.html'">ANIME<span>YONIX</span></div>
+            
+            <div class="search-container">
+                <input type="text" placeholder="Search anime...">
+                <i class="fas fa-search"></i>
+            </div>
+
             <div class="nav-links">
                 <a href="index.html" class="active">Home</a>
-                <a href="#">Trending</a>
+                <a href="#" class="login-btn">Login</a>
             </div>
         </div>
     </nav>
 
-    <div class="container" style="margin-top: 100px;">
-        <h1 style="color: #fff; margin-bottom: 30px;">Trending Now</h1>
+    <div class="container" style="margin-top: 120px;">
+        <h2 style="color: #fff;"><i class="fas fa-fire" style="color: #ff4500;"></i> Trending Now</h2>
         <div class="anime-grid">
             
             <a href="player.html?anime=solo-leveling" class="anime-card">
-                <img src="./solo.jpg" alt="Solo Leveling" onerror="this.src='https://via.placeholder.com/200x300?text=Solo+Leveling'">
-                <div class="card-details">
+                <div class="badge">SUB | DUB</div>
+                <img src="./solo.jpg" alt="Solo Leveling" onerror="this.src='https://via.placeholder.com/220x320?text=Solo+Leveling'">
+                <div class="card-info">
                     <h3>Solo Leveling</h3>
-                    <p>Action • Adventure</p>
+                    <p style="color: #8b949e; font-size: 0.8rem; margin-top: 5px;">S1 • 12 Episodes</p>
                 </div>
             </a>
 
             <a href="player.html?anime=dragon-ball" class="anime-card">
-                <img src="./db.jpg" alt="Dragon Ball" onerror="this.src='https://via.placeholder.com/200x300?text=Dragon+Ball'">
-                <div class="card-details">
-                    <h3>Dragon Ball</h3>
-                    <p>Classic • Shonen</p>
+                <div class="badge">SUB</div>
+                <img src="./db.jpg" alt="Dragon Ball" onerror="this.src='https://via.placeholder.com/220x320?text=Dragon+Ball'">
+                <div class="card-info">
+                    <h3>Dragon Ball DAIMA</h3>
+                    <p style="color: #8b949e; font-size: 0.8rem; margin-top: 5px;">Ongoing</p>
                 </div>
             </a>
 
