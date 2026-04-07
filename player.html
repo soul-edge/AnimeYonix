@@ -7,49 +7,51 @@
     <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .player-wrapper { background: #0d1117; padding: 20px; border-radius: 20px; border: 1px solid #30363d; margin-bottom: 40px; }
-        .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: #000; }
-        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        .player-section { background: #161b22; border-radius: 20px; padding: 25px; border: 1px solid #30363d; margin-bottom: 40px; }
+        .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 15px; background: #000; box-shadow: 0 20px 50px rgba(0,0,0,0.8); }
+        .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
         
-        .ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; margin-top: 20px; }
-        .ep-btn { background: #161b22; color: #fff; padding: 12px; text-align: center; text-decoration: none; border-radius: 8px; border: 1px solid #30363d; transition: 0.3s; font-weight: bold; }
-        .ep-btn:hover, .ep-btn.active { background: var(--primary); color: #000; border-color: #fff; transform: translateY(-3px); }
+        .ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 15px; margin-top: 25px; }
+        .ep-btn { background: #0d1117; color: #fff; padding: 15px; text-align: center; text-decoration: none; border-radius: 10px; border: 1px solid #30363d; transition: 0.3s ease; font-weight: bold; }
+        .ep-btn:hover, .ep-btn.active { background: #00d1ff; color: #000; border-color: #fff; transform: translateY(-5px); }
         
-        .anime-meta { margin-top: 20px; border-top: 1px solid #30363d; padding-top: 20px; }
+        .status-bar { display: flex; align-items: center; gap: 10px; color: #00d1ff; font-weight: bold; margin-bottom: 15px; }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
             <div class="logo" onclick="location.href='index.html'">ANIME<span>YONIX</span></div>
-            <div class="nav-links"><a href="index.html">Back to Home</a></div>
+            <div class="nav-links"><a href="index.html" class="login-btn" style="color:black;">Home</a></div>
         </div>
     </nav>
 
-    <div class="container" style="margin-top: 100px;">
+    <div class="container" style="margin-top: 110px;">
         <div id="contentArea">
-            <div class="player-wrapper">
-                <div class="video-container" id="vidBox" style="display:none;">
-                    <iframe id="mainPlayer" src="" allowfullscreen></iframe>
-                </div>
-                <div id="placeholder" style="text-align:center; padding: 60px 0; color: #8b949e;">
-                    <i class="fas fa-play-circle" style="font-size: 5rem; margin-bottom: 20px;"></i>
-                    <h2>Ready to watch? Select an episode below!</h2>
+            <div class="player-section">
+                <div class="status-bar" id="statusLine" style="display:none;">
+                    <i class="fas fa-circle-play"></i> <span id="epText">Watching Episode 1</span>
                 </div>
                 
-                <div class="anime-meta">
-                    <h1 id="mainTitle" style="color: #fff; margin: 0;">Loading...</h1>
-                    <p id="epStatus" style="color: var(--primary); font-weight: bold; margin-top: 5px;"></p>
+                <div class="video-wrapper" id="vidContainer" style="display:none;">
+                    <iframe id="mainPlayer" src="" allowfullscreen></iframe>
                 </div>
+
+                <div id="emptyState" style="text-align:center; padding: 80px 0; color: #8b949e;">
+                    <i class="fas fa-tv" style="font-size: 4rem; margin-bottom: 15px;"></i>
+                    <h2>Choose an episode to start the stream</h2>
+                </div>
+
+                <h1 id="animeTitle" style="color: #fff; margin-top: 25px; font-size: 2.2rem;">Loading...</h1>
             </div>
 
-            <h3 style="color: #fff;"><i class="fas fa-list"></i> Episode List</h3>
+            <h3 style="color: #fff; margin-bottom: 20px;"><i class="fas fa-th-list"></i> Select Episode</h3>
             <div class="ep-grid" id="epGrid"></div>
         </div>
 
-        <div id="errorArea" style="display:none; text-align:center; color:#fff; padding:100px 0;">
-            <h1>Anime Not Found</h1>
-            <a href="index.html" class="ep-btn" style="display:inline-block; margin-top:20px;">Go Home</a>
+        <div id="errorArea" style="display:none; text-align:center; padding:100px 0;">
+            <h1 style="color:white;">Anime Not Found</h1>
+            <a href="index.html" class="ep-btn" style="display:inline-block; margin-top:20px;">Back to Library</a>
         </div>
     </div>
 
@@ -63,22 +65,21 @@
                 title: 'Solo Leveling',
                 episodes: 12,
                 links: {
-                    '1': "https://animeyonix.seekplayer.me/e/5u8x6",
-                    '2': "https://animeyonix.seekplayer.me/e/another-link-here", // Add your links as you get them
-                    '3': "https://animeyonix.seekplayer.me/e/link3"
+                    '1': "https://animeyonix.seekplayer.me/e/5u8x6"
                 }
             }
         };
 
         if (animeSlug && animeData[animeSlug]) {
             const data = animeData[animeSlug];
-            document.getElementById('mainTitle').innerText = data.title;
+            document.getElementById('animeTitle').innerText = data.title;
 
             if (episodeNum && data.links[episodeNum]) {
-                document.getElementById('vidBox').style.display = 'block';
-                document.getElementById('placeholder').style.display = 'none';
+                document.getElementById('vidContainer').style.display = 'block';
+                document.getElementById('statusLine').style.display = 'flex';
+                document.getElementById('emptyState').style.display = 'none';
                 document.getElementById('mainPlayer').src = data.links[episodeNum];
-                document.getElementById('epStatus').innerText = `Watching Episode ${episodeNum}`;
+                document.getElementById('epText').innerText = `Now Playing: Episode ${episodeNum}`;
             }
 
             let html = '';
