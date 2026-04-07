@@ -1,58 +1,46 @@
-// Database of your anime for the search to look through
-const animeDatabase = [
-    { title: "Solo Leveling", slug: "solo-leveling", img: "./solo.jpg", year: "2024" },
-    { title: "Dragon Ball", slug: "dragon-ball", img: "./db.jpg", year: "1986" },
+// Sample Data for the search dropdown
+const animeList = [
+    { name: "Dragon Ball Z", img: "db.jpg", url: "db-episodes.html" },
+    { name: "Solo Leveling", img: "solo.jpg", url: "solo-episodes.html" },
+    { name: "One Piece", img: "op.jpg", url: "#" }
 ];
 
-// Professional Dropdown Search
-function searchAnime() {
-    const input = document.getElementById('searchInput').value.toLowerCase();
-    const dropdown = document.getElementById('searchResults');
+const searchInput = document.getElementById('searchInput');
+const dropdown = document.getElementById('searchDropdown');
+
+searchInput.addEventListener('input', (e) => {
+    const value = e.target.value.toLowerCase();
+    dropdown.innerHTML = "";
     
-    // If search is empty, hide the dropdown
-    if (input.length === 0) {
-        dropdown.style.display = "none";
-        return;
-    }
-
-    // Filter the database
-    const results = animeDatabase.filter(anime => 
-        anime.title.toLowerCase().includes(input)
-    );
-
-    if (results.length > 0) {
-        dropdown.style.display = "block";
-        dropdown.innerHTML = results.map(anime => `
-            <a href="player.html?anime=${anime.slug}" class="search-result-item">
-                <img src="${anime.img}" alt="${anime.title}">
-                <div class="search-result-info">
-                    <h4>${anime.title}</h4>
-                    <span>${anime.year} • TV</span>
-                </div>
-            </a>
-        `).join('') + '<div style="padding: 10px; text-align: center; background: var(--primary); color: black; font-weight: bold; font-size: 0.8rem;">View all results</div>';
+    if (value.length > 0) {
+        const filtered = animeList.filter(anime => anime.name.toLowerCase().includes(value));
+        
+        if (filtered.length > 0) {
+            dropdown.style.display = "block";
+            filtered.forEach(anime => {
+                const item = document.createElement('div');
+                item.className = "search-item";
+                item.innerHTML = `
+                    <img src="${anime.img}">
+                    <div>
+                        <div style="font-weight:bold;">${anime.name}</div>
+                        <div style="font-size:12px; color:gray;">TV Series</div>
+                    </div>
+                `;
+                item.onclick = () => location.href = anime.url;
+                dropdown.appendChild(item);
+            });
+        } else {
+            dropdown.style.display = "none";
+        }
     } else {
-        dropdown.innerHTML = '<div style="padding: 20px; color: grey; text-align: center;">No results found</div>';
-        dropdown.style.display = "block";
+        dropdown.style.display = "none";
     }
-}
+});
 
-// Login Toggle
-function toggleLogin() {
-    const loginModal = document.getElementById('loginModal');
-    loginModal.style.display = (loginModal.style.display === 'block') ? 'none' : 'block';
-}
-
-// Close modals or dropdowns if user clicks outside
-window.onclick = function(event) {
-    // Close dropdown
-    if (!event.target.closest('.search-box')) {
-        const dropdown = document.getElementById('searchResults');
-        if (dropdown) dropdown.style.display = "none";
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.search-wrapper')) {
+        dropdown.style.display = "none";
     }
-    
-    // Close Login Modal
-    if (event.target.classList.contains('modal')) {
-        document.getElementById('loginModal').style.display = 'none';
-    }
-}
+});
