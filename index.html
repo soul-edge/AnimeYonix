@@ -2,33 +2,64 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AnimeYonix - Episodes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnimeYonix | Watch Anime Online</title>
     <link rel="stylesheet" href="style.css">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 </head>
-<body onload="initEpisodePage()">
+<body>
     <header>
         <div class="nav-container">
             <h1 class="logo" onclick="location.href='index.html'">Anime<span>Yonix</span></h1>
+            <div class="search-wrapper">
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Search anime...">
+                    <button><i class='bx bx-search'></i></button>
+                </div>
+                <div id="searchDropdown" class="search-dropdown"></div>
+            </div>
         </div>
     </header>
 
-    <div id="animeHero" class="anime-info-hero">
-        <div class="hero-blur"></div>
-        <div class="hero-info-content">
-            <h1 id="mainTitle">Loading...</h1>
-            <p id="mainDesc">Official series episodes and details.</p>
-        </div>
-    </div>
-
-    <main class="container">
-        <div class="ep-header">
-            <h2 class="section-title">List of Episodes</h2>
-        </div>
-        <div class="episode-grid" id="episodeList">
+    <main>
+        <section class="hero-banner">
+            <div class="hero-content">
+                <span class="trending">#1 Trending</span>
+                <h2>Solo Leveling</h2>
+                <p>In a world where hunters must battle deadly monsters to protect mankind...</p>
+                <button class="btn-watch" onclick="location.href='episodes.html?anime=sololeveling'">Watch Now</button>
             </div>
-    </main>
+        </section>
 
+        <section class="content-section">
+            <h2 class="section-title">Latest Updates</h2>
+            <div class="anime-grid">
+                <div class="anime-card" onclick="location.href='episodes.html?anime=dragonball'">
+                    <div class="poster">
+                        <img src="db.jpg" alt="Dragon Ball">
+                        <div class="ep-tag">EP 70</div>
+                        <div class="overlay"><i class='bx bx-play'></i></div>
+                    </div>
+                    <div class="info">
+                        <h3>Dragon Ball</h3>
+                        <p>Action • Adventure</p>
+                    </div>
+                </div>
+
+                <div class="anime-card" onclick="location.href='episodes.html?anime=sololeveling'">
+                    <div class="poster">
+                        <img src="solo.jpg" alt="Solo Leveling">
+                        <div class="ep-tag">EP 12</div>
+                        <div class="overlay"><i class='bx bx-play'></i></div>
+                    </div>
+                    <div class="info">
+                        <h3>Solo Leveling</h3>
+                        <p>Fantasy • Action</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
     <script src="script.js"></script>
 </body>
 </html>
