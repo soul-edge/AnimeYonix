@@ -3,170 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Episodes - AnimeYonix</title>
+    <title>Watch - AnimeYonix</title>
     <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Pro Player Styling */
-        .ep-header { margin-bottom: 30px; }
-        .ep-header h1 { font-size: 2.5rem; color: #fff; margin-bottom: 10px; }
-        .breadcrumb { color: var(--primary); font-size: 0.9rem; margin-bottom: 20px; }
-        
-        .episode-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 15px;
-            margin-top: 30px;
-        }
-
-        .ep-link {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--card-bg);
-            border: 1px solid #30363d;
-            color: #fff;
-            padding: 15px;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: 0.3s all ease;
-        }
-
-        .ep-link:hover, .ep-link.active {
-            background: var(--primary);
-            color: #000;
-            transform: translateY(-3px);
-            border-color: #fff;
-        }
-
-        /* Video Section Styling */
-        .video-container {
-            width: 100%;
-            max-width: 1000px;
-            margin: 0 auto 40px;
-            display: none; /* Hidden until episode is clicked */
-        }
-
-        .video-wrapper {
-            position: relative;
-            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
-            height: 0;
-            overflow: hidden;
-            background: #000;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-
-        .video-wrapper iframe {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            border: none;
-        }
-
-        .no-anime {
-            text-align: center;
-            padding: 100px 0;
-            color: #8b949e;
-        }
+        .episode-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; margin-top: 30px; }
+        .ep-link { display: flex; align-items: center; justify-content: center; background: #1a1d21; border: 1px solid #30363d; color: #fff; padding: 12px; border-radius: 6px; text-decoration: none; font-weight: bold; transition: 0.2s; }
+        .ep-link:hover, .ep-link.active { background: #00d1ff; color: #000; border-color: #fff; }
+        .video-container { width: 100%; max-width: 1000px; margin: 0 auto 30px; display: none; }
+        .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; background: #000; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
-
     <nav class="navbar">
         <div class="nav-container">
-            <div class="logo" onclick="window.location.href='index.html'" style="cursor:pointer">
-                ANIME<span>YONIX</span>
-            </div>
-            <div class="nav-links">
-                <a href="index.html">Home</a>
-                <a href="#" class="active">Trending</a>
-            </div>
+            <div class="logo" onclick="window.location.href='index.html'" style="cursor:pointer">ANIME<span>YONIX</span></div>
+            <div class="nav-links"><a href="index.html">Home</a></div>
         </div>
     </nav>
 
     <div class="container" style="margin-top: 100px;">
         <div id="contentArea">
-            
             <div class="video-container" id="playerSection">
                 <div class="video-wrapper">
-                    <iframe id="mainPlayer" src="" allowfullscreen scrolling="no" sandbox="allow-forms allow-scripts allow-same-origin"></iframe>
+                    <iframe id="mainPlayer" src="" allowfullscreen scrolling="no"></iframe>
                 </div>
-                <h2 id="nowPlayingTitle" style="margin-top: 20px; color: var(--primary); font-size: 1.5rem;"></h2>
+                <h2 id="nowPlayingTitle" style="margin-top: 15px; color: #00d1ff; font-size: 1.2rem;"></h2>
             </div>
 
-            <div class="breadcrumb">
-                <a href="index.html" style="color: var(--primary); text-decoration: none;">Home</a> 
-                <i class="fas fa-chevron-right" style="font-size: 0.7rem; margin: 0 10px;"></i> 
-                <span id="b-name">Anime</span>
-            </div>
-
-            <div class="ep-header">
-                <h1 id="mainTitle">Loading Anime...</h1>
-                <p style="color: #8b949e;"><i class="fas fa-info-circle"></i> Select an episode to start watching.</p>
-            </div>
-
-            <div class="episode-grid" id="epGrid">
-            </div>
+            <h1 id="mainTitle" style="color: #fff; font-size: 2.5rem; margin-bottom: 10px;">Loading...</h1>
+            <p style="color: #8b949e; margin-bottom: 20px;"><i class="fas fa-play-circle"></i> Select an episode below.</p>
+            <div class="episode-grid" id="epGrid"></div>
         </div>
 
-        <div id="errorArea" class="no-anime" style="display: none;">
-            <i class="fas fa-search" style="font-size: 4rem; margin-bottom: 20px;"></i>
-            <h1>Anime Not Found</h1>
-            <p>We couldn't find the anime you're looking for. Return to the home page.</p>
-            <a href="index.html" class="login-btn" style="display: inline-block; margin-top: 20px; text-decoration: none; color: black;">Go Home</a>
+        <div id="errorArea" style="display: none; text-align: center; padding: 100px 0;">
+            <i class="fas fa-exclamation-circle" style="font-size: 4rem; color: #30363d; margin-bottom: 20px;"></i>
+            <h1 style="color: #fff;">Anime Not Found</h1>
+            <p style="color: #8b949e;">We couldn't find that series. Please try again from the home page.</p>
+            <a href="index.html" class="ep-link" style="display: inline-block; margin-top: 20px; width: 150px;">Go Home</a>
         </div>
     </div>
 
     <script>
         const params = new URLSearchParams(window.location.search);
         const animeSlug = params.get('anime');
-        const episodeNum = params.get('ep'); // Check if an episode is selected
+        const episodeNum = params.get('ep');
 
+        // DATABASE: Add your anime data here
         const animeData = {
             'solo-leveling': {
                 title: 'Solo Leveling',
                 episodes: 12,
-                links: {
-                    '1': "<iframe src="<iframe src="https://animeyonix.seekplayer.me/#tohl1" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>
+                links: { 
+                    '1': "https://animeyonix.seekplayer.me/e/5u8x6",
+                    '2': "https://example.com/embed/ep2" 
+                }
             },
             'dragon-ball': {
                 title: 'Dragon Ball',
                 episodes: 70,
-                links: {}
+                links: { '1': "https://example.com/embed/db1" }
             }
         };
 
-        if (animeData[animeSlug]) {
+        // EXECUTION LOGIC
+        if (animeSlug && animeData[animeSlug]) {
             const data = animeData[animeSlug];
             document.getElementById('mainTitle').innerText = data.title;
-            document.getElementById('b-name').innerText = data.title;
 
-            // CHECK: Should we show the player?
+            // Load Video if episode exists
             if (episodeNum && data.links[episodeNum]) {
                 document.getElementById('playerSection').style.display = 'block';
                 document.getElementById('mainPlayer').src = data.links[episodeNum];
                 document.getElementById('nowPlayingTitle').innerText = `Now Playing: Episode ${episodeNum}`;
-                
-                // Scroll smoothly to player
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
 
-            // GENERATE BUTTONS
+            // Generate Episode Buttons
             let html = '';
             for (let i = 1; i <= data.episodes; i++) {
-                // Highlight the button if it's the current episode
                 const activeClass = (episodeNum == i) ? 'active' : '';
-                
-                html += `
-                    <a href="player.html?anime=${animeSlug}&ep=${i}" class="ep-link ${activeClass}">
-                        EP ${i < 10 ? '0' + i : i}
-                    </a>
-                `;
+                html += `<a href="player.html?anime=${animeSlug}&ep=${i}" class="ep-link ${activeClass}">EP ${i}</a>`;
             }
             document.getElementById('epGrid').innerHTML = html;
         } else {
+            // No anime found in URL? Show Error.
             document.getElementById('contentArea').style.display = 'none';
             document.getElementById('errorArea').style.display = 'block';
         }
