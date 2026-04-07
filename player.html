@@ -7,45 +7,49 @@
     <link rel="stylesheet" href="./style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .ep-header { margin-bottom: 30px; }
-        .ep-header h1 { font-size: 2.5rem; color: #fff; margin-bottom: 10px; }
-        .episode-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; margin-top: 30px; }
-        .ep-link { display: flex; align-items: center; justify-content: center; background: #1a1d21; border: 1px solid #30363d; color: #fff; padding: 15px; border-radius: 8px; text-decoration: none; font-weight: bold; transition: 0.3s all ease; }
-        .ep-link:hover, .ep-link.active { background: #00d1ff; color: #000; transform: translateY(-3px); border-color: #fff; }
-        .video-container { width: 100%; max-width: 1000px; margin: 0 auto 40px; display: none; }
-        .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; background: #000; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        .player-wrapper { background: #0d1117; padding: 20px; border-radius: 20px; border: 1px solid #30363d; margin-bottom: 40px; }
+        .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; background: #000; }
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        
+        .ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; margin-top: 20px; }
+        .ep-btn { background: #161b22; color: #fff; padding: 12px; text-align: center; text-decoration: none; border-radius: 8px; border: 1px solid #30363d; transition: 0.3s; font-weight: bold; }
+        .ep-btn:hover, .ep-btn.active { background: var(--primary); color: #000; border-color: #fff; transform: translateY(-3px); }
+        
+        .anime-meta { margin-top: 20px; border-top: 1px solid #30363d; padding-top: 20px; }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="logo" onclick="window.location.href='index.html'" style="cursor:pointer">ANIME<span>YONIX</span></div>
-            <div class="nav-links"><a href="index.html">Home</a></div>
+            <div class="logo" onclick="location.href='index.html'">ANIME<span>YONIX</span></div>
+            <div class="nav-links"><a href="index.html">Back to Home</a></div>
         </div>
     </nav>
 
     <div class="container" style="margin-top: 100px;">
         <div id="contentArea">
-            <div class="video-container" id="playerSection">
-                <div class="video-wrapper">
-                    <iframe id="mainPlayer" src="" allowfullscreen scrolling="no"></iframe>
+            <div class="player-wrapper">
+                <div class="video-container" id="vidBox" style="display:none;">
+                    <iframe id="mainPlayer" src="" allowfullscreen></iframe>
                 </div>
-                <h2 id="nowPlayingTitle" style="margin-top: 20px; color: #00d1ff; font-size: 1.5rem;"></h2>
+                <div id="placeholder" style="text-align:center; padding: 60px 0; color: #8b949e;">
+                    <i class="fas fa-play-circle" style="font-size: 5rem; margin-bottom: 20px;"></i>
+                    <h2>Ready to watch? Select an episode below!</h2>
+                </div>
+                
+                <div class="anime-meta">
+                    <h1 id="mainTitle" style="color: #fff; margin: 0;">Loading...</h1>
+                    <p id="epStatus" style="color: var(--primary); font-weight: bold; margin-top: 5px;"></p>
+                </div>
             </div>
 
-            <div class="ep-header">
-                <h1 id="mainTitle">Loading Anime...</h1>
-                <p style="color: #8b949e;"><i class="fas fa-info-circle"></i> Select an episode to start watching.</p>
-            </div>
-
-            <div class="episode-grid" id="epGrid"></div>
+            <h3 style="color: #fff;"><i class="fas fa-list"></i> Episode List</h3>
+            <div class="ep-grid" id="epGrid"></div>
         </div>
 
-        <div id="errorArea" style="display: none; text-align: center; padding: 100px 0; color: #fff;">
-            <i class="fas fa-search" style="font-size: 4rem; margin-bottom: 20px; color: #30363d;"></i>
+        <div id="errorArea" style="display:none; text-align:center; color:#fff; padding:100px 0;">
             <h1>Anime Not Found</h1>
-            <a href="index.html" class="ep-link" style="display: inline-block; margin-top: 20px; width: 200px;">Back to Home</a>
+            <a href="index.html" class="ep-btn" style="display:inline-block; margin-top:20px;">Go Home</a>
         </div>
     </div>
 
@@ -58,14 +62,11 @@
             'solo-leveling': {
                 title: 'Solo Leveling',
                 episodes: 12,
-                links: { 
-                    '1': "https://animeyonix.seekplayer.me/e/5u8x6"
+                links: {
+                    '1': "https://animeyonix.seekplayer.me/e/5u8x6",
+                    '2': "https://animeyonix.seekplayer.me/e/another-link-here", // Add your links as you get them
+                    '3': "https://animeyonix.seekplayer.me/e/link3"
                 }
-            },
-            'dragon-ball': {
-                title: 'Dragon Ball',
-                episodes: 70,
-                links: {}
             }
         };
 
@@ -74,16 +75,16 @@
             document.getElementById('mainTitle').innerText = data.title;
 
             if (episodeNum && data.links[episodeNum]) {
-                document.getElementById('playerSection').style.display = 'block';
+                document.getElementById('vidBox').style.display = 'block';
+                document.getElementById('placeholder').style.display = 'none';
                 document.getElementById('mainPlayer').src = data.links[episodeNum];
-                document.getElementById('nowPlayingTitle').innerText = `Now Playing: Episode ${episodeNum}`;
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                document.getElementById('epStatus').innerText = `Watching Episode ${episodeNum}`;
             }
 
             let html = '';
             for (let i = 1; i <= data.episodes; i++) {
-                const activeClass = (episodeNum == i) ? 'active' : '';
-                html += `<a href="player.html?anime=${animeSlug}&ep=${i}" class="ep-link ${activeClass}">EP ${i < 10 ? '0'+i : i}</a>`;
+                const active = (episodeNum == i) ? 'active' : '';
+                html += `<a href="player.html?anime=${animeSlug}&ep=${i}" class="ep-btn ${active}">EP ${i < 10 ? '0'+i : i}</a>`;
             }
             document.getElementById('epGrid').innerHTML = html;
         } else {
