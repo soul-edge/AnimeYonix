@@ -1,107 +1,64 @@
-    :root {
-    --bg-color: #0b0e14;
-    --card-bg: #161b25;
-    --accent-color: #5d5fef; /* Professional Purple/Blue */
-    --text-main: #ffffff;
-    --text-dim: #a0a7b1;
-    --search-bg: #1f2633;
+:root {
+    --bg-dark: #0a0c10;
+    --bg-card: #151921;
+    --accent: #007bff; /* Deep Blue */
+    --text-white: #ffffff;
+    --text-dim: #94a3b8;
 }
 
 body {
-    background-color: var(--bg-color);
-    color: var(--text-main);
-    font-family: 'Inter', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-white);
+    font-family: 'Segoe UI', Roboto, sans-serif;
     margin: 0;
 }
 
-/* Nav & Search Bar */
+/* Header & Search */
 header {
-    background: rgba(11, 14, 20, 0.95);
-    padding: 1rem 5%;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    border-bottom: 1px solid #252d3d;
+    background: rgba(10, 12, 16, 0.95);
+    padding: 15px 5%;
+    border-bottom: 1px solid #1e293b;
+    position: sticky; top: 0; z-index: 100;
 }
 
-.nav-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+.nav-container { display: flex; justify-content: space-between; align-items: center; }
+.logo { font-size: 24px; font-weight: 800; cursor: pointer; }
+.logo span { color: var(--accent); }
 
-.logo span { color: var(--accent-color); }
+.search-wrapper { position: relative; width: 350px; }
+.search-bar { background: #1e293b; border-radius: 8px; display: flex; padding: 5px 15px; }
+.search-bar input { background: none; border: none; color: white; width: 100%; outline: none; }
 
-.search-wrapper { position: relative; width: 400px; }
-
-.search-bar {
-    display: flex;
-    background: var(--search-bg);
-    border-radius: 20px;
-    padding: 5px 15px;
-}
-
-.search-bar input {
-    background: none; border: none; color: white;
-    padding: 8px; width: 100%; outline: none;
-}
-
-/* Dropdown Effect */
 .search-dropdown {
-    position: absolute;
-    top: 50px; width: 100%;
-    background: var(--card-bg);
-    border-radius: 8px;
-    display: none; /* Hidden by default */
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    overflow: hidden;
+    position: absolute; top: 50px; width: 100%; background: var(--bg-card);
+    border-radius: 8px; display: none; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
-.search-item {
-    display: flex; align-items: center;
-    padding: 10px; gap: 15px;
-    cursor: pointer; transition: 0.3s;
-}
-
-.search-item:hover { background: var(--search-bg); }
-
+.search-item { display: flex; padding: 10px; gap: 10px; cursor: pointer; transition: 0.2s; }
+.search-item:hover { background: #1e293b; }
 .search-item img { width: 40px; height: 55px; border-radius: 4px; object-fit: cover; }
 
 /* Anime Cards */
-.anime-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 25px;
-    padding: 40px 5%;
-}
+.anime-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; padding: 20px 0; }
+.anime-card { cursor: pointer; transition: 0.3s; }
+.anime-card:hover { transform: translateY(-8px); }
 
-.anime-card {
-    background: var(--card-bg);
-    border-radius: 12px;
-    overflow: hidden;
-    cursor: pointer;
-    transition: transform 0.3s ease;
-}
-
-.anime-card:hover { transform: translateY(-10px); }
-
-.poster { position: relative; height: 260px; }
-
+.poster { position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 2/3; }
 .poster img { width: 100%; height: 100%; object-fit: cover; }
+.ep-tag { position: absolute; top: 10px; left: 10px; background: var(--accent); padding: 2px 8px; font-size: 12px; border-radius: 4px; }
 
 .overlay {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.6);
-    display: flex; justify-content: center; align-items: center;
-    opacity: 0; transition: 0.3s;
+    position: absolute; inset: 0; background: rgba(0,0,0,0.5); 
+    display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.3s;
 }
-
 .anime-card:hover .overlay { opacity: 1; }
+.overlay i { font-size: 50px; }
 
-.overlay i { font-size: 50px; color: var(--accent-color); }
+/* Episode Page */
+.anime-info-hero { height: 400px; position: relative; display: flex; align-items: flex-end; padding: 50px 5%; background-size: cover; background-position: center; }
+.hero-blur { position: absolute; inset: 0; background: linear-gradient(0deg, var(--bg-dark) 0%, transparent 100%); }
+.hero-info-content { position: relative; z-index: 1; }
 
-.info { padding: 15px; }
-
-.info h3 { font-size: 1rem; margin: 0; }
-
-.info p { font-size: 0.8rem; color: var(--text-dim); }
+.episode-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+.ep-btn { background: #1e293b; padding: 15px; text-align: center; border-radius: 6px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+.ep-btn:hover { background: var(--accent); border-color: white; }
