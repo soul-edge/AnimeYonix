@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AnimeYonix - Episodes</title>
+    <link rel="stylesheet" href="style.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body onload="initEpisodePage()">
+    <header>
+        <div class="nav-container">
+            <h1 class="logo" onclick="location.href='index.html'">Anime<span>Yonix</span></h1>
+        </div>
+    </header>
+
+    <div id="animeHero" class="anime-info-hero">
+        <div class="hero-blur"></div>
+        <div class="hero-info-content">
+            <h1 id="mainTitle">Loading...</h1>
+            <p id="mainDesc">Official series episodes and details.</p>
+        </div>
+    </div>
+
+    <main class="container">
+        <div class="ep-header">
+            <h2 class="section-title">List of Episodes</h2>
+        </div>
+        <div class="episode-grid" id="episodeList">
+            </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
