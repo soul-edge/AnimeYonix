@@ -1,64 +1,134 @@
+/* Color Palette & Base */
 :root {
     --bg-dark: #0a0c10;
     --bg-card: #151921;
-    --accent: #007bff; /* Deep Blue */
+    --accent: #ffb106; /* The Orange Soul */
     --text-white: #ffffff;
-    --text-dim: #94a3b8;
+    --text-dim: #a0a7b1;
+    --search-bg: #1e293b;
 }
 
 body {
     background: var(--bg-dark);
     color: var(--text-white);
-    font-family: 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
     margin: 0;
+    overflow-x: hidden;
 }
 
-/* Header & Search */
+/* Header Styling */
 header {
-    background: rgba(10, 12, 16, 0.95);
-    padding: 15px 5%;
-    border-bottom: 1px solid #1e293b;
-    position: sticky; top: 0; z-index: 100;
+    background: rgba(10, 12, 16, 0.9);
+    padding: 12px 5%;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
 }
 
-.nav-container { display: flex; justify-content: space-between; align-items: center; }
-.logo { font-size: 24px; font-weight: 800; cursor: pointer; }
+.nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo { font-size: 24px; font-weight: 800; cursor: pointer; margin: 0; }
 .logo span { color: var(--accent); }
 
-.search-wrapper { position: relative; width: 350px; }
-.search-bar { background: #1e293b; border-radius: 8px; display: flex; padding: 5px 15px; }
-.search-bar input { background: none; border: none; color: white; width: 100%; outline: none; }
-
-.search-dropdown {
-    position: absolute; top: 50px; width: 100%; background: var(--bg-card);
-    border-radius: 8px; display: none; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+.search-bar {
+    background: var(--search-bg);
+    border-radius: 4px;
+    display: flex;
+    padding: 4px 12px;
+    width: 300px;
 }
 
-.search-item { display: flex; padding: 10px; gap: 10px; cursor: pointer; transition: 0.2s; }
-.search-item:hover { background: #1e293b; }
-.search-item img { width: 40px; height: 55px; border-radius: 4px; object-fit: cover; }
+.search-bar input {
+    background: none; border: none; color: white; width: 100%; outline: none; padding: 6px;
+}
 
-/* Anime Cards */
-.anime-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; padding: 20px 0; }
+.login-btn {
+    background: var(--accent);
+    border: none;
+    padding: 6px 18px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* --- THE SOUL: Hero Spotlight --- */
+.hero-banner {
+    height: 85vh;
+    position: relative;
+    /* Change this to your landscape wallpaper file name */
+    background: url('solo-wallpaper.jpg') center/cover no-repeat; 
+    display: flex;
+    align-items: center;
+    padding: 0 8%;
+}
+
+/* The Gradient Masks (This blends the image into the black background) */
+.hero-banner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, var(--bg-dark) 20%, transparent 80%),
+                linear-gradient(0deg, var(--bg-dark) 5%, transparent 50%);
+    z-index: 1;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 600px;
+}
+
+.trending-rank { color: var(--accent); font-weight: 700; font-size: 0.9rem; }
+.hero-title { font-size: 4rem; margin: 10px 0; text-transform: uppercase; line-height: 1; }
+
+.meta-info { display: flex; gap: 15px; margin-bottom: 20px; font-size: 0.9rem; color: var(--text-dim); align-items: center; }
+.meta-info i { color: var(--accent); }
+.quality { background: white; color: black; padding: 0 4px; border-radius: 2px; font-weight: 800; font-size: 0.7rem; }
+
+.hero-description { color: var(--text-dim); line-height: 1.6; margin-bottom: 30px; font-size: 0.95rem; }
+
+.hero-buttons { display: flex; gap: 15px; }
+
+.btn-watch {
+    background: var(--accent); color: #000; border: none;
+    padding: 14px 28px; border-radius: 30px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; gap: 10px; transition: 0.3s;
+}
+
+.btn-detail {
+    background: rgba(255,255,255,0.1); color: #fff; border: none;
+    padding: 14px 28px; border-radius: 30px; font-weight: 600; cursor: pointer;
+}
+
+.btn-watch:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(255, 177, 6, 0.3); }
+
+/* Grid Layout */
+.main-container { padding: 40px 8%; }
+.section-title { border-left: 3px solid var(--accent); padding-left: 15px; margin-bottom: 25px; }
+
+.anime-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 20px;
+}
+
 .anime-card { cursor: pointer; transition: 0.3s; }
-.anime-card:hover { transform: translateY(-8px); }
-
-.poster { position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 2/3; }
+.poster { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 2/3; }
 .poster img { width: 100%; height: 100%; object-fit: cover; }
-.ep-tag { position: absolute; top: 10px; left: 10px; background: var(--accent); padding: 2px 8px; font-size: 12px; border-radius: 4px; }
 
-.overlay {
-    position: absolute; inset: 0; background: rgba(0,0,0,0.5); 
-    display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.3s;
+.ep-tag {
+    position: absolute; bottom: 10px; left: 10px;
+    background: var(--accent); color: black; font-size: 11px;
+    padding: 2px 6px; border-radius: 4px; font-weight: 700;
 }
-.anime-card:hover .overlay { opacity: 1; }
-.overlay i { font-size: 50px; }
 
-/* Episode Page */
-.anime-info-hero { height: 400px; position: relative; display: flex; align-items: flex-end; padding: 50px 5%; background-size: cover; background-position: center; }
-.hero-blur { position: absolute; inset: 0; background: linear-gradient(0deg, var(--bg-dark) 0%, transparent 100%); }
-.hero-info-content { position: relative; z-index: 1; }
-
-.episode-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
-.ep-btn { background: #1e293b; padding: 15px; text-align: center; border-radius: 6px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
-.ep-btn:hover { background: var(--accent); border-color: white; }
+.anime-card:hover { transform: translateY(-5px); }
+.info h3 { font-size: 0.95rem; margin: 10px 0 5px 0; }
+.info p { color: var(--text-dim); font-size: 0.8rem; margin: 0; }
