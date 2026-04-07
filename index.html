@@ -8,9 +8,14 @@
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 </head>
 <body>
+
     <header>
         <div class="nav-container">
-            <h1 class="logo" onclick="location.href='index.html'">Anime<span>Yonix</span></h1>
+            <div class="left-nav">
+                <i class='bx bx-menu' id="menu-icon"></i>
+                <h1 class="logo" onclick="location.href='index.html'">Anime<span>Yonix</span></h1>
+            </div>
+            
             <div class="search-wrapper">
                 <div class="search-bar">
                     <input type="text" id="searchInput" placeholder="Search anime...">
@@ -18,48 +23,28 @@
                 </div>
                 <div id="searchDropdown" class="search-dropdown"></div>
             </div>
+
+            <div class="user-actions">
+                <button class="login-btn">Login</button>
+            </div>
         </div>
     </header>
 
     <main>
         <section class="hero-banner">
             <div class="hero-content">
-                <span class="trending">#1 Trending</span>
-                <h2>Solo Leveling</h2>
-                <p>In a world where hunters must battle deadly monsters to protect mankind...</p>
-                <button class="btn-watch" onclick="location.href='episodes.html?anime=sololeveling'">Watch Now</button>
-            </div>
-        </section>
-
-        <section class="content-section">
-            <h2 class="section-title">Latest Updates</h2>
-            <div class="anime-grid">
-                <div class="anime-card" onclick="location.href='episodes.html?anime=dragonball'">
-                    <div class="poster">
-                        <img src="db.jpg" alt="Dragon Ball">
-                        <div class="ep-tag">EP 70</div>
-                        <div class="overlay"><i class='bx bx-play'></i></div>
-                    </div>
-                    <div class="info">
-                        <h3>Dragon Ball</h3>
-                        <p>Action • Adventure</p>
-                    </div>
+                <span class="trending-rank">#1 Spotlight</span>
+                <h2 class="hero-title">Solo Leveling</h2>
+                
+                <div class="meta-info">
+                    <span><i class='bx bxs-star'></i> 4.9</span>
+                    <span class="quality">HD</span>
+                    <span>TV</span>
+                    <span>24m</span>
+                    <span>Jan 2024</span>
                 </div>
 
-                <div class="anime-card" onclick="location.href='episodes.html?anime=sololeveling'">
-                    <div class="poster">
-                        <img src="solo.jpg" alt="Solo Leveling">
-                        <div class="ep-tag">EP 12</div>
-                        <div class="overlay"><i class='bx bx-play'></i></div>
-                    </div>
-                    <div class="info">
-                        <h3>Solo Leveling</h3>
-                        <p>Fantasy • Action</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-    <script src="script.js"></script>
-</body>
-</html>
+                <p class="hero-description">
+                    In a world where hunters must battle deadly monsters to protect mankind, 
+                    Sung Jinwoo, known as the weakest hunter of all mankind, finds himself 
+                    in a struggle for
