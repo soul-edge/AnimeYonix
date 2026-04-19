@@ -34,18 +34,24 @@ function logout() {
     });
 }
 
-firebase.auth().onAuthStateChanged(user => {
-    const loginDiv = document.getElementById('login-section');
-    const adminDiv = document.getElementById('admin-content');
-    
-    if (user) {
-        if(loginDiv) loginDiv.style.display = 'none';
-        if(adminDiv) adminDiv.style.display = 'block';
-    } else {
-        if(loginDiv) loginDiv.style.display = 'block';
-        if(adminDiv) adminDiv.style.display = 'none';
-    }
-});
+// Watcher: Automatically shows/hides Admin Panel based on login status
+// The 'if' statement prevents crashes on pages that don't have the Auth library loaded
+if (typeof firebase.auth === 'function') {
+    firebase.auth().onAuthStateChanged(user => {
+        const loginDiv = document.getElementById('login-section');
+        const adminDiv = document.getElementById('admin-content');
+        
+        if (user) {
+            // Logged In: Hide login form, show admin panel
+            if(loginDiv) loginDiv.style.display = 'none';
+            if(adminDiv) adminDiv.style.display = 'block';
+        } else {
+            // Logged Out: Show login form, hide admin panel
+            if(loginDiv) loginDiv.style.display = 'block';
+            if(adminDiv) adminDiv.style.display = 'none';
+        }
+    });
+}
 
 // --- 2. ADMIN LOGIC (CLOUD WRITING) ---
 async function saveEpisode() {
