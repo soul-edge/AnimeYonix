@@ -109,3 +109,10 @@ async function displayAdminManager() {
 
     snapshot.forEach(doc => {
         const title =
+            // --- 6. INITIALIZATION ROUTER ---
+window.onload = function() {
+    if (document.getElementById('episodeGrid')) displayEpisodes();
+    if (document.getElementById('adminManageList')) displayAdminManager();
+    if (document.getElementById('det-title')) loadDetails();
+    if (document.getElementById('mainPlayer')) loadVideo();
+};
