@@ -32,31 +32,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        // 1. Read the title from the web address (URL)
-        const params = new URLSearchParams(window.location.search);
-        const title = decodeURIComponent(params.get('title'));
-        
-        // 2. Get the library from storage
-        const library = JSON.parse(localStorage.getItem('animeLibrary')) || {};
-        const anime = library[title];
-
-        // 3. Populate the page
-        if(anime) {
-            document.getElementById('det-title').innerText = title;
-            document.getElementById('det-genre').innerText = "GENRE: " + (anime.genre || "N/A");
-            document.getElementById('det-syn').innerText = anime.synopsis || "No description available.";
-            document.getElementById('det-thumb').src = anime.mainThumbnail;
-
-            const epList = document.getElementById('ep-list');
-            epList.innerHTML = ""; 
-            anime.episodes.forEach(ep => {
-                epList.innerHTML += `<div class="ep-btn" onclick="window.location.href='watch.html?url=${encodeURIComponent(ep.link)}&title=${encodeURIComponent(title)}&ep=${ep.number}'">Ep ${ep.number}</div>`;
-            });
-        } else {
-            // If nothing shows up, this helps you see if the title is being found
-            document.body.innerHTML = "<h1>Error: Could not find anime: " + title + "</h1>";
-        }
-    });
-</script>
