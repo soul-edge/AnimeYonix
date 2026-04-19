@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AnimeYonix Admin | Control Panel</title>
@@ -15,6 +17,7 @@
         button:hover { background: #ff6b81; }
         .manage-item { background: #1a1c22; padding: 15px; margin-top: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
         .delete-btn { width: auto; background: #444; padding: 5px 10px; cursor: pointer; }
+        #login-section { margin-top: 50px; }
     </style>
 </head>
 <body>
@@ -23,7 +26,18 @@
         <a href="index.html" style="color: white; text-decoration: none;">← Back to Site</a>
     </nav>
 
-    <div class="admin-container">
+    <div id="login-section" class="admin-container">
+        <h2 style="text-align: center; margin-bottom: 20px;">Admin Access</h2>
+        <div class="form-group">
+            <input type="email" id="adminEmail" placeholder="Admin Email">
+        </div>
+        <div class="form-group">
+            <input type="password" id="adminPass" placeholder="Password">
+        </div>
+        <button onclick="login()">Login to Dashboard</button>
+    </div>
+
+    <div id="admin-content" class="admin-container" style="display:none;">
         <h2>Upload Content</h2>
         
         <div class="form-group"><input type="text" id="title" placeholder="Anime Title"></div>
@@ -42,6 +56,8 @@
             <input type="text" id="adminSearch" placeholder="Search library to delete..." onkeyup="filterAdminList()">
         </div>
         <div id="adminManageList"></div>
+
+        <button onclick="logout()" style="background: #444; margin-top: 40px; font-size: 0.8rem;">Secure Logout</button>
     </div>
 
     <script src="script.js"></script>
