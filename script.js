@@ -165,4 +165,38 @@ async function loadDetails() {
         document.getElementById('det-thumb').src = anime.mainThumbnail;
 
         const epList = document.getElementById('ep-list');
-        epList.innerHTML = "";
+        epList.innerHTML = ""; 
+        
+        anime.episodes.sort((a,b) => a.number - b.number).forEach(ep => {
+            const btn = document.createElement('div');
+            btn.className = 'ep-btn';
+            btn.innerText = "Ep " + ep.number;
+            btn.onclick = () => window.location.href = `watch.html?url=${encodeURIComponent(ep.link)}&title=${encodeURIComponent(title)}&ep=${ep.number}`;
+            epList.appendChild(btn);
+        });
+    } else {
+        document.querySelector('.details-info').innerHTML = "<h1 style='color:red;'>Anime not found in database.</h1>";
+    }
+}
+
+// --- 5. WATCH PAGE LOGIC ---
+function loadVideo() {
+    const params = new URLSearchParams(window.location.search);
+    const videoUrl = params.get('url');
+    const title = params.get('title');
+    const ep = params.get('ep');
+
+    if(videoUrl && document.getElementById('mainPlayer')) {
+        document.getElementById('mainPlayer').src = videoUrl;
+        document.getElementById('playingTitle').innerText = decodeURIComponent(title);
+        document.getElementById('playingEp').innerText = "Episode " + ep;
+    }
+}
+
+// --- 6. INITIALIZATION ROUTER ---
+window.onload = function() {
+    if (document.getElementById('episodeGrid')) displayEpisodes();
+    if (document.getElementById('adminManageList')) displayAdminManager();
+    if (document.getElementById('det-title')) loadDetails();
+    if (document.getElementById('mainPlayer')) loadVideo();
+};
