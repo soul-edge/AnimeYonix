@@ -3,48 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnimeYonix | Watch Anime Online</title>
+    <title>AnimeYonix | Stream Premium Anime</title>
     <link rel="stylesheet" href="style.css">
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
 </head>
 <body>
+    <nav class="navbar">
+        <a href="index.html" class="logo">Anime<span>Yonix</span></a>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="admin.html">Admin Panel</a></li>
+        </ul>
+    </nav>
 
-    <header>
-        <div class="nav-container">
-            <div class="left-nav">
-                <i class='bx bx-menu' id="menu-icon"></i>
-                <h1 class="logo" onclick="location.href='index.html'">Anime<span>Yonix</span></h1>
-            </div>
-            
-            <div class="search-wrapper">
-                <div class="search-bar">
-                    <input type="text" id="searchInput" placeholder="Search anime...">
-                    <button><i class='bx bx-search'></i></button>
-                </div>
-                <div id="searchDropdown" class="search-dropdown"></div>
-            </div>
-
-            <div class="user-actions">
-                <button class="login-btn">Login</button>
-            </div>
+    <header class="hero">
+        <div class="hero-content">
+            <h1>Welcome to AnimeYonix</h1>
+            <p>Your ad-free library for the best anime streaming.</p>
         </div>
     </header>
 
-    <main>
-        <section class="hero-banner">
-            <div class="hero-content">
-                <span class="trending-rank">#1 Spotlight</span>
-                <h2 class="hero-title">Solo Leveling</h2>
-                
-                <div class="meta-info">
-                    <span><i class='bx bxs-star'></i> 4.9</span>
-                    <span class="quality">HD</span>
-                    <span>TV</span>
-                    <span>24m</span>
-                    <span>Jan 2024</span>
-                </div>
+    <div class="search-container">
+        <input type="text" id="userSearch" class="search-input" placeholder="Search for an anime..." onkeyup="filterLibrary()">
+    </div>
 
-                <p class="hero-description">
-                    In a world where hunters must battle deadly monsters to protect mankind, 
-                    Sung Jinwoo, known as the weakest hunter of all mankind, finds himself 
-                    in a struggle for
+    <section>
+        <h2 style="padding: 0 5%; margin-bottom: 20px;">Recent Additions</h2>
+        <div id="episodeGrid" class="grid"></div>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>
