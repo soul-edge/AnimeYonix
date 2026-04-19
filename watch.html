@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playing Video | AnimeYonix</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="logo">Anime<span>Yonix</span></a>
+        <a href="javascript:history.back()" style="color: white; text-decoration: none;">← Back to Details</a>
+    </nav>
+
+    <div class="player-container">
+        <div class="video-wrapper">
+            <iframe id="mainPlayer" src="" allowfullscreen></iframe>
+        </div>
+        <div class="video-info">
+            <h1 id="playingTitle">Loading Title...</h1>
+            <p id="playingEp" style="color: var(--accent); font-weight: bold;">Episode --</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
