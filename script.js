@@ -1,5 +1,43 @@
-// --- 1. ADMIN LOGIC ---
-function saveEpisode() {
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCVwL4UNX2o564IrcQJ9WZGNwkcxiyNArg",
+  authDomain: "animeyonix-827c9.firebaseapp.com",
+  projectId: "animeyonix-827c9",
+  storageBucket: "animeyonix-827c9.firebasestorage.app",
+  messagingSenderId: "225022514016",
+  appId: "1:225022514016:web:8a8823a527c8e3db3a0405",
+  measurementId: "G-NJ0BN6CZ2T"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+// --- 1. FIREBASE SETUP ---
+// ⚠️ PASTE YOUR UNIQUE FIREBASE CONFIG HERE FROM STEP 1
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.firestore();
+
+// --- 2. ADMIN LOGIC (CLOUD WRITING) ---
+async function saveEpisode() {
     try {
         const title = document.getElementById('title').value.trim();
         const genre = document.getElementById('genre').value.trim() || "Unknown";
@@ -7,7 +45,6 @@ function saveEpisode() {
         const epNum = document.getElementById('episodeNum').value.trim();
         const thumb = document.getElementById('thumbUrl').value.trim() || 'https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600&auto=format&fit=crop';
         
-        // Extract URL from iframe if necessary
         let rawUrl = document.getElementById('videoUrl').value.trim();
         let finalUrl = rawUrl;
         if (rawUrl.includes('src=')) {
@@ -19,99 +56,129 @@ function saveEpisode() {
             return alert("Error: Title, Episode #, and URL are required!");
         }
 
-        let animeLibrary = JSON.parse(localStorage.getItem('animeLibrary')) || {};
+        // Target the specific anime document in the cloud
+        const docRef = db.collection("animeLibrary").doc(title);
+        const docSnap = await docRef.get();
 
-        if (!animeLibrary[title]) {
-            animeLibrary[title] = { mainThumbnail: thumb, genre: genre, synopsis: synopsis, episodes: [] };
+        if (docSnap.exists) {
+            // Anime exists, just add the new episode
+            let data = docSnap.data();
+            if (data.episodes.find(e => e.number == epNum)) {
+                return alert("Episode " + epNum + " already exists for this title!");
+            }
+            data.episodes.push({ number: epNum, link: finalUrl });
+            await docRef.update({ episodes: data.episodes });
+        } else {
+            // New Anime, create it
+            await docRef.set({
+                mainThumbnail: thumb,
+                genre: genre,
+                synopsis: synopsis,
+                episodes: [{ number: epNum, link: finalUrl }]
+            });
         }
-
-        // Prevent duplicate episodes
-        if (animeLibrary[title].episodes.find(e => e.number == epNum)) {
-            return alert("Episode " + epNum + " already exists for this title!");
-        }
-
-        animeLibrary[title].episodes.push({ number: epNum, link: finalUrl });
-        localStorage.setItem('animeLibrary', JSON.stringify(animeLibrary));
         
-        alert("Anime Published Successfully!");
+        alert("Anime Published to Cloud Successfully!");
         location.reload(); 
     } catch (error) {
         console.error("Save Error:", error);
-        alert("An error occurred. Check the console (F12) for details.");
+        alert("An error occurred saving to Firebase. Check console.");
     }
 }
 
-function displayAdminManager() {
+async function displayAdminManager() {
     const managerDiv = document.getElementById('adminManageList');
     if(!managerDiv) return;
 
-    let animeLibrary = JSON.parse(localStorage.getItem('animeLibrary')) || {};
+    managerDiv.innerHTML = "Loading library from cloud...";
+
+    const snapshot = await db.collection("animeLibrary").get();
     managerDiv.innerHTML = "";
 
-    for (let title in animeLibrary) {
+    snapshot.forEach(doc => {
+        const title = doc.id;
+        const data = doc.data();
         const item = document.createElement('div');
         item.className = 'manage-item';
         item.innerHTML = `
-            <span><strong>${title}</strong> (${animeLibrary[title].episodes.length} Eps)</span>
-            <button class="delete-btn">Delete</button>
+            <span><strong>${title}</strong> (${data.episodes.length} Eps)</span>
+            <button class="delete-btn" onclick="deleteAnime('${title}')">Delete</button>
         `;
-        item.querySelector('.delete-btn').addEventListener('click', () => deleteAnime(title));
         managerDiv.appendChild(item);
-    }
+    });
 }
 
-function deleteAnime(title) {
-    if(confirm("Delete " + title + " permanently?")) {
-        let animeLibrary = JSON.parse(localStorage.getItem('animeLibrary')) || {};
-        delete animeLibrary[title];
-        localStorage.setItem('animeLibrary', JSON.stringify(animeLibrary));
+async function deleteAnime(title) {
+    if(confirm("Delete " + title + " permanently from the cloud?")) {
+        await db.collection("animeLibrary").doc(title).delete();
         displayAdminManager();
     }
 }
 
-// --- 2. HOMEPAGE LOGIC ---
-function displayEpisodes() {
+function filterAdminList() {
+    const query = document.getElementById('adminSearch').value.toLowerCase();
+    const items = document.querySelectorAll('.manage-item');
+    items.forEach(item => {
+        const title = item.querySelector('strong').innerText.toLowerCase();
+        item.style.display = title.includes(query) ? "flex" : "none";
+    });
+}
+
+// --- 3. HOMEPAGE LOGIC (CLOUD READING) ---
+async function displayEpisodes() {
     const grid = document.getElementById('episodeGrid');
     if(!grid) return;
 
-    let animeLibrary = JSON.parse(localStorage.getItem('animeLibrary')) || {};
+    grid.innerHTML = "<p style='color: white; padding-left: 20px;'>Connecting to cloud database...</p>"; 
+
+    const snapshot = await db.collection("animeLibrary").get();
     grid.innerHTML = ""; 
 
-    for (let title in animeLibrary) {
-        const anime = animeLibrary[title];
+    snapshot.forEach(doc => {
+        const title = doc.id;
+        const anime = doc.data();
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
             <div class="thumbnail" style="background-image: url('${anime.mainThumbnail}');"></div>
             <div class="info">
                 <h3>${title}</h3>
-                <button class="btn" id="btn-${title.replace(/\s+/g, '-')}">Details</button>
+                <button class="btn" onclick="window.location.href='details.html?title=${encodeURIComponent(title)}'">Details</button>
             </div>
         `;
         grid.appendChild(card);
-        
-        // Secure event listener for Details button
-        document.getElementById(`btn-${title.replace(/\s+/g, '-')}`).addEventListener('click', () => {
-            window.location.href = `details.html?title=${encodeURIComponent(title)}`;
-        });
-    }
+    });
 }
 
-// --- 3. DETAILS PAGE LOGIC ---
-function loadDetails() {
+function filterLibrary() {
+    const query = document.getElementById('userSearch').value.toLowerCase();
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        const title = card.querySelector('h3').innerText.toLowerCase();
+        card.style.display = title.includes(query) ? "block" : "none";
+    });
+}
+
+// --- 4. DETAILS PAGE LOGIC ---
+async function loadDetails() {
     const params = new URLSearchParams(window.location.search);
     const title = decodeURIComponent(params.get('title'));
-    const library = JSON.parse(localStorage.getItem('animeLibrary')) || {};
-    const anime = library[title];
+    
+    if(!title || title === "null") return;
 
-    if(anime) {
+    const docRef = db.collection("animeLibrary").doc(title);
+    const docSnap = await docRef.get();
+
+    if(docSnap.exists) {
+        const anime = docSnap.data();
         document.getElementById('det-title').innerText = title;
-        document.getElementById('det-genre').innerText = "GENRE: " + anime.genre;
-        document.getElementById('det-syn').innerText = anime.synopsis;
+        document.getElementById('det-genre').innerText = "GENRE: " + (anime.genre || "N/A");
+        document.getElementById('det-syn').innerText = anime.synopsis || "No description.";
         document.getElementById('det-thumb').src = anime.mainThumbnail;
 
         const epList = document.getElementById('ep-list');
         epList.innerHTML = ""; 
+        
         anime.episodes.sort((a,b) => a.number - b.number).forEach(ep => {
             const btn = document.createElement('div');
             btn.className = 'ep-btn';
@@ -119,10 +186,12 @@ function loadDetails() {
             btn.onclick = () => window.location.href = `watch.html?url=${encodeURIComponent(ep.link)}&title=${encodeURIComponent(title)}&ep=${ep.number}`;
             epList.appendChild(btn);
         });
+    } else {
+        document.querySelector('.details-info').innerHTML = "<h1 style='color:red;'>Anime not found in database.</h1>";
     }
 }
 
-// --- 4. WATCH PAGE LOGIC ---
+// --- 5. WATCH PAGE LOGIC ---
 function loadVideo() {
     const params = new URLSearchParams(window.location.search);
     const videoUrl = params.get('url');
@@ -136,7 +205,7 @@ function loadVideo() {
     }
 }
 
-// --- 5. INITIALIZATION ROUTER ---
+// --- 6. INITIALIZATION ROUTER ---
 window.onload = function() {
     if (document.getElementById('episodeGrid')) displayEpisodes();
     if (document.getElementById('adminManageList')) displayAdminManager();
