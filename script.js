@@ -14,7 +14,7 @@ if (!firebase.apps.length) {
 }
 const db = firebase.firestore();
 
-// --- 1.5 AUTH LOGIC (LOGIN/LOGOUT) ---
+// --- 1.5 AUTH LOGIC (LOGIN/REGISTER/LOGOUT) ---
 function login() {
     const email = document.getElementById('adminEmail').value;
     const pass = document.getElementById('adminPass').value;
@@ -24,24 +24,36 @@ function login() {
             console.log("Logged in successfully");
         })
         .catch(error => {
-            alert("Access Denied: " + error.message);
+            alert("Login Failed: " + error.message);
+        });
+}
+
+function register() {
+    const email = document.getElementById('adminEmail').value;
+    const pass = document.getElementById('adminPass').value;
+    
+    firebase.auth().createUserWithEmailAndPassword(email, pass)
+        .then(() => {
+            alert("Account created successfully! Welcome to AnimeYonix.");
+        })
+        .catch(error => {
+            alert("Registration Failed: " + error.message);
         });
 }
 
 function logout() {
     firebase.auth().signOut().then(() => {
-        location.reload();
+        // Redirect to homepage after logging out
+        window.location.href = 'index.html';
     });
 }
 
-// Watcher: Automatically shows/hides Admin Panel & Navbar based on login status
+// Watcher: Automatically routes users based on their Admin status
 if (typeof firebase.auth === 'function') {
     firebase.auth().onAuthStateChanged(user => {
-        // Dashboard Page Elements
         const loginDiv = document.getElementById('login-section');
         const adminDiv = document.getElementById('admin-content');
         
-        // Navbar Elements
         const navLogin = document.getElementById('nav-login');
         const navAdmin = document.getElementById('nav-admin');
         const navLogout = document.getElementById('nav-logout');
@@ -53,25 +65,24 @@ if (typeof firebase.auth === 'function') {
         ];
         
         if (user) {
-            // ANY USER IS LOGGED IN (Admin or Normal)
-            if(navLogin) navLogin.style.display = 'none'; // Hide Login button
-            if(navLogout) navLogout.style.display = 'inline'; // Show Logout button
+            // ANY USER IS LOGGED IN
+            if(navLogin) navLogin.style.display = 'none';
+            if(navLogout) navLogout.style.display = 'inline';
             
             // IS THIS USER AN ADMIN?
             if (adminUIDs.includes(user.uid)) {
-                // Yes, unlock the Dashboard
+                // Admin Account: Unlock Dashboard
                 if(navAdmin) navAdmin.style.display = 'inline';
                 if(loginDiv) loginDiv.style.display = 'none';
                 if(adminDiv) adminDiv.style.display = 'block';
             } else {
-                // No, they are a normal viewer
-                if(navAdmin) navAdmin.style.display = 'none'; // Keep Dashboard hidden
+                // Normal Account: Hide Dashboard
+                if(navAdmin) navAdmin.style.display = 'none'; 
                 if(loginDiv) loginDiv.style.display = 'none';
                 
-                // If they snoop around and try to access the admin page directly:
-                if(adminDiv) {
-                    adminDiv.style.display = 'block';
-                    adminDiv.innerHTML = "<h2 style='text-align:center; color:#ff4757; padding: 50px;'>Access Denied. You are not an admin.</h2>";
+                // Auto-Redirect: If a normal user is on the login page, send them Home!
+                if(window.location.pathname.includes('admin.html')) {
+                    window.location.href = 'index.html';
                 }
             }
         } else {
