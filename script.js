@@ -55,6 +55,7 @@ if (typeof firebase.auth === 'function') {
         const navAdmin = document.getElementById('nav-admin');
         const navLogout = document.getElementById('nav-logout');
 
+        // VIP List
         const adminUIDs = [
             "oSGZdrHncdSZfNC482Q0XO2KYR42", 
             "mo66mfVjmxdHUcKtwZSfcBsBieC3"  
@@ -85,16 +86,16 @@ if (typeof firebase.auth === 'function') {
     });
 }
 
-// --- 2. ADMIN LOGIC (CLOUD WRITING) ---
+// --- 2. ADMIN LOGIC (CLOUD WRITING & EDITING) ---
 async function saveEpisode() {
     try {
         const title = document.getElementById('title').value.trim();
-        const genre = document.getElementById('genre').value.trim() || "Unknown";
-        const synopsis = document.getElementById('synopsis').value.trim() || "No description.";
+        const genre = document.getElementById('genre').value.trim();
+        const synopsis = document.getElementById('synopsis').value.trim();
         const epNum = document.getElementById('episodeNum').value.trim();
-        const thumb = document.getElementById('thumbUrl').value.trim() || 'https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600&auto=format&fit=crop';
+        const thumb = document.getElementById('thumbUrl').value.trim();
         
-        // Grab the new Type and Status dropdowns
+        // Grab the Type and Status dropdowns
         const type = document.getElementById('type').value;
         const status = document.getElementById('status').value;
         
@@ -105,29 +106,52 @@ async function saveEpisode() {
             if (match) finalUrl = match[1];
         }
 
-        if(!title || !finalUrl || !epNum) return alert("Error: Title, Episode #, and URL are required!");
+        // Title is ALWAYS required
+        if(!title) return alert("Error: Anime Title is required!");
 
         const docRef = db.collection("animeLibrary").doc(title);
         const docSnap = await docRef.get();
 
         if (docSnap.exists) {
+            // EDIT MODE: The anime already exists!
             let data = docSnap.data();
-            if (data.episodes.find(e => e.number == epNum)) return alert("Episode " + epNum + " already exists for this title!");
-            data.episodes.push({ number: epNum, link: finalUrl });
-            await docRef.update({ episodes: data.episodes, type: type, status: status });
+            
+            // Always update Type and Status based on the dropdowns
+            let updateData = { type: type, status: status };
+            
+            // Only update Genre, Synopsis, or Image if you actually typed something new in the boxes
+            if (genre) updateData.genre = genre;
+            if (synopsis) updateData.synopsis = synopsis;
+            if (thumb) updateData.mainThumbnail = thumb;
+
+            // If you ALSO typed in an episode number and link, add the new episode
+            if (epNum && finalUrl) {
+                if (data.episodes.find(e => e.number == epNum)) return alert("Episode " + epNum + " already exists!");
+                data.episodes.push({ number: epNum, link: finalUrl });
+                updateData.episodes = data.episodes;
+            }
+
+            await docRef.update(updateData);
+            alert("Anime Details Updated Successfully!");
+
         } else {
+            // NEW MODE: This is a brand new anime!
+            if(!finalUrl || !epNum) return alert("Error: Episode # and Video URL are required for a NEW anime!");
+            
             await docRef.set({ 
-                mainThumbnail: thumb, 
-                genre: genre, 
-                synopsis: synopsis, 
+                mainThumbnail: thumb || 'https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600&auto=format&fit=crop', 
+                genre: genre || "Unknown", 
+                synopsis: synopsis || "No description.", 
                 type: type, 
                 status: status, 
                 episodes: [{ number: epNum, link: finalUrl }] 
             });
+            alert("New Anime Published to Cloud Successfully!");
         }
-        alert("Anime Published to Cloud Successfully!");
+        
         location.reload(); 
     } catch (error) {
+        console.error(error);
         alert("Permission Denied: Only the Admin can save data.");
     }
 }
@@ -168,7 +192,7 @@ function filterAdminList() {
 
 // --- 3. HOMEPAGE LOGIC (ADVANCED FILTERS) ---
 let globalAnimeData = []; 
-let activeLetter = 'All'; // Keeps track of which letter button is clicked
+let activeLetter = 'All'; 
 
 async function displayEpisodes() {
     const grid = document.getElementById('episodeGrid');
@@ -195,7 +219,6 @@ async function displayEpisodes() {
         }
     });
 
-    // 1. Populate the Genre Dropdown
     const genreSelect = document.getElementById('filter-genre');
     if(genreSelect) {
         genreSelect.innerHTML = `<option value="All">All Genres</option>`;
@@ -204,10 +227,7 @@ async function displayEpisodes() {
         });
     }
 
-    // 2. Build the A-Z Buttons
     buildLetterFilter();
-
-    // 3. Draw the initial grid
     renderGrid(globalAnimeData, "Recent Additions");
 }
 
@@ -215,11 +235,9 @@ function buildLetterFilter() {
     const letterBox = document.getElementById('letterBox');
     if(!letterBox) return;
 
-    // "All" button and "#" (for numbers/symbols)
     let html = `<button class="active" onclick="setLetter('All', this)">All</button>`;
     html += `<button onclick="setLetter('#', this)">#</button>`;
     
-    // Auto-generate A-Z buttons
     for(let i = 65; i <= 90; i++) {
         let letter = String.fromCharCode(i);
         html += `<button onclick="setLetter('${letter}', this)">${letter}</button>`;
@@ -227,49 +245,33 @@ function buildLetterFilter() {
     letterBox.innerHTML = html;
 }
 
-// Triggered when a letter button is clicked
 function setLetter(letter, btnElement) {
     activeLetter = letter;
-    // Visually highlight the clicked button
     document.querySelectorAll('.filter-letters button').forEach(btn => btn.classList.remove('active'));
     btnElement.classList.add('active');
-    
-    // Run the main filter
     applyFilters();
 }
 
-// THE MASTER FILTER: Checks Search + Genre + Letter + Type + Status all at once
+// THE MASTER FILTER
 function applyFilters() {
     const searchQuery = document.getElementById('userSearch') ? document.getElementById('userSearch').value.toLowerCase() : "";
     const genreSelect = document.getElementById('filter-genre');
     const activeGenre = genreSelect ? genreSelect.value : 'All';
-
-    // Grab the new dropdowns
     const typeSelect = document.getElementById('filter-type');
     const activeType = typeSelect ? typeSelect.value : 'All';
-    
     const statusSelect = document.getElementById('filter-status');
     const activeStatus = statusSelect ? statusSelect.value : 'All';
 
     const filtered = globalAnimeData.filter(anime => {
-        // 1. Check Search Bar
         const matchesSearch = anime.title.toLowerCase().includes(searchQuery);
-
-        // 2. Check Genre Dropdown
         const matchesGenre = (activeGenre === 'All') || (anime.genre && anime.genre.toLowerCase().includes(activeGenre.toLowerCase()));
-
-        // 3. Check Type Dropdown
         const matchesType = (activeType === 'All') || (anime.type === activeType);
-
-        // 4. Check Status Dropdown
         const matchesStatus = (activeStatus === 'All') || (anime.status === activeStatus);
 
-        // 5. Check A-Z Letter
         let matchesLetter = true;
         if (activeLetter !== 'All') {
             let firstChar = anime.title.charAt(0).toUpperCase();
             if (activeLetter === '#') {
-                // If they click '#', show anime that start with numbers (0-9)
                 matchesLetter = !/[A-Z]/.test(firstChar); 
             } else {
                 matchesLetter = (firstChar === activeLetter);
@@ -279,7 +281,6 @@ function applyFilters() {
         return matchesSearch && matchesGenre && matchesType && matchesStatus && matchesLetter;
     });
 
-    // Update the title based on what is filtered
     let headerText = "Filtered Results";
     if (searchQuery === "" && activeGenre === "All" && activeType === "All" && activeStatus === "All" && activeLetter === "All") {
         headerText = "Recent Additions";
