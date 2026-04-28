@@ -37,7 +37,6 @@ function logout() {
     firebase.auth().signOut().then(() => { window.location.href = 'index.html'; });
 }
 
-// Watcher: Handles UI changes based on login status
 if (typeof firebase.auth === 'function') {
     firebase.auth().onAuthStateChanged(user => {
         const loginDiv = document.getElementById('login-section');
@@ -54,8 +53,6 @@ if (typeof firebase.auth === 'function') {
             if(navLogin) navLogin.style.display = 'none';
             if(navLogout) navLogout.style.display = 'inline';
             if(navProfile) navProfile.style.display = 'inline';
-            
-            // If we are on the profile page, load it now that we have the UID
             if(document.getElementById('profileGrid')) loadProfile();
 
             if (adminUIDs.includes(user.uid)) {
@@ -211,8 +208,11 @@ function applyFilters() {
     const filtered = globalAnimeData.filter(anime => {
         const matchesSearch = anime.title.toLowerCase().includes(searchQuery);
         const matchesGenre = (activeGenre === 'All') || (anime.genre && anime.genre.toLowerCase().includes(activeGenre.toLowerCase()));
-        const matchesType = (activeType === 'All') || (anime.type === activeType);
-        const matchesStatus = (activeStatus === 'All') || (anime.status === activeStatus);
+        
+        // Fixed: Allow showing anime even if Type/Status isn't set yet
+        const matchesType = (activeType === 'All') || (anime.type === activeType) || (!anime.type);
+        const matchesStatus = (activeStatus === 'All') || (anime.status === activeStatus) || (!anime.status);
+        
         let matchesLetter = true;
         if (activeLetter !== 'All') {
             let firstChar = anime.title.charAt(0).toUpperCase();
@@ -268,7 +268,6 @@ async function loadDetails() {
         document.getElementById('det-syn').innerText = anime.synopsis || "No description.";
         document.getElementById('det-thumb').src = anime.mainThumbnail;
         
-        // --- 1. Fix: Wait for Auth to show Watchlist Button ---
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
                 currentUserUID = user.uid;
@@ -276,7 +275,6 @@ async function loadDetails() {
             }
         });
 
-        // --- 2. Fetch MyAnimeList Rating ---
         const ratingElement = document.getElementById('det-rating');
         if (ratingElement) {
             try {
@@ -290,7 +288,6 @@ async function loadDetails() {
             } catch (e) { ratingElement.innerText = ""; }
         }
 
-        // --- 3. Load Episode Buttons ---
         const epList = document.getElementById('ep-list');
         if(epList && anime.episodes) {
             epList.innerHTML = ""; 
@@ -302,18 +299,6 @@ async function loadDetails() {
                 epList.appendChild(btn);
             });
         }
-    }
-}
-
-        const epList = document.getElementById('ep-list');
-        epList.innerHTML = ""; 
-        anime.episodes.sort((a,b) => a.number - b.number).forEach(ep => {
-            const btn = document.createElement('div');
-            btn.className = 'ep-btn';
-            btn.innerText = "Ep " + ep.number;
-            btn.onclick = () => window.location.href = `watch.html?url=${encodeURIComponent(ep.link)}&title=${encodeURIComponent(title)}&ep=${ep.number}`;
-            epList.appendChild(btn);
-        });
     }
 }
 
