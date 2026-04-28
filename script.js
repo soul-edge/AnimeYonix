@@ -95,7 +95,6 @@ async function saveEpisode() {
         const epNum = document.getElementById('episodeNum').value.trim();
         const thumb = document.getElementById('thumbUrl').value.trim();
         
-        // Grab the Type and Status dropdowns
         const type = document.getElementById('type').value;
         const status = document.getElementById('status').value;
         
@@ -106,25 +105,20 @@ async function saveEpisode() {
             if (match) finalUrl = match[1];
         }
 
-        // Title is ALWAYS required
         if(!title) return alert("Error: Anime Title is required!");
 
         const docRef = db.collection("animeLibrary").doc(title);
         const docSnap = await docRef.get();
 
         if (docSnap.exists) {
-            // EDIT MODE: The anime already exists!
+            // EDIT MODE
             let data = docSnap.data();
-            
-            // Always update Type and Status based on the dropdowns
             let updateData = { type: type, status: status };
             
-            // Only update Genre, Synopsis, or Image if you actually typed something new in the boxes
             if (genre) updateData.genre = genre;
             if (synopsis) updateData.synopsis = synopsis;
             if (thumb) updateData.mainThumbnail = thumb;
 
-            // If you ALSO typed in an episode number and link, add the new episode
             if (epNum && finalUrl) {
                 if (data.episodes.find(e => e.number == epNum)) return alert("Episode " + epNum + " already exists!");
                 data.episodes.push({ number: epNum, link: finalUrl });
@@ -133,9 +127,8 @@ async function saveEpisode() {
 
             await docRef.update(updateData);
             alert("Anime Details Updated Successfully!");
-
         } else {
-            // NEW MODE: This is a brand new anime!
+            // NEW MODE
             if(!finalUrl || !epNum) return alert("Error: Episode # and Video URL are required for a NEW anime!");
             
             await docRef.set({ 
@@ -151,7 +144,6 @@ async function saveEpisode() {
         
         location.reload(); 
     } catch (error) {
-        console.error(error);
         alert("Permission Denied: Only the Admin can save data.");
     }
 }
@@ -333,6 +325,31 @@ async function loadDetails() {
         document.getElementById('det-genre').innerText = "GENRE: " + (anime.genre || "N/A");
         document.getElementById('det-syn').innerText = anime.synopsis || "No description.";
         document.getElementById('det-thumb').src = anime.mainThumbnail;
+
+        // ==========================================
+        // FETCH LIVE RATING FROM MYANIMELIST
+        // ==========================================
+        const ratingElement = document.getElementById('det-rating');
+        if (ratingElement) {
+            try {
+                const response = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(title)}&limit=1`);
+                const malData = await response.json();
+                if (malData.data && malData.data.length > 0) {
+                    const score = malData.data[0].score;
+                    if (score) {
+                        ratingElement.innerHTML = `⭐️ ${score} / 10 <span style="font-size: 0.8rem; color: gray; font-weight: normal;">(MyAnimeList)</span>`;
+                    } else {
+                        ratingElement.innerText = "⭐️ No Rating Yet";
+                    }
+                } else {
+                    ratingElement.innerText = "⭐️ Rating Not Found";
+                }
+            } catch (error) {
+                console.error("Error fetching MAL data:", error);
+                ratingElement.innerText = "⭐️ Rating Unavailable";
+            }
+        }
+        // ==========================================
 
         const epList = document.getElementById('ep-list');
         epList.innerHTML = ""; 
