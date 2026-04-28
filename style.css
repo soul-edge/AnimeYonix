@@ -178,3 +178,71 @@ body {
     color: white;
     border-color: #ff4757;
 }
+/* =========================================
+   📱 MOBILE RESPONSIVE DESIGN (Phones & Tablets)
+   ========================================= */
+
+/* This rule activates only when the screen is 768px wide or smaller */
+@media (max-width: 768px) {
+    
+    /* 1. Fix the Navbar */
+    .navbar {
+        flex-direction: column;
+        padding: 15px;
+        gap: 15px;
+    }
+    .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+    .nav-links li a {
+        margin-left: 0 !important; /* Removes the side margins on small screens */
+    }
+
+    /* 2. Fix the Hero Section Text */
+    .hero-content h1 {
+        font-size: 2rem; /* Make the giant title slightly smaller */
+    }
+    .hero-content p {
+        font-size: 1rem;
+    }
+
+    /* 3. Fix the Advanced Filter Panel */
+    .advanced-filter-container {
+        padding: 15px;
+        margin: 0 3% 20px 3%;
+    }
+    .filter-dropdowns {
+        flex-direction: column; /* Stacks the dropdowns vertically */
+        align-items: center;
+        gap: 10px;
+    }
+    .filter-dropdowns select {
+        width: 100%; /* Makes dropdowns stretch nicely across the phone screen */
+    }
+
+    /* 4. Fix the Anime Grid */
+    /* (Assuming you used a CSS grid, this forces it to 2 columns, or 1 column on tiny screens) */
+    .grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+        gap: 10px;
+        padding: 0 3%;
+    }
+
+    /* 5. Fix the Admin/Login Container */
+    .admin-container {
+        padding: 20px 5%;
+        margin-top: 20px;
+    }
+}
+
+/* Extra rule for really tiny phones */
+@media (max-width: 480px) {
+    .grid {
+        grid-template-columns: repeat(auto-fill, minmax(100%, 1fr)); /* 1 card per row */
+    }
+    .hero {
+        padding: 40px 20px; /* Shrinks the giant hero image padding */
+    }
+}
