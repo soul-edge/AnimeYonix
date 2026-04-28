@@ -45,17 +45,37 @@ if (typeof firebase.auth === 'function') {
         const navLogin = document.getElementById('nav-login');
         const navAdmin = document.getElementById('nav-admin');
         const navLogout = document.getElementById('nav-logout');
+
+        // The VIP List: Only these UIDs get the Admin Dashboard
+        const adminUIDs = [
+            "oSGZdrHncdSZfNC482Q0XO2KYR42", // Your account
+            "mo66mfVjmxdHUcKtwZSfcBsBieC3"  // Your friend's account
+        ];
         
         if (user) {
-            // IF LOGGED IN: Show Dashboard & Admin Links
-            if(loginDiv) loginDiv.style.display = 'none';
-            if(adminDiv) adminDiv.style.display = 'block';
+            // ANY USER IS LOGGED IN (Admin or Normal)
+            if(navLogin) navLogin.style.display = 'none'; // Hide Login button
+            if(navLogout) navLogout.style.display = 'inline'; // Show Logout button
             
-            if(navLogin) navLogin.style.display = 'none';
-            if(navAdmin) navAdmin.style.display = 'inline';
-            if(navLogout) navLogout.style.display = 'inline';
+            // IS THIS USER AN ADMIN?
+            if (adminUIDs.includes(user.uid)) {
+                // Yes, unlock the Dashboard
+                if(navAdmin) navAdmin.style.display = 'inline';
+                if(loginDiv) loginDiv.style.display = 'none';
+                if(adminDiv) adminDiv.style.display = 'block';
+            } else {
+                // No, they are a normal viewer
+                if(navAdmin) navAdmin.style.display = 'none'; // Keep Dashboard hidden
+                if(loginDiv) loginDiv.style.display = 'none';
+                
+                // If they snoop around and try to access the admin page directly:
+                if(adminDiv) {
+                    adminDiv.style.display = 'block';
+                    adminDiv.innerHTML = "<h2 style='text-align:center; color:#ff4757; padding: 50px;'>Access Denied. You are not an admin.</h2>";
+                }
+            }
         } else {
-            // IF LOGGED OUT (GUEST): Show Login Forms & Guest Links
+            // NOBODY IS LOGGED IN (Guest)
             if(loginDiv) loginDiv.style.display = 'block';
             if(adminDiv) adminDiv.style.display = 'none';
             
