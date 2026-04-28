@@ -86,7 +86,6 @@ if (typeof firebase.auth === 'function') {
 }
 
 // --- 2. ADMIN LOGIC (CLOUD WRITING) ---
-// (Kept exactly the same)
 async function saveEpisode() {
     try {
         const title = document.getElementById('title').value.trim();
@@ -94,6 +93,10 @@ async function saveEpisode() {
         const synopsis = document.getElementById('synopsis').value.trim() || "No description.";
         const epNum = document.getElementById('episodeNum').value.trim();
         const thumb = document.getElementById('thumbUrl').value.trim() || 'https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600&auto=format&fit=crop';
+        
+        // Grab the new Type and Status dropdowns
+        const type = document.getElementById('type').value;
+        const status = document.getElementById('status').value;
         
         let rawUrl = document.getElementById('videoUrl').value.trim();
         let finalUrl = rawUrl;
@@ -111,9 +114,16 @@ async function saveEpisode() {
             let data = docSnap.data();
             if (data.episodes.find(e => e.number == epNum)) return alert("Episode " + epNum + " already exists for this title!");
             data.episodes.push({ number: epNum, link: finalUrl });
-            await docRef.update({ episodes: data.episodes });
+            await docRef.update({ episodes: data.episodes, type: type, status: status });
         } else {
-            await docRef.set({ mainThumbnail: thumb, genre: genre, synopsis: synopsis, episodes: [{ number: epNum, link: finalUrl }] });
+            await docRef.set({ 
+                mainThumbnail: thumb, 
+                genre: genre, 
+                synopsis: synopsis, 
+                type: type, 
+                status: status, 
+                episodes: [{ number: epNum, link: finalUrl }] 
+            });
         }
         alert("Anime Published to Cloud Successfully!");
         location.reload(); 
@@ -228,11 +238,18 @@ function setLetter(letter, btnElement) {
     applyFilters();
 }
 
-// THE MASTER FILTER: Checks Search + Genre + Letter all at once
+// THE MASTER FILTER: Checks Search + Genre + Letter + Type + Status all at once
 function applyFilters() {
     const searchQuery = document.getElementById('userSearch') ? document.getElementById('userSearch').value.toLowerCase() : "";
     const genreSelect = document.getElementById('filter-genre');
     const activeGenre = genreSelect ? genreSelect.value : 'All';
+
+    // Grab the new dropdowns
+    const typeSelect = document.getElementById('filter-type');
+    const activeType = typeSelect ? typeSelect.value : 'All';
+    
+    const statusSelect = document.getElementById('filter-status');
+    const activeStatus = statusSelect ? statusSelect.value : 'All';
 
     const filtered = globalAnimeData.filter(anime => {
         // 1. Check Search Bar
@@ -241,7 +258,13 @@ function applyFilters() {
         // 2. Check Genre Dropdown
         const matchesGenre = (activeGenre === 'All') || (anime.genre && anime.genre.toLowerCase().includes(activeGenre.toLowerCase()));
 
-        // 3. Check A-Z Letter
+        // 3. Check Type Dropdown
+        const matchesType = (activeType === 'All') || (anime.type === activeType);
+
+        // 4. Check Status Dropdown
+        const matchesStatus = (activeStatus === 'All') || (anime.status === activeStatus);
+
+        // 5. Check A-Z Letter
         let matchesLetter = true;
         if (activeLetter !== 'All') {
             let firstChar = anime.title.charAt(0).toUpperCase();
@@ -253,12 +276,14 @@ function applyFilters() {
             }
         }
 
-        return matchesSearch && matchesGenre && matchesLetter;
+        return matchesSearch && matchesGenre && matchesType && matchesStatus && matchesLetter;
     });
 
     // Update the title based on what is filtered
     let headerText = "Filtered Results";
-    if (searchQuery === "" && activeGenre === "All" && activeLetter === "All") headerText = "Recent Additions";
+    if (searchQuery === "" && activeGenre === "All" && activeType === "All" && activeStatus === "All" && activeLetter === "All") {
+        headerText = "Recent Additions";
+    }
     
     renderGrid(filtered, headerText);
 }
