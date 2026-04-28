@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +12,8 @@
     <style>
         .admin-container { padding: 40px 5%; max-width: 600px; margin: auto; }
         .form-group { margin-bottom: 15px; }
-        input, textarea { width: 100%; padding: 12px; background: #1a1c22; border: 1px solid #333; color: white; border-radius: 5px; box-sizing: border-box; font-family: sans-serif; }
+        /* Added 'select' here so the dropdowns match the dark theme */
+        input, textarea, select { width: 100%; padding: 12px; background: #1a1c22; border: 1px solid #333; color: white; border-radius: 5px; box-sizing: border-box; font-family: sans-serif; }
         button { width: 100%; background: #ff4757; color: white; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; margin-bottom: 10px; }
         button:hover { background: #ff6b81; }
         .register-btn { background: #333; }
@@ -30,14 +31,18 @@
 
     <div id="login-section" class="admin-container">
         <h2 style="text-align: center; margin-bottom: 20px;">Sign In or Register</h2>
-        <div class="form-group">
-            <input type="email" id="adminEmail" placeholder="Email Address">
-        </div>
-        <div class="form-group">
-            <input type="password" id="adminPass" placeholder="Password">
-        </div>
-        <button onclick="login()">Login</button>
-        <button onclick="register()" class="register-btn">Create New Account</button>
+        
+        <form onsubmit="event.preventDefault(); login();">
+            <div class="form-group">
+                <input type="email" id="adminEmail" placeholder="Email Address" autocomplete="email" required>
+            </div>
+            <div class="form-group">
+                <input type="password" id="adminPass" placeholder="Password" autocomplete="current-password" required>
+            </div>
+            
+            <button type="submit">Login</button>
+            <button type="button" onclick="register()" class="register-btn">Create New Account</button>
+        </form>
     </div>
 
     <div id="admin-content" class="admin-container" style="display:none;">
@@ -46,6 +51,21 @@
         <div class="form-group"><input type="text" id="title" placeholder="Anime Title"></div>
         <div class="form-group"><input type="text" id="genre" placeholder="Genre (e.g., Action, Shounen)"></div>
         <div class="form-group"><textarea id="synopsis" placeholder="Synopsis/Story..." rows="4"></textarea></div>
+        
+        <div class="form-group">
+            <select id="type">
+                <option value="TV">TV Series</option>
+                <option value="Movie">Movie</option>
+                <option value="OVA">OVA / Special</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <select id="status">
+                <option value="Ongoing">Ongoing</option>
+                <option value="Completed">Completed</option>
+            </select>
+        </div>
+
         <div class="form-group"><input type="text" id="episodeNum" placeholder="Episode Number (e.g., 01)"></div>
         <div class="form-group"><input type="text" id="videoUrl" placeholder="Video URL (Embed Link)"></div>
         <div class="form-group"><input type="text" id="thumbUrl" placeholder="Cover Image URL"></div>
