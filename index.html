@@ -36,10 +36,28 @@
         </div>
     </header>
 
-    <div class="search-container">
-        <input type="text" id="userSearch" class="search-input" placeholder="Search for an anime..." onkeyup="filterLibrary()">
-    </div>
+  <div class="advanced-filter-container">
+        
+        <input type="text" id="userSearch" class="filter-search" placeholder="Search for an anime..." onkeyup="applyFilters()">
+        
+        <div class="filter-dropdowns">
+            <select id="filter-genre" onchange="applyFilters()">
+                <option value="All">All Genres</option>
+                </select>
+            
+            <select id="filter-type" onchange="applyFilters()" style="color: gray;">
+                <option value="All">Type (Coming Soon)</option>
+            </select>
+            
+            <select id="filter-status" onchange="applyFilters()" style="color: gray;">
+                <option value="All">Status (Coming Soon)</option>
+            </select>
+        </div>
 
+        <div class="filter-letters" id="letterBox">
+            </div>
+        
+    </div>
     <section>
         <h2 style="padding: 0 5%; margin-bottom: 20px;">Recent Additions</h2>
         <div id="episodeGrid" class="grid"></div>
