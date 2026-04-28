@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AnimeYonix | Stream Premium Anime</title>
@@ -10,10 +12,14 @@
 </head>
 <body>
     <nav class="navbar">
-        <a href="index.html" class="logo">Anime<span>Yonix</span></a>
+        <a href="index.html" class="logo" style="text-decoration: none;">Anime<span>Yonix</span></a>
         <ul class="nav-links">
             <li><a href="index.html">Home</a></li>
-            <li><a href="admin.html">Admin Panel</a></li>
+            
+            <li id="nav-login"><a href="admin.html" style="color: #ff4757;">Admin Login</a></li>
+            
+            <li id="nav-admin" style="display: none;"><a href="admin.html" style="color: white;">Dashboard</a></li>
+            <li id="nav-logout" style="display: none;"><a href="#" onclick="logout()" style="color: gray;">Logout</a></li>
         </ul>
     </nav>
 
