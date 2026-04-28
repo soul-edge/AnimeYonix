@@ -268,7 +268,15 @@ async function loadDetails() {
         document.getElementById('det-syn').innerText = anime.synopsis || "No description.";
         document.getElementById('det-thumb').src = anime.mainThumbnail;
         
-        // MyAnimeList Rating
+        // --- 1. Fix: Wait for Auth to show Watchlist Button ---
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                currentUserUID = user.uid;
+                checkWatchlistStatus(title); 
+            }
+        });
+
+        // --- 2. Fetch MyAnimeList Rating ---
         const ratingElement = document.getElementById('det-rating');
         if (ratingElement) {
             try {
@@ -276,9 +284,26 @@ async function loadDetails() {
                 const mal = await res.json();
                 if (mal.data && mal.data[0]) {
                     ratingElement.innerHTML = `⭐️ ${mal.data[0].score} / 10 <span style="font-size:0.8rem;color:gray;">(MAL)</span>`;
+                } else {
+                    ratingElement.innerText = "⭐️ No Rating Found";
                 }
             } catch (e) { ratingElement.innerText = ""; }
         }
+
+        // --- 3. Load Episode Buttons ---
+        const epList = document.getElementById('ep-list');
+        if(epList && anime.episodes) {
+            epList.innerHTML = ""; 
+            anime.episodes.sort((a,b) => a.number - b.number).forEach(ep => {
+                const btn = document.createElement('div');
+                btn.className = 'ep-btn';
+                btn.innerText = "Ep " + ep.number;
+                btn.onclick = () => window.location.href = `watch.html?url=${encodeURIComponent(ep.link)}&title=${encodeURIComponent(title)}&ep=${ep.number}`;
+                epList.appendChild(btn);
+            });
+        }
+    }
+}
 
         const epList = document.getElementById('ep-list');
         epList.innerHTML = ""; 
