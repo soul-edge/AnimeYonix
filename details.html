@@ -1,34 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anime Details | AnimeYonix</title>
+    <title>AnimeYonix | Details</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .details-container { display: flex; flex-wrap: wrap; gap: 30px; padding: 40px 5%; max-width: 1000px; margin: auto; }
+        .details-thumb { width: 300px; height: 450px; border-radius: 10px; object-fit: cover; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .details-info { flex: 1; min-width: 300px; }
+        .episodes-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+        .ep-btn { background: #2a2d35; padding: 10px 20px; border-radius: 5px; cursor: pointer; border: 1px solid #444; transition: 0.3s; }
+        .ep-btn:hover { background: #ff4757; color: white; border-color: #ff4757; }
+    </style>
 </head>
 <body>
-   <nav class="navbar">
+    <nav class="navbar">
         <a href="index.html" class="logo" style="text-decoration: none;">Anime<span>Yonix</span></a>
         <ul class="nav-links">
             <li><a href="index.html">Home</a></li>
-            
             <li id="nav-login"><a href="admin.html" style="color: #ff4757;">Login</a></li>
-            
             <li id="nav-admin" style="display: none;"><a href="admin.html" style="color: white;">Dashboard</a></li>
             <li id="nav-logout" style="display: none;"><a href="#" onclick="logout()" style="color: gray;">Logout</a></li>
         </ul>
     </nav>
 
     <div class="details-container">
-        <img id="det-thumb" class="details-cover" src="" alt="Cover Art">
+        <img id="det-thumb" src="" alt="Thumbnail" class="details-thumb">
         <div class="details-info">
-            <h1 id="det-title" class="details-title">Loading...</h1>
-            <div id="det-genre" class="details-genre">GENRE: ...</div>
-            <p id="det-syn" class="details-synopsis">Loading synopsis...</p>
+            <h1 id="det-title" style="margin-bottom: 10px;">Loading...</h1>
+            <p id="det-genre" style="color: gray; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase;">GENRE: ...</p>
             
-            <h2 style="margin-bottom: 15px;">Episodes</h2>
+            <p id="det-rating" style="color: #FFD700; font-size: 1.1rem; margin-bottom: 20px; font-weight: bold;">⭐️ Fetching Rating...</p>
+            
+            <p id="det-syn" style="line-height: 1.6; color: #ccc;">Loading synopsis...</p>
+            
+            <h2 style="margin-top: 40px;">Episodes</h2>
             <div id="ep-list" class="episodes-grid"></div>
         </div>
     </div>
