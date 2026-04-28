@@ -114,3 +114,67 @@ body {
 .dropdown:hover .dropdown-content {
     display: block;
 }
+/* --- ADVANCED FILTER PANEL --- */
+.advanced-filter-container {
+    background-color: #1a1c22;
+    padding: 25px;
+    margin: 0 5% 30px 5%;
+    border-radius: 8px;
+    border: 1px solid #333;
+    text-align: center;
+}
+
+.filter-search {
+    width: 100%;
+    max-width: 600px;
+    padding: 12px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    background: #2a2d35;
+    color: white;
+    border: 1px solid #444;
+}
+
+.filter-dropdowns {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.filter-dropdowns select {
+    background-color: #2a2d35;
+    color: white;
+    border: 1px solid #444;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    min-width: 150px;
+}
+
+.filter-letters {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.filter-letters button {
+    background-color: #2a2d35;
+    color: #aaa;
+    border: 1px solid #444;
+    width: 35px;
+    height: 35px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+    font-weight: bold;
+}
+
+.filter-letters button:hover, .filter-letters button.active {
+    background-color: #ff4757;
+    color: white;
+    border-color: #ff4757;
+}
