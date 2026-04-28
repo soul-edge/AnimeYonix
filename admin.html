@@ -7,14 +7,16 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnimeYonix Admin | Control Panel</title>
+    <title>AnimeYonix | Login & Register</title>
     <link rel="stylesheet" href="style.css">
     <style>
         .admin-container { padding: 40px 5%; max-width: 600px; margin: auto; }
         .form-group { margin-bottom: 15px; }
         input, textarea { width: 100%; padding: 12px; background: #1a1c22; border: 1px solid #333; color: white; border-radius: 5px; box-sizing: border-box; font-family: sans-serif; }
-        button { width: 100%; background: #ff4757; color: white; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button { width: 100%; background: #ff4757; color: white; padding: 12px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.3s; margin-bottom: 10px; }
         button:hover { background: #ff6b81; }
+        .register-btn { background: #333; }
+        .register-btn:hover { background: #555; }
         .manage-item { background: #1a1c22; padding: 15px; margin-top: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
         .delete-btn { width: auto; background: #444; padding: 5px 10px; cursor: pointer; }
         #login-section { margin-top: 50px; }
@@ -22,19 +24,20 @@
 </head>
 <body>
     <nav class="navbar">
-        <div class="logo">Anime<span>Yonix</span> Admin</div>
-        <a href="index.html" style="color: white; text-decoration: none;">← Back to Site</a>
+        <div class="logo" style="cursor: pointer;" onclick="window.location.href='index.html'">Anime<span>Yonix</span></div>
+        <a href="index.html" style="color: white; text-decoration: none;">← Back to Home</a>
     </nav>
 
     <div id="login-section" class="admin-container">
-        <h2 style="text-align: center; margin-bottom: 20px;">Admin Access</h2>
+        <h2 style="text-align: center; margin-bottom: 20px;">Sign In or Register</h2>
         <div class="form-group">
-            <input type="email" id="adminEmail" placeholder="Admin Email">
+            <input type="email" id="adminEmail" placeholder="Email Address">
         </div>
         <div class="form-group">
             <input type="password" id="adminPass" placeholder="Password">
         </div>
-        <button onclick="login()">Login to Dashboard</button>
+        <button onclick="login()">Login</button>
+        <button onclick="register()" class="register-btn">Create New Account</button>
     </div>
 
     <div id="admin-content" class="admin-container" style="display:none;">
