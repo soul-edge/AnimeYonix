@@ -107,7 +107,8 @@ async function saveEpisode() {
             if (thumb) updateData.mainThumbnail = thumb;
 
             if (epNum && finalUrl) {
-                if (data.episodes.find(e => e.number == epNum)) return alert("Ep exists!");
+                // This removes the old episode link so the new one can take its place
+data.episodes = data.episodes.filter(e => e.number != epNum);
                 data.episodes.push({ number: epNum, link: finalUrl });
                 updateData.episodes = data.episodes;
             }
