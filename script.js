@@ -43,53 +43,41 @@ function register() {
 
 function logout() {
     firebase.auth().signOut().then(() => {
-        // Redirect to homepage after logging out
         window.location.href = 'index.html';
     });
 }
 
-// Watcher: Automatically routes users based on their Admin status
 if (typeof firebase.auth === 'function') {
     firebase.auth().onAuthStateChanged(user => {
         const loginDiv = document.getElementById('login-section');
         const adminDiv = document.getElementById('admin-content');
-        
         const navLogin = document.getElementById('nav-login');
         const navAdmin = document.getElementById('nav-admin');
         const navLogout = document.getElementById('nav-logout');
 
-        // The VIP List: Only these UIDs get the Admin Dashboard
         const adminUIDs = [
-            "oSGZdrHncdSZfNC482Q0XO2KYR42", // Your account
-            "mo66mfVjmxdHUcKtwZSfcBsBieC3"  // Your friend's account
+            "oSGZdrHncdSZfNC482Q0XO2KYR42", 
+            "mo66mfVjmxdHUcKtwZSfcBsBieC3"  
         ];
         
         if (user) {
-            // ANY USER IS LOGGED IN
             if(navLogin) navLogin.style.display = 'none';
             if(navLogout) navLogout.style.display = 'inline';
             
-            // IS THIS USER AN ADMIN?
             if (adminUIDs.includes(user.uid)) {
-                // Admin Account: Unlock Dashboard
                 if(navAdmin) navAdmin.style.display = 'inline';
                 if(loginDiv) loginDiv.style.display = 'none';
                 if(adminDiv) adminDiv.style.display = 'block';
             } else {
-                // Normal Account: Hide Dashboard
                 if(navAdmin) navAdmin.style.display = 'none'; 
                 if(loginDiv) loginDiv.style.display = 'none';
-                
-                // Auto-Redirect: If a normal user is on the login page, send them Home!
                 if(window.location.pathname.includes('admin.html')) {
                     window.location.href = 'index.html';
                 }
             }
         } else {
-            // NOBODY IS LOGGED IN (Guest)
             if(loginDiv) loginDiv.style.display = 'block';
             if(adminDiv) adminDiv.style.display = 'none';
-            
             if(navLogin) navLogin.style.display = 'inline';
             if(navAdmin) navAdmin.style.display = 'none';
             if(navLogout) navLogout.style.display = 'none';
@@ -98,6 +86,7 @@ if (typeof firebase.auth === 'function') {
 }
 
 // --- 2. ADMIN LOGIC (CLOUD WRITING) ---
+// (Kept exactly the same)
 async function saveEpisode() {
     try {
         const title = document.getElementById('title').value.trim();
@@ -113,33 +102,22 @@ async function saveEpisode() {
             if (match) finalUrl = match[1];
         }
 
-        if(!title || !finalUrl || !epNum) {
-            return alert("Error: Title, Episode #, and URL are required!");
-        }
+        if(!title || !finalUrl || !epNum) return alert("Error: Title, Episode #, and URL are required!");
 
         const docRef = db.collection("animeLibrary").doc(title);
         const docSnap = await docRef.get();
 
         if (docSnap.exists) {
             let data = docSnap.data();
-            if (data.episodes.find(e => e.number == epNum)) {
-                return alert("Episode " + epNum + " already exists for this title!");
-            }
+            if (data.episodes.find(e => e.number == epNum)) return alert("Episode " + epNum + " already exists for this title!");
             data.episodes.push({ number: epNum, link: finalUrl });
             await docRef.update({ episodes: data.episodes });
         } else {
-            await docRef.set({
-                mainThumbnail: thumb,
-                genre: genre,
-                synopsis: synopsis,
-                episodes: [{ number: epNum, link: finalUrl }]
-            });
+            await docRef.set({ mainThumbnail: thumb, genre: genre, synopsis: synopsis, episodes: [{ number: epNum, link: finalUrl }] });
         }
-        
         alert("Anime Published to Cloud Successfully!");
         location.reload(); 
     } catch (error) {
-        console.error("Save Error:", error);
         alert("Permission Denied: Only the Admin can save data.");
     }
 }
@@ -147,33 +125,25 @@ async function saveEpisode() {
 async function displayAdminManager() {
     const managerDiv = document.getElementById('adminManageList');
     if(!managerDiv) return;
-
     managerDiv.innerHTML = "Loading library from cloud...";
-
     const snapshot = await db.collection("animeLibrary").get();
     managerDiv.innerHTML = "";
-
     snapshot.forEach(doc => {
         const title = doc.id;
         const data = doc.data();
         const item = document.createElement('div');
         item.className = 'manage-item';
-        item.innerHTML = `
-            <span><strong>${title}</strong> (${data.episodes.length} Eps)</span>
-            <button class="delete-btn" onclick="deleteAnime('${title.replace(/'/g, "\\'")}')">Delete</button>
-        `;
+        item.innerHTML = `<span><strong>${title}</strong> (${data.episodes.length} Eps)</span><button class="delete-btn" onclick="deleteAnime('${title.replace(/'/g, "\\'")}')">Delete</button>`;
         managerDiv.appendChild(item);
     });
 }
 
 async function deleteAnime(title) {
-    if(confirm("Delete " + title + " permanently from the cloud?")) {
+    if(confirm("Delete " + title + " permanently?")) {
         try {
             await db.collection("animeLibrary").doc(title).delete();
             displayAdminManager();
-        } catch(e) {
-            alert("Error: You don't have permission to delete.");
-        }
+        } catch(e) { alert("Error: You don't have permission."); }
     }
 }
 
@@ -186,7 +156,9 @@ function filterAdminList() {
     });
 }
 
-// --- 3. HOMEPAGE LOGIC (CLOUD READING) ---
+// --- 3. HOMEPAGE LOGIC (DYNAMIC GENRES) ---
+let globalAnimeData = []; // Master list to hold all anime
+
 async function displayEpisodes() {
     const grid = document.getElementById('episodeGrid');
     if(!grid) return;
@@ -194,44 +166,100 @@ async function displayEpisodes() {
     grid.innerHTML = "<p style='color: white; padding-left: 20px;'>Connecting to cloud database...</p>"; 
 
     const snapshot = await db.collection("animeLibrary").get();
-    grid.innerHTML = ""; 
+    globalAnimeData = []; // Reset list
+    let uniqueGenres = new Set(); // A Set automatically prevents duplicates!
 
     snapshot.forEach(doc => {
         const title = doc.id;
         const anime = doc.data();
-        
+        anime.title = title; // Save the title into the object
+        globalAnimeData.push(anime);
+
+        // Extract and clean up the genres
+        if (anime.genre) {
+            // Split by comma in case admin typed "Action, Fantasy"
+            let genres = anime.genre.split(',');
+            genres.forEach(g => {
+                let cleanGenre = g.trim(); // Remove extra spaces
+                if (cleanGenre !== "" && cleanGenre !== "Unknown") {
+                    uniqueGenres.add(cleanGenre);
+                }
+            });
+        }
+    });
+
+    // 1. Draw the cards on the screen
+    renderGrid(globalAnimeData, "Recent Additions");
+
+    // 2. Build the dropdown menu automatically
+    buildGenreMenu(Array.from(uniqueGenres).sort());
+}
+
+function renderGrid(animeArray, sectionTitle) {
+    const grid = document.getElementById('episodeGrid');
+    const header = document.querySelector('section h2');
+    
+    if (header && sectionTitle) header.innerText = sectionTitle;
+    grid.innerHTML = ""; 
+
+    if (animeArray.length === 0) {
+        grid.innerHTML = "<p style='color: gray; padding-left: 20px;'>No anime found for this category.</p>";
+        return;
+    }
+
+    animeArray.forEach(anime => {
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
             <div class="thumbnail" style="background-image: url('${anime.mainThumbnail}');"></div>
             <div class="info">
-                <h3>${title}</h3>
+                <h3>${anime.title}</h3>
                 <button class="btn detail-btn">Details</button>
             </div>
         `;
-        
         card.querySelector('.detail-btn').addEventListener('click', () => {
-            window.location.href = `details.html?title=${encodeURIComponent(title)}`;
+            window.location.href = `details.html?title=${encodeURIComponent(anime.title)}`;
         });
-
         grid.appendChild(card);
     });
 }
 
+// Function to inject links into the dropdown menu
+function buildGenreMenu(genresArray) {
+    const dropdown = document.getElementById('genreDropdown');
+    if(!dropdown) return;
+
+    dropdown.innerHTML = `<a onclick="filterByGenre('All')">All Anime</a>`; // Default reset button
+    
+    genresArray.forEach(genre => {
+        dropdown.innerHTML += `<a onclick="filterByGenre('${genre}')">${genre}</a>`;
+    });
+}
+
+// Function that runs when you click a genre in the menu
+function filterByGenre(selectedGenre) {
+    if (selectedGenre === 'All') {
+        renderGrid(globalAnimeData, "All Anime");
+    } else {
+        // Find animes that include the selected genre
+        const filtered = globalAnimeData.filter(anime => {
+            return anime.genre && anime.genre.toLowerCase().includes(selectedGenre.toLowerCase());
+        });
+        renderGrid(filtered, `Genre: ${selectedGenre}`);
+    }
+}
+
+// Normal search bar filter
 function filterLibrary() {
     const query = document.getElementById('userSearch').value.toLowerCase();
-    const cards = document.querySelectorAll('.card');
-    cards.forEach(card => {
-        const title = card.querySelector('h3').innerText.toLowerCase();
-        card.style.display = title.includes(query) ? "block" : "none";
-    });
+    const filtered = globalAnimeData.filter(anime => anime.title.toLowerCase().includes(query));
+    renderGrid(filtered, query === "" ? "Recent Additions" : "Search Results");
 }
 
 // --- 4. DETAILS PAGE LOGIC ---
 async function loadDetails() {
     const params = new URLSearchParams(window.location.search);
     const title = decodeURIComponent(params.get('title'));
-    
     if(!title || title === "null") return;
 
     const docRef = db.collection("animeLibrary").doc(title);
@@ -246,7 +274,6 @@ async function loadDetails() {
 
         const epList = document.getElementById('ep-list');
         epList.innerHTML = ""; 
-        
         anime.episodes.sort((a,b) => a.number - b.number).forEach(ep => {
             const btn = document.createElement('div');
             btn.className = 'ep-btn';
