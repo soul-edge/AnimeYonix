@@ -14,10 +14,9 @@ if (!firebase.apps.length) {
 }
 const db = firebase.firestore();
 
-// Global variable to keep track of who is logged in
 let currentUserUID = null; 
 
-// --- 1.5 AUTH LOGIC (LOGIN/REGISTER/LOGOUT) ---
+// --- 1.5 AUTH LOGIC ---
 function login() {
     const email = document.getElementById('adminEmail').value;
     const pass = document.getElementById('adminPass').value;
@@ -30,7 +29,7 @@ function register() {
     const email = document.getElementById('adminEmail').value;
     const pass = document.getElementById('adminPass').value;
     firebase.auth().createUserWithEmailAndPassword(email, pass)
-        .then(() => { alert("Account created successfully! Welcome to AnimeYonix."); })
+        .then(() => { alert("Account created successfully!"); })
         .catch(error => { alert("Registration Failed: " + error.message); });
 }
 
@@ -38,6 +37,7 @@ function logout() {
     firebase.auth().signOut().then(() => { window.location.href = 'index.html'; });
 }
 
+// Watcher: Handles UI changes based on login status
 if (typeof firebase.auth === 'function') {
     firebase.auth().onAuthStateChanged(user => {
         const loginDiv = document.getElementById('login-section');
@@ -45,18 +45,18 @@ if (typeof firebase.auth === 'function') {
         const navLogin = document.getElementById('nav-login');
         const navAdmin = document.getElementById('nav-admin');
         const navLogout = document.getElementById('nav-logout');
-        const navProfile = document.getElementById('nav-profile'); // New Profile Link
+        const navProfile = document.getElementById('nav-profile');
 
         const adminUIDs = ["oSGZdrHncdSZfNC482Q0XO2KYR42", "mo66mfVjmxdHUcKtwZSfcBsBieC3"];
         
         if (user) {
-            currentUserUID = user.uid; // Save their ID
+            currentUserUID = user.uid;
             if(navLogin) navLogin.style.display = 'none';
             if(navLogout) navLogout.style.display = 'inline';
-            if(navProfile) navProfile.style.display = 'inline'; // Show My List
+            if(navProfile) navProfile.style.display = 'inline';
             
-            // Check if they are on a details page, and update the watchlist button
-            if(document.getElementById('det-title')) checkWatchlistStatus(document.getElementById('det-title').innerText);
+            // If we are on the profile page, load it now that we have the UID
+            if(document.getElementById('profileGrid')) loadProfile();
 
             if (adminUIDs.includes(user.uid)) {
                 if(navAdmin) navAdmin.style.display = 'inline';
@@ -74,12 +74,12 @@ if (typeof firebase.auth === 'function') {
             if(navLogin) navLogin.style.display = 'inline';
             if(navAdmin) navAdmin.style.display = 'none';
             if(navLogout) navLogout.style.display = 'none';
-            if(navProfile) navProfile.style.display = 'none'; // Hide My List
+            if(navProfile) navProfile.style.display = 'none';
         }
     });
 }
 
-// --- 2. ADMIN LOGIC (CLOUD WRITING & EDITING) ---
+// --- 2. ADMIN LOGIC ---
 async function saveEpisode() {
     try {
         const title = document.getElementById('title').value.trim();
@@ -97,7 +97,7 @@ async function saveEpisode() {
             if (match) finalUrl = match[1];
         }
 
-        if(!title) return alert("Error: Anime Title is required!");
+        if(!title) return alert("Error: Title required!");
 
         const docRef = db.collection("animeLibrary").doc(title);
         const docSnap = await docRef.get();
@@ -110,29 +110,27 @@ async function saveEpisode() {
             if (thumb) updateData.mainThumbnail = thumb;
 
             if (epNum && finalUrl) {
-                if (data.episodes.find(e => e.number == epNum)) return alert("Episode " + epNum + " already exists!");
+                if (data.episodes.find(e => e.number == epNum)) return alert("Ep exists!");
                 data.episodes.push({ number: epNum, link: finalUrl });
                 updateData.episodes = data.episodes;
             }
             await docRef.update(updateData);
-            alert("Anime Details Updated Successfully!");
+            alert("Updated!");
         } else {
-            if(!finalUrl || !epNum) return alert("Error: Episode # and Video URL are required for a NEW anime!");
             await docRef.set({ 
                 mainThumbnail: thumb || 'https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600&auto=format&fit=crop', 
                 genre: genre || "Unknown", synopsis: synopsis || "No description.", type: type, status: status, 
                 episodes: [{ number: epNum, link: finalUrl }] 
             });
-            alert("New Anime Published to Cloud Successfully!");
+            alert("Published!");
         }
         location.reload(); 
-    } catch (error) { alert("Permission Denied: Only the Admin can save data."); }
+    } catch (error) { alert("Error saving data."); }
 }
 
 async function displayAdminManager() {
     const managerDiv = document.getElementById('adminManageList');
     if(!managerDiv) return;
-    managerDiv.innerHTML = "Loading library from cloud...";
     const snapshot = await db.collection("animeLibrary").get();
     managerDiv.innerHTML = "";
     snapshot.forEach(doc => {
@@ -146,32 +144,19 @@ async function displayAdminManager() {
 }
 
 async function deleteAnime(title) {
-    if(confirm("Delete " + title + " permanently?")) {
-        try {
-            await db.collection("animeLibrary").doc(title).delete();
-            displayAdminManager();
-        } catch(e) { alert("Error: You don't have permission."); }
+    if(confirm("Delete " + title + "?")) {
+        await db.collection("animeLibrary").doc(title).delete();
+        displayAdminManager();
     }
 }
 
-function filterAdminList() {
-    const query = document.getElementById('adminSearch').value.toLowerCase();
-    const items = document.querySelectorAll('.manage-item');
-    items.forEach(item => {
-        const title = item.querySelector('strong').innerText.toLowerCase();
-        item.style.display = title.includes(query) ? "flex" : "none";
-    });
-}
-
-// --- 3. HOMEPAGE LOGIC (ADVANCED FILTERS) ---
+// --- 3. HOMEPAGE LOGIC ---
 let globalAnimeData = []; 
 let activeLetter = 'All'; 
 
 async function displayEpisodes() {
     const grid = document.getElementById('episodeGrid');
     if(!grid) return;
-    grid.innerHTML = "<p style='color: white; padding-left: 20px;'>Connecting to cloud database...</p>"; 
-
     const snapshot = await db.collection("animeLibrary").get();
     globalAnimeData = []; 
     let uniqueGenres = new Set(); 
@@ -182,10 +167,9 @@ async function displayEpisodes() {
         anime.title = title; 
         globalAnimeData.push(anime);
         if (anime.genre) {
-            let genres = anime.genre.split(',');
-            genres.forEach(g => {
-                let cleanGenre = g.trim(); 
-                if (cleanGenre !== "" && cleanGenre !== "Unknown") uniqueGenres.add(cleanGenre);
+            anime.genre.split(',').forEach(g => {
+                let clean = g.trim();
+                if (clean !== "" && clean !== "Unknown") uniqueGenres.add(clean);
             });
         }
     });
@@ -197,7 +181,7 @@ async function displayEpisodes() {
     }
 
     buildLetterFilter();
-    renderGrid(globalAnimeData, "Recent Additions");
+    renderGrid(globalAnimeData, "Recent Additions", "episodeGrid");
 }
 
 function buildLetterFilter() {
@@ -220,12 +204,9 @@ function setLetter(letter, btnElement) {
 
 function applyFilters() {
     const searchQuery = document.getElementById('userSearch') ? document.getElementById('userSearch').value.toLowerCase() : "";
-    const genreSelect = document.getElementById('filter-genre');
-    const activeGenre = genreSelect ? genreSelect.value : 'All';
-    const typeSelect = document.getElementById('filter-type');
-    const activeType = typeSelect ? typeSelect.value : 'All';
-    const statusSelect = document.getElementById('filter-status');
-    const activeStatus = statusSelect ? statusSelect.value : 'All';
+    const activeGenre = document.getElementById('filter-genre') ? document.getElementById('filter-genre').value : 'All';
+    const activeType = document.getElementById('filter-type') ? document.getElementById('filter-type').value : 'All';
+    const activeStatus = document.getElementById('filter-status') ? document.getElementById('filter-status').value : 'All';
 
     const filtered = globalAnimeData.filter(anime => {
         const matchesSearch = anime.title.toLowerCase().includes(searchQuery);
@@ -241,17 +222,13 @@ function applyFilters() {
         return matchesSearch && matchesGenre && matchesType && matchesStatus && matchesLetter;
     });
 
-    let headerText = "Filtered Results";
-    if (searchQuery === "" && activeGenre === "All" && activeType === "All" && activeStatus === "All" && activeLetter === "All") {
-        headerText = "Recent Additions";
-    }
-    renderGrid(filtered, headerText);
+    renderGrid(filtered, "Filtered Results", "episodeGrid");
 }
 
-function renderGrid(animeArray, sectionTitle) {
-    const grid = document.getElementById('episodeGrid');
+function renderGrid(animeArray, sectionTitle, targetID) {
+    const grid = document.getElementById(targetID);
     const header = document.querySelector('section h2');
-    if (header && sectionTitle) header.innerText = sectionTitle;
+    if (header && targetID === "episodeGrid") header.innerText = sectionTitle;
     if(!grid) return;
     grid.innerHTML = ""; 
 
@@ -270,7 +247,7 @@ function renderGrid(animeArray, sectionTitle) {
                 <button class="btn detail-btn">Details</button>
             </div>
         `;
-        card.querySelector('.detail-btn').addEventListener('click', () => { window.location.href = `details.html?title=${encodeURIComponent(anime.title)}`; });
+        card.querySelector('.detail-btn').onclick = () => { window.location.href = `details.html?title=${encodeURIComponent(anime.title)}`; };
         grid.appendChild(card);
     });
 }
@@ -291,20 +268,16 @@ async function loadDetails() {
         document.getElementById('det-syn').innerText = anime.synopsis || "No description.";
         document.getElementById('det-thumb').src = anime.mainThumbnail;
         
-        // Show the Watchlist button if logged in
-        if(currentUserUID) checkWatchlistStatus(title);
-
+        // MyAnimeList Rating
         const ratingElement = document.getElementById('det-rating');
         if (ratingElement) {
             try {
-                const response = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(title)}&limit=1`);
-                const malData = await response.json();
-                if (malData.data && malData.data.length > 0) {
-                    const score = malData.data[0].score;
-                    if (score) ratingElement.innerHTML = `⭐️ ${score} / 10 <span style="font-size: 0.8rem; color: gray; font-weight: normal;">(MyAnimeList)</span>`;
-                    else ratingElement.innerText = "⭐️ No Rating Yet";
-                } else { ratingElement.innerText = "⭐️ Rating Not Found"; }
-            } catch (error) { ratingElement.innerText = "⭐️ Rating Unavailable"; }
+                const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(title)}&limit=1`);
+                const mal = await res.json();
+                if (mal.data && mal.data[0]) {
+                    ratingElement.innerHTML = `⭐️ ${mal.data[0].score} / 10 <span style="font-size:0.8rem;color:gray;">(MAL)</span>`;
+                }
+            } catch (e) { ratingElement.innerText = ""; }
         }
 
         const epList = document.getElementById('ep-list');
@@ -316,83 +289,71 @@ async function loadDetails() {
             btn.onclick = () => window.location.href = `watch.html?url=${encodeURIComponent(ep.link)}&title=${encodeURIComponent(title)}&ep=${ep.number}`;
             epList.appendChild(btn);
         });
-    } else { document.querySelector('.details-info').innerHTML = "<h1 style='color:red;'>Anime not found in database.</h1>"; }
+    }
 }
 
-// --- 4.5 USER PROFILE LOGIC (WATCHLIST) ---
+// --- 4.5 WATCHLIST LOGIC ---
 async function toggleWatchlist() {
-    if(!currentUserUID) return alert("Please log in to save anime to your Watchlist!");
+    if(!currentUserUID) return alert("Log in first!");
     const title = document.getElementById('det-title').innerText;
-    
     const userRef = db.collection("users").doc(currentUserUID);
-    const docSnap = await userRef.get();
+    const doc = await userRef.get();
     
-    let watchlist = [];
-    if(docSnap.exists) watchlist = docSnap.data().watchlist || [];
+    let list = (doc.exists) ? (doc.data().watchlist || []) : [];
 
-    if(watchlist.includes(title)) {
-        // It's already there, remove it
-        watchlist = watchlist.filter(t => t !== title);
-        await userRef.set({ watchlist: watchlist }, { merge: true });
-        alert("Removed from Watchlist.");
+    if(list.includes(title)) {
+        list = list.filter(t => t !== title);
+        alert("Removed.");
     } else {
-        // Add it
-        watchlist.push(title);
-        await userRef.set({ watchlist: watchlist }, { merge: true });
-        alert("Added to Watchlist!");
+        list.push(title);
+        alert("Added!");
     }
-    checkWatchlistStatus(title); // Update the button color
+    await userRef.set({ watchlist: list }, { merge: true });
+    checkWatchlistStatus(title);
 }
 
 async function checkWatchlistStatus(title) {
     if(!currentUserUID) return;
     const btn = document.getElementById('watchlist-btn');
     if(!btn) return;
-    
-    btn.style.display = "inline-block"; // Make it visible
+    btn.style.display = "inline-block";
 
-    const docSnap = await db.collection("users").doc(currentUserUID).get();
-    if(docSnap.exists && docSnap.data().watchlist && docSnap.data().watchlist.includes(title)) {
-        btn.innerHTML = "💔 Remove from Watchlist";
-        btn.style.background = "#ff4757"; // Red
+    const doc = await db.collection("users").doc(currentUserUID).get();
+    if(doc.exists && doc.data().watchlist && doc.data().watchlist.includes(title)) {
+        btn.innerHTML = "💔 Remove";
+        btn.style.background = "#ff4757";
     } else {
-        btn.innerHTML = "❤️ Add to Watchlist";
-        btn.style.background = "#444"; // Grey
+        btn.innerHTML = "❤️ Add to List";
+        btn.style.background = "#444";
     }
 }
 
 async function loadProfile() {
-    if(!currentUserUID) return window.location.href = 'index.html'; // Kick out guests
-    
     const profileGrid = document.getElementById('profileGrid');
-    profileGrid.innerHTML = "<p style='color: white; padding-left: 20px;'>Loading your watchlist...</p>";
+    if(!profileGrid || !currentUserUID) return;
 
+    profileGrid.innerHTML = "<p style='color:white;'>Loading...</p>";
     const userDoc = await db.collection("users").doc(currentUserUID).get();
+    
     if(!userDoc.exists || !userDoc.data().watchlist || userDoc.data().watchlist.length === 0) {
-        profileGrid.innerHTML = "<p style='color: gray; padding-left: 20px;'>Your watchlist is empty! Go browse some anime.</p>";
+        profileGrid.innerHTML = "<p style='color:gray;'>Your list is empty.</p>";
         return;
     }
 
-    const savedTitles = userDoc.data().watchlist;
-    let savedAnimes = [];
-
-    // Fetch the actual data for each saved title
-    for (let title of savedTitles) {
-        const animeDoc = await db.collection("animeLibrary").doc(title).get();
-        if(animeDoc.exists) {
-            let animeData = animeDoc.data();
-            animeData.title = title;
-            savedAnimes.push(animeData);
+    const titles = userDoc.data().watchlist;
+    let items = [];
+    for (let t of titles) {
+        const doc = await db.collection("animeLibrary").doc(t).get();
+        if(doc.exists) {
+            let d = doc.data();
+            d.title = t;
+            items.push(d);
         }
     }
-    
-    // We can reuse the homepage render function!
-    document.getElementById('episodeGrid').id = "tempID"; // Temporary hack to reuse renderGrid
-    profileGrid.id = "episodeGrid"; 
-    renderGrid(savedAnimes, "My Watchlist");
+    renderGrid(items, "My List", "profileGrid");
 }
 
-// --- 5. WATCH PAGE LOGIC ---
+// --- 5. WATCH PAGE ---
 function loadVideo() {
     const params = new URLSearchParams(window.location.search);
     const videoUrl = params.get('url');
@@ -405,18 +366,10 @@ function loadVideo() {
     }
 }
 
-// --- 6. INITIALIZATION ROUTER ---
+// --- 6. INIT ---
 window.onload = function() {
     if (document.getElementById('episodeGrid')) displayEpisodes();
     if (document.getElementById('adminManageList')) displayAdminManager();
     if (document.getElementById('det-title')) loadDetails();
     if (document.getElementById('mainPlayer')) loadVideo();
-    
-    // Wait for auth to finish before loading profile
-    if (document.getElementById('profileGrid')) {
-        firebase.auth().onAuthStateChanged(user => {
-            if(user) { currentUserUID = user.uid; loadProfile(); }
-            else { window.location.href = 'index.html'; }
-        });
-    }
 };
