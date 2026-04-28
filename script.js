@@ -156,8 +156,9 @@ function filterAdminList() {
     });
 }
 
-// --- 3. HOMEPAGE LOGIC (DYNAMIC GENRES) ---
-let globalAnimeData = []; // Master list to hold all anime
+// --- 3. HOMEPAGE LOGIC (ADVANCED FILTERS) ---
+let globalAnimeData = []; 
+let activeLetter = 'All'; // Keeps track of which letter button is clicked
 
 async function displayEpisodes() {
     const grid = document.getElementById('episodeGrid');
@@ -166,33 +167,100 @@ async function displayEpisodes() {
     grid.innerHTML = "<p style='color: white; padding-left: 20px;'>Connecting to cloud database...</p>"; 
 
     const snapshot = await db.collection("animeLibrary").get();
-    globalAnimeData = []; // Reset list
-    let uniqueGenres = new Set(); // A Set automatically prevents duplicates!
+    globalAnimeData = []; 
+    let uniqueGenres = new Set(); 
 
     snapshot.forEach(doc => {
         const title = doc.id;
         const anime = doc.data();
-        anime.title = title; // Save the title into the object
+        anime.title = title; 
         globalAnimeData.push(anime);
 
-        // Extract and clean up the genres
         if (anime.genre) {
-            // Split by comma in case admin typed "Action, Fantasy"
             let genres = anime.genre.split(',');
             genres.forEach(g => {
-                let cleanGenre = g.trim(); // Remove extra spaces
-                if (cleanGenre !== "" && cleanGenre !== "Unknown") {
-                    uniqueGenres.add(cleanGenre);
-                }
+                let cleanGenre = g.trim(); 
+                if (cleanGenre !== "" && cleanGenre !== "Unknown") uniqueGenres.add(cleanGenre);
             });
         }
     });
 
-    // 1. Draw the cards on the screen
-    renderGrid(globalAnimeData, "Recent Additions");
+    // 1. Populate the Genre Dropdown
+    const genreSelect = document.getElementById('filter-genre');
+    if(genreSelect) {
+        genreSelect.innerHTML = `<option value="All">All Genres</option>`;
+        Array.from(uniqueGenres).sort().forEach(g => {
+            genreSelect.innerHTML += `<option value="${g}">${g}</option>`;
+        });
+    }
 
-    // 2. Build the dropdown menu automatically
-    buildGenreMenu(Array.from(uniqueGenres).sort());
+    // 2. Build the A-Z Buttons
+    buildLetterFilter();
+
+    // 3. Draw the initial grid
+    renderGrid(globalAnimeData, "Recent Additions");
+}
+
+function buildLetterFilter() {
+    const letterBox = document.getElementById('letterBox');
+    if(!letterBox) return;
+
+    // "All" button and "#" (for numbers/symbols)
+    let html = `<button class="active" onclick="setLetter('All', this)">All</button>`;
+    html += `<button onclick="setLetter('#', this)">#</button>`;
+    
+    // Auto-generate A-Z buttons
+    for(let i = 65; i <= 90; i++) {
+        let letter = String.fromCharCode(i);
+        html += `<button onclick="setLetter('${letter}', this)">${letter}</button>`;
+    }
+    letterBox.innerHTML = html;
+}
+
+// Triggered when a letter button is clicked
+function setLetter(letter, btnElement) {
+    activeLetter = letter;
+    // Visually highlight the clicked button
+    document.querySelectorAll('.filter-letters button').forEach(btn => btn.classList.remove('active'));
+    btnElement.classList.add('active');
+    
+    // Run the main filter
+    applyFilters();
+}
+
+// THE MASTER FILTER: Checks Search + Genre + Letter all at once
+function applyFilters() {
+    const searchQuery = document.getElementById('userSearch') ? document.getElementById('userSearch').value.toLowerCase() : "";
+    const genreSelect = document.getElementById('filter-genre');
+    const activeGenre = genreSelect ? genreSelect.value : 'All';
+
+    const filtered = globalAnimeData.filter(anime => {
+        // 1. Check Search Bar
+        const matchesSearch = anime.title.toLowerCase().includes(searchQuery);
+
+        // 2. Check Genre Dropdown
+        const matchesGenre = (activeGenre === 'All') || (anime.genre && anime.genre.toLowerCase().includes(activeGenre.toLowerCase()));
+
+        // 3. Check A-Z Letter
+        let matchesLetter = true;
+        if (activeLetter !== 'All') {
+            let firstChar = anime.title.charAt(0).toUpperCase();
+            if (activeLetter === '#') {
+                // If they click '#', show anime that start with numbers (0-9)
+                matchesLetter = !/[A-Z]/.test(firstChar); 
+            } else {
+                matchesLetter = (firstChar === activeLetter);
+            }
+        }
+
+        return matchesSearch && matchesGenre && matchesLetter;
+    });
+
+    // Update the title based on what is filtered
+    let headerText = "Filtered Results";
+    if (searchQuery === "" && activeGenre === "All" && activeLetter === "All") headerText = "Recent Additions";
+    
+    renderGrid(filtered, headerText);
 }
 
 function renderGrid(animeArray, sectionTitle) {
@@ -203,7 +271,7 @@ function renderGrid(animeArray, sectionTitle) {
     grid.innerHTML = ""; 
 
     if (animeArray.length === 0) {
-        grid.innerHTML = "<p style='color: gray; padding-left: 20px;'>No anime found for this category.</p>";
+        grid.innerHTML = "<p style='color: gray; padding-left: 20px;'>No anime found matching those filters.</p>";
         return;
     }
 
@@ -222,38 +290,6 @@ function renderGrid(animeArray, sectionTitle) {
         });
         grid.appendChild(card);
     });
-}
-
-// Function to inject links into the dropdown menu
-function buildGenreMenu(genresArray) {
-    const dropdown = document.getElementById('genreDropdown');
-    if(!dropdown) return;
-
-    dropdown.innerHTML = `<a onclick="filterByGenre('All')">All Anime</a>`; // Default reset button
-    
-    genresArray.forEach(genre => {
-        dropdown.innerHTML += `<a onclick="filterByGenre('${genre}')">${genre}</a>`;
-    });
-}
-
-// Function that runs when you click a genre in the menu
-function filterByGenre(selectedGenre) {
-    if (selectedGenre === 'All') {
-        renderGrid(globalAnimeData, "All Anime");
-    } else {
-        // Find animes that include the selected genre
-        const filtered = globalAnimeData.filter(anime => {
-            return anime.genre && anime.genre.toLowerCase().includes(selectedGenre.toLowerCase());
-        });
-        renderGrid(filtered, `Genre: ${selectedGenre}`);
-    }
-}
-
-// Normal search bar filter
-function filterLibrary() {
-    const query = document.getElementById('userSearch').value.toLowerCase();
-    const filtered = globalAnimeData.filter(anime => anime.title.toLowerCase().includes(query));
-    renderGrid(filtered, query === "" ? "Recent Additions" : "Search Results");
 }
 
 // --- 4. DETAILS PAGE LOGIC ---
