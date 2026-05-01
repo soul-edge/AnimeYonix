@@ -280,17 +280,27 @@ async function loadMangaReader() {
     document.getElementById('playingTitle').innerText = decodeURIComponent(title);
     document.getElementById('playingEp').innerText = "Chapter " + ep;
 
+    // 1. Hide Video and prepare the Reader Area
     playerContainer.style.display = "none"; 
     let mangaView = document.getElementById('mangaView');
     if(!mangaView) {
         mangaView = document.createElement('div');
         mangaView.id = "mangaView";
-        mangaView.style.cssText = "width:100%; max-width:900px; margin:20px auto; display:flex; flex-direction:column; gap:0; background:#000;";
+        // CRITICAL: This CSS forces the "Proper Reader" look
+        mangaView.style.cssText = `
+            width: 100%; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            display: block; 
+            background: #000;
+            min-height: 100vh;
+        `;
         playerContainer.parentElement.appendChild(mangaView);
     }
-    mangaView.innerHTML = "<p style='color:white; text-align:center;'>Loading pages...</p>";
+    mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Assembling pages...</p>";
 
     try {
+        // 2. Fetch page data through your Vercel Proxy
         const res = await fetch(`/api/search?chapterId=${chapterId}`);
         const serverData = await res.json();
         
@@ -298,33 +308,34 @@ async function loadMangaReader() {
         const hash = serverData.chapter.hash;
         const pageFiles = serverData.chapter.data; 
 
-        mangaView.innerHTML = ""; 
-        pageFiles.forEach(file => {
+        mangaView.innerHTML = ""; // Clear "Assembling" text
+
+        // 3. Build the Long-strip
+        pageFiles.forEach((file, index) => {
             const img = document.createElement('img');
             const fullMangaDexUrl = `${host}/data/${hash}/${file}`;
-            img.src = `https://wsrv.nl/?url=${encodeURIComponent(fullMangaDexUrl)}`;
-            img.style.width = "100%";
-            img.style.display = "block";
+            
+            // We use wsrv.nl to bypass hotlinking protection
+            img.src = `https://wsrv.nl/?url=${encodeURIComponent(fullMangaDexUrl)}&default=${encodeURIComponent(fullMangaDexUrl)}`;
+            
+            img.style.cssText = "width:100%; display:block; margin:0; padding:0; border:none;";
+            img.alt = `Page ${index + 1}`;
             img.loading = "lazy"; 
+
+            // Error Fallback
+            img.onerror = () => {
+                console.warn(`Proxy failed for page ${index}, trying direct link...`);
+                img.src = fullMangaDexUrl; 
+            };
+
             mangaView.appendChild(img);
         });
-    } catch (err) { mangaView.innerHTML = "<p style='color:red; text-align:center;'>Access Error. Refreshing helps.</p>"; }
-}
 
-function loadVideo() {
-    const params = new URLSearchParams(window.location.search);
-    const videoUrl = params.get('url');
-    const title = params.get('title');
-    const ep = params.get('ep');
-    const player = document.getElementById('mainPlayer');
-    if(videoUrl && player) {
-        player.style.display = "block";
-        player.src = videoUrl;
-        document.getElementById('playingTitle').innerText = decodeURIComponent(title);
-        document.getElementById('playingEp').innerText = "Episode " + ep;
+    } catch (err) {
+        console.error("Reader Error:", err);
+        mangaView.innerHTML = "<p style='color:red; text-align:center; padding:20px;'>MangaDex rejected the connection. Try again in 10 seconds.</p>";
     }
 }
-
 // --- 6. WATCHLIST & PROFILE ---
 async function toggleWatchlist() {
     if(!currentUserUID) return alert("Log in first!");
