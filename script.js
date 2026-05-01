@@ -384,7 +384,7 @@ window.onload = function() {
     if (document.getElementById('mainPlayer')) loadVideo();
 };
 
-// --- 7. API SEARCH LOGIC (Official MangaDex API) ---
+// --- 7. API SEARCH LOGIC (Bulletproof MangaDex API) ---
 async function searchAnimeAPI() { 
     const query = document.getElementById('userSearch').value;
     
@@ -400,8 +400,6 @@ async function searchAnimeAPI() {
     grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Fetching manga directly from source...</p>";
 
     try {
-        // 1. Bypass Consumet completely. Ask MangaDex directly!
-        // We use &includes[]=cover_art so they send the poster data alongside the title.
         const url = `https://api.mangadex.org/manga?title=${encodeURIComponent(query)}&includes[]=cover_art&limit=12`;
         const response = await fetch(url);
         
@@ -409,29 +407,36 @@ async function searchAnimeAPI() {
         
         const jsonResponse = await response.json();
 
-        // 2. Format the data. MangaDex nests their data a bit deeper than others.
+        // The Super-Safe Translator Loop
         const formattedResults = jsonResponse.data.map(manga => {
             
-            // Get the title (Try English first, fallback to whatever language is default)
-            const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0] || "Unknown Title";
+            // 1. Safely grab the title
+            const titleObj = manga.attributes.title;
+            const title = titleObj ? (titleObj.en || Object.values(titleObj)[0]) : "Unknown Title";
 
-            // Find the cover art file name hidden inside the "relationships" array
+            // 2. Safely hunt for the cover art (The ?. stops it from crashing if data is missing!)
             const coverRel = manga.relationships.find(rel => rel.type === 'cover_art');
-            const coverFileName = coverRel ? coverRel.attributes.fileName : null;
+            const coverFileName = coverRel?.attributes?.fileName;
 
-            // Build the official MangaDex image URL (they use a separate upload server for images)
+            // 3. Build the image link or use the default placeholder
             const mainThumbnail = coverFileName 
                 ? `https://uploads.mangadex.org/covers/${manga.id}/${coverFileName}.256.jpg` 
-                : 'https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600&auto=format&fit=crop'; // Your default fallback image
+                : 'https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600&auto=format&fit=crop'; 
 
             return { title, mainThumbnail };
         });
 
-        // 3. Send the formatted results to your custom grid!
+        // Send the formatted results to your custom grid!
         renderGrid(formattedResults, `Manga Results for "${query}"`, "episodeGrid");
 
     } catch (error) {
         console.error("Direct MangaDex fetch failed:", error);
-        grid.innerHTML = "<p style='color: #ff4757; padding-left: 20px;'>Search failed. Please try again.</p>";
+        // This will now print the exact bug to the screen if it ever crashes again!
+        grid.innerHTML = `
+            <div style='padding-left: 20px;'>
+                <p style='color: #ff4757; font-weight: bold;'>Search failed.</p>
+                <p style='color: gray; font-size: 0.9rem;'>Error Details: ${error.message}</p>
+            </div>
+        `;
     }
 }
