@@ -384,7 +384,7 @@ window.onload = function() {
     if (document.getElementById('mainPlayer')) loadVideo();
 };
 
-// --- 7. API SEARCH LOGIC (Using Custom Vercel Backend) ---
+//// --- 7. API SEARCH LOGIC (Hybrid Pivot: Jikan for Metadata) ---
 async function searchAnimeAPI() { 
     const query = document.getElementById('userSearch').value;
     
@@ -396,38 +396,29 @@ async function searchAnimeAPI() {
     const grid = document.getElementById('episodeGrid');
     const header = document.querySelector('section h2');
     
-    if (header) header.innerText = "Searching MangaDex...";
-    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Asking our private Vercel server...</p>";
+    if (header) header.innerText = "Searching Database...";
+    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Fetching high-quality posters...</p>";
 
     try {
-        // 1. Talk to YOUR backend, not the internet directly!
-        const url = `/api/search?q=${encodeURIComponent(query)}`;
+        // We ask Jikan (MyAnimeList) for the MANGA data! No proxies needed.
+        const url = `https://api.jikan.moe/v4/manga?q=${encodeURIComponent(query)}&limit=12`;
         const response = await fetch(url);
         
-        if (!response.ok) throw new Error("Private Backend Request Failed"); 
+        if (!response.ok) throw new Error("Jikan Request Failed"); 
         
         const jsonResponse = await response.json();
 
-        // 2. Safely translate the data for the grid
-        const formattedResults = jsonResponse.data.map(manga => {
-            const titleObj = manga.attributes.title;
-            const title = titleObj ? (titleObj.en || Object.values(titleObj)[0]) : "Unknown Title";
+        // Jikan's formatting is super clean and the images NEVER block
+        const formattedResults = jsonResponse.data.map(manga => ({
+            title: manga.title, // We will use this exact title later to ask MangaDex for chapters
+            mainThumbnail: manga.images.jpg.large_image_url 
+        }));
 
-            const coverRel = manga.relationships.find(rel => rel.type === 'cover_art');
-            const coverFileName = coverRel?.attributes?.fileName;
-
-        // THIS IS THE UPDATED LINE: We are adding https:// and encoding the URL so the proxy can read it perfectly
-            const mainThumbnail = coverFileName 
-                ? `https://wsrv.nl/?url=${encodeURIComponent(`https://uploads.mangadex.org/covers/${manga.id}/${coverFileName}.256.jpg`)}` 
-                : 'https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600&auto=format&fit=crop';
-            return { title, mainThumbnail };
-        });
-
-        // 3. Render it!
+        // Render the beautiful, unblocked posters to the screen!
         renderGrid(formattedResults, `Manga Results for "${query}"`, "episodeGrid");
 
     } catch (error) {
-        console.error("Backend fetch failed:", error);
+        console.error("Hybrid fetch failed:", error);
         grid.innerHTML = `
             <div style='padding-left: 20px;'>
                 <p style='color: #ff4757; font-weight: bold;'>Search failed.</p>
