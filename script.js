@@ -117,17 +117,28 @@ async function loadDetails() {
     if(!title || title === "null") return;
 
     const epList = document.getElementById('ep-list');
-    if (epList) epList.innerHTML = "<p style='color: gray;'>Optimizing chapter list...</p>";
+    if (epList) epList.innerHTML = "<p style='color: gray;'>Fetching full history...</p>";
 
     try {
-        // 1. Search for the Manga ID
+        // 1. Get Metadata (Jikan)
+        const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
+        const mal = await res.json();
+        if (mal.data && mal.data[0]) {
+            const manga = mal.data[0];
+            document.getElementById('det-title').innerText = manga.title;
+            document.getElementById('det-syn').innerText = manga.synopsis || "No description.";
+            document.getElementById('det-thumb').src = manga.images.jpg.large_image_url;
+            document.getElementById('det-genre').innerText = "GENRE: " + manga.genres.map(g => g.name).join(', ');
+        }
+
+        // 2. Search for MangaDex ID
         const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
         const searchData = await searchRes.json();
         if (!searchData.data || searchData.data.length === 0) return;
         const mangaId = searchData.data[0].id;
 
-        // 2. Fetch Chapters with explicit Ascending Order and higher limit
-        // We add 'contentRating' to ensure Berserk's mature chapters aren't hidden
+        // 3. Fetch Chapters with "Mature" support and High Limit
+        // This ensures Berserk's chapters aren't hidden by the API
         const feedUrl = `/api/search?mangaId=${mangaId}&limit=500&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`;
         const feedRes = await fetch(feedUrl);
         const feedData = await feedRes.json();
@@ -135,15 +146,14 @@ async function loadDetails() {
         if (epList && feedData.data) {
             epList.innerHTML = ""; 
             
-            // 3. SMART FILTER: Only show one version of each chapter number
-            // This prevents duplicates from scan groups from pushing out real chapters
+            // SMART FILTER: Only show ONE button per chapter number
+            // This stops duplicate uploads from pushing out real chapters
             const seenChapters = new Set();
             
             feedData.data.forEach(chapter => {
                 const attrs = chapter.attributes;
                 const chapNum = attrs.chapter;
 
-                // Only process if it's English and we haven't added this chapter number yet
                 if (attrs.translatedLanguage === 'en' && chapNum && !seenChapters.has(chapNum)) {
                     seenChapters.add(chapNum);
 
@@ -163,7 +173,7 @@ async function loadDetails() {
             });
         }
     } catch (err) {
-        console.error("Fetch failed", err);
+        console.error("Reader Error:", err);
         if (epList) epList.innerHTML = "<p style='color: red;'>Failed to load. Please refresh.</p>";
     }
 }
