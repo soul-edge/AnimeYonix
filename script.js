@@ -416,10 +416,10 @@ async function searchAnimeAPI() {
             const coverRel = manga.relationships.find(rel => rel.type === 'cover_art');
             const coverFileName = coverRel?.attributes?.fileName;
 
-          const mainThumbnail = coverFileName 
-                ? `https://wsrv.nl/?url=uploads.mangadex.org/covers/${manga.id}/${coverFileName}.256.jpg` 
+        // THIS IS THE UPDATED LINE: We are adding https:// and encoding the URL so the proxy can read it perfectly
+            const mainThumbnail = coverFileName 
+                ? `https://wsrv.nl/?url=${encodeURIComponent(`https://uploads.mangadex.org/covers/${manga.id}/${coverFileName}.256.jpg`)}` 
                 : 'https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600&auto=format&fit=crop';
-
             return { title, mainThumbnail };
         });
 
