@@ -277,30 +277,23 @@ async function loadMangaReader() {
     
     if (!chapterId || !playerContainer) return;
 
+    // 1. Update UI Headers
     document.getElementById('playingTitle').innerText = decodeURIComponent(title);
     document.getElementById('playingEp').innerText = "Chapter " + ep;
 
-    // 1. Hide Video and prepare the Reader Area
+    // 2. Setup Container
     playerContainer.style.display = "none"; 
     let mangaView = document.getElementById('mangaView');
     if(!mangaView) {
         mangaView = document.createElement('div');
         mangaView.id = "mangaView";
-        // CRITICAL: This CSS forces the "Proper Reader" look
-        mangaView.style.cssText = `
-            width: 100%; 
-            max-width: 800px; 
-            margin: 0 auto; 
-            display: block; 
-            background: #000;
-            min-height: 100vh;
-        `;
+        mangaView.style.cssText = "width:100%; max-width:900px; margin:0 auto; display:block; background:#000; min-height:100vh; color: white;";
         playerContainer.parentElement.appendChild(mangaView);
     }
-    mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Assembling pages...</p>";
+    mangaView.innerHTML = "<p style='text-align:center; padding:50px;'>Loading high-quality pages...</p>";
+    window.scrollTo(0, 0); // Always start at the top of the chapter
 
     try {
-        // 2. Fetch page data through your Vercel Proxy
         const res = await fetch(`/api/search?chapterId=${chapterId}`);
         const serverData = await res.json();
         
@@ -308,32 +301,35 @@ async function loadMangaReader() {
         const hash = serverData.chapter.hash;
         const pageFiles = serverData.chapter.data; 
 
-        mangaView.innerHTML = ""; // Clear "Assembling" text
+        mangaView.innerHTML = ""; // Clear loader
 
-        // 3. Build the Long-strip
+        // 3. Render Pages
         pageFiles.forEach((file, index) => {
             const img = document.createElement('img');
-            const fullMangaDexUrl = `${host}/data/${hash}/${file}`;
+            const fullUrl = `${host}/data/${hash}/${file}`;
             
-            // We use wsrv.nl to bypass hotlinking protection
-            img.src = `https://wsrv.nl/?url=${encodeURIComponent(fullMangaDexUrl)}&default=${encodeURIComponent(fullMangaDexUrl)}`;
+            // Proxy via wsrv.nl for stability
+            img.src = `https://wsrv.nl/?url=${encodeURIComponent(fullUrl)}&default=${encodeURIComponent(fullUrl)}`;
             
-            img.style.cssText = "width:100%; display:block; margin:0; padding:0; border:none;";
-            img.alt = `Page ${index + 1}`;
-            img.loading = "lazy"; 
-
-            // Error Fallback
-            img.onerror = () => {
-                console.warn(`Proxy failed for page ${index}, trying direct link...`);
-                img.src = fullMangaDexUrl; 
-            };
+            img.style.cssText = "width:100%; display:block; margin:0; border:none;";
+            img.loading = "lazy";
+            
+            // If one specific image fails, try it without the proxy as a backup
+            img.onerror = () => { img.src = fullUrl; };
 
             mangaView.appendChild(img);
         });
 
+        // 4. Add "End of Chapter" Button
+        const endBtn = document.createElement('button');
+        endBtn.innerText = "Back to Details";
+        endBtn.style.cssText = "display:block; margin:40px auto; padding:15px 30px; background:#ff4757; color:white; border:none; cursor:pointer; border-radius:5px; font-weight:bold;";
+        endBtn.onclick = () => window.location.href = `details.html?title=${encodeURIComponent(title)}`;
+        mangaView.appendChild(endBtn);
+
     } catch (err) {
-        console.error("Reader Error:", err);
-        mangaView.innerHTML = "<p style='color:red; text-align:center; padding:20px;'>MangaDex rejected the connection. Try again in 10 seconds.</p>";
+        console.error("Reader failed", err);
+        mangaView.innerHTML = "<p style='color:red; text-align:center; padding:50px;'>Connection timed out. Please refresh.</p>";
     }
 }
 // --- 6. WATCHLIST & PROFILE ---
