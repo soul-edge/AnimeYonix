@@ -17,14 +17,6 @@ const db = firebase.firestore();
 let currentUserUID = null; 
 
 // --- 1.5 AUTH LOGIC ---
-function login() {
-    const email = document.getElementById('adminEmail').value;
-    const pass = document.getElementById('adminPass').value;
-    firebase.auth().signInWithEmailAndPassword(email, pass)
-        .then(() => { console.log("Logged in successfully"); })
-        .catch(error => { alert("Login Failed: " + error.message); });
-}
-
 function logout() {
     firebase.auth().signOut().then(() => { window.location.href = 'index.html'; });
 }
@@ -77,7 +69,7 @@ async function applyFilters(selectedLetter = 'All') {
     const header = document.querySelector('section h2');
     
     if (header) header.innerText = "Filtering Manga...";
-    if (grid) grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Fetching results...</p>";
+    if (grid) grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Searching...</p>";
 
     try {
         let url = `https://api.jikan.moe/v4/manga?limit=12&order_by=popularity`;
@@ -86,14 +78,12 @@ async function applyFilters(selectedLetter = 'All') {
 
         const response = await fetch(url);
         const jsonResponse = await response.json();
-
         const formattedResults = jsonResponse.data.map(manga => ({
             title: manga.title, 
             mainThumbnail: manga.images.jpg.large_image_url 
         }));
-
         renderGrid(formattedResults, `Results`, "episodeGrid");
-    } catch (error) { console.error("Filter fetch failed:", error); }
+    } catch (error) { console.error("Filter error:", error); }
 }
 
 function renderGrid(mangaArray, sectionTitle, targetID) {
@@ -120,7 +110,7 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
     });
 }
 
-// --- 3. DETAILS & CHAPTERS ---
+// --- 3. DETAILS & CHAPTERS (FIXED FOR MISSING CHAPTERS) ---
 async function loadDetails() {
     const params = new URLSearchParams(window.location.search);
     const title = decodeURIComponent(params.get('title'));
@@ -129,35 +119,46 @@ async function loadDetails() {
     const epList = document.getElementById('ep-list');
     if (epList) epList.innerHTML = "<p style='color: gray;'>Loading chapters...</p>";
 
+    // Jikan Metadata
     try {
         const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
         const mal = await res.json();
         if (mal.data && mal.data[0]) {
             const manga = mal.data[0];
             document.getElementById('det-title').innerText = manga.title;
-            document.getElementById('det-syn').innerText = manga.synopsis || "No description available.";
+            document.getElementById('det-syn').innerText = manga.synopsis || "No description.";
             document.getElementById('det-thumb').src = manga.images.jpg.large_image_url;
             document.getElementById('det-genre').innerText = "GENRE: " + manga.genres.map(g => g.name).join(', ');
         }
     } catch (e) { console.error("Metadata load failed", e); }
 
+    // MangaDex Chapters
     try {
         const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
         const searchData = await searchRes.json();
 
         if (searchData.data && searchData.data.length > 0) {
             const mangaId = searchData.data[0].id;
-            const feedRes = await fetch(`/api/search?mangaId=${mangaId}`);
+
+            // FIX: includeExternalUrl=1 ensures we see chapters hosted on MangaPlus/etc.
+            const feedRes = await fetch(`/api/search?mangaId=${mangaId}&translatedLanguage[]=en&includeExternalUrl=1&limit=100`);
             const feedData = await feedRes.json();
 
             if (epList && feedData.data) {
                 epList.innerHTML = ""; 
                 feedData.data.forEach(chapter => {
+                    const attrs = chapter.attributes;
+                    const externalUrl = attrs.externalUrl;
                     const btn = document.createElement('div');
                     btn.className = 'ep-btn';
-                    btn.innerText = `Ch. ${chapter.attributes.chapter || '?'}`;
+                    btn.innerText = `Ch. ${attrs.chapter || '?'}`;
+                    
                     btn.onclick = () => {
-                        window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${chapter.attributes.chapter}`;
+                        if (externalUrl) {
+                            window.open(externalUrl, '_blank');
+                        } else {
+                            window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${attrs.chapter}`;
+                        }
                     };
                     epList.appendChild(btn);
                 });
@@ -178,8 +179,6 @@ async function loadMangaReader() {
     const mainPlayer = document.getElementById('mainPlayer');
     
     if (!chapterId) return;
-
-    // Remove video iframe and wrapper box constraints for manga
     if (mainPlayer) mainPlayer.remove();
     if (wrapper) {
         wrapper.style.paddingBottom = "0";
@@ -229,7 +228,7 @@ async function loadMangaReader() {
         mangaView.appendChild(endBtn);
 
     } catch (err) {
-        mangaView.innerHTML = "<p style='color:red; text-align:center; padding:50px;'>Reader failed. Please refresh.</p>";
+        mangaView.innerHTML = "<p style='color:red; text-align:center; padding:50px;'>Reader error. Please refresh.</p>";
     }
 }
 
@@ -245,7 +244,7 @@ async function loadTopManga() {
             mainThumbnail: manga.images.jpg.large_image_url 
         }));
         renderGrid(formattedResults, "Top Trending Manga", "episodeGrid");
-    } catch (error) { console.error("Startup fetch failed:", error); }
+    } catch (error) { console.error("Startup fetch error:", error); }
 }
 
 async function searchAnimeAPI() { 
