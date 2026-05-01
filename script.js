@@ -110,14 +110,14 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
     });
 }
 
-// --- 3. DETAILS & CHAPTERS (FIXED FOR MISSING CHAPTERS) ---
+// --- 3. DETAILS & CHAPTERS (ULTRA FETCH) ---
 async function loadDetails() {
     const params = new URLSearchParams(window.location.search);
     const title = decodeURIComponent(params.get('title'));
     if(!title || title === "null") return;
 
     const epList = document.getElementById('ep-list');
-    if (epList) epList.innerHTML = "<p style='color: gray;'>Loading chapters...</p>";
+    if (epList) epList.innerHTML = "<p style='color: gray;'>Loading all chapters...</p>";
 
     // Jikan Metadata
     try {
@@ -140,8 +140,9 @@ async function loadDetails() {
         if (searchData.data && searchData.data.length > 0) {
             const mangaId = searchData.data[0].id;
 
-            // FIX: includeExternalUrl=1 ensures we see chapters hosted on MangaPlus/etc.
-            const feedRes = await fetch(`/api/search?mangaId=${mangaId}&translatedLanguage[]=en&includeExternalUrl=1&limit=100`);
+            // Sort by chapter number ascending and bump limit to 500
+            const feedUrl = `/api/search?mangaId=${mangaId}&translatedLanguage[]=en&includeExternalUrl=1&limit=500&order[chapter]=asc`;
+            const feedRes = await fetch(feedUrl);
             const feedData = await feedRes.json();
 
             if (epList && feedData.data) {
