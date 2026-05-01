@@ -427,3 +427,34 @@ async function searchAnimeAPI() {
         `;
     }
 }
+// --- AUTO-LOAD TOP MANGA ON STARTUP ---
+document.addEventListener('DOMContentLoaded', () => {
+    // This runs automatically as soon as the site opens
+    loadTopManga();
+});
+
+async function loadTopManga() {
+    const grid = document.getElementById('episodeGrid');
+    const header = document.querySelector('section h2');
+    
+    if (header) header.innerText = "Top Trending Manga";
+    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Loading trending manga...</p>";
+
+    try {
+        // Fetch the top manga from MyAnimeList
+        const response = await fetch('https://api.jikan.moe/v4/top/manga?limit=12');
+        if (!response.ok) throw new Error("Failed to load top manga");
+        
+        const jsonResponse = await response.json();
+        
+        const formattedResults = jsonResponse.data.map(manga => ({
+            title: manga.title, 
+            mainThumbnail: manga.images.jpg.large_image_url 
+        }));
+
+        renderGrid(formattedResults, "Top Trending Manga", "episodeGrid");
+    } catch (error) {
+        console.error("Startup fetch failed:", error);
+        grid.innerHTML = "<p style='color: #ff4757; padding-left: 20px;'>Couldn't load trending manga.</p>";
+    }
+}
