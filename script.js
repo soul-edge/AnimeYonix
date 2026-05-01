@@ -107,8 +107,8 @@ async function saveEpisode() {
             if (thumb) updateData.mainThumbnail = thumb;
 
             if (epNum && finalUrl) {
-                // This removes the old episode link so the new one can take its place
-data.episodes = data.episodes.filter(e => e.number != epNum);
+                // --> FIX APPLIED: This removes the old episode link so the new one can take its place
+                data.episodes = data.episodes.filter(e => e.number != epNum);
                 data.episodes.push({ number: epNum, link: finalUrl });
                 updateData.episodes = data.episodes;
             }
@@ -210,7 +210,6 @@ function applyFilters() {
         const matchesSearch = anime.title.toLowerCase().includes(searchQuery);
         const matchesGenre = (activeGenre === 'All') || (anime.genre && anime.genre.toLowerCase().includes(activeGenre.toLowerCase()));
         
-        // Fixed: Allow showing anime even if Type/Status isn't set yet
         const matchesType = (activeType === 'All') || (anime.type === activeType) || (!anime.type);
         const matchesStatus = (activeStatus === 'All') || (anime.status === activeStatus) || (!anime.status);
         
@@ -384,3 +383,17 @@ window.onload = function() {
     if (document.getElementById('det-title')) loadDetails();
     if (document.getElementById('mainPlayer')) loadVideo();
 };
+
+// --- 7. API EXPERIMENTATION (Consumet) ---
+// Note: Open your browser Developer Console (F12) and type searchAnimeAPI("naruto") to test this!
+async function searchAnimeAPI(searchTitle) {
+    const url = `https://api.consumet.org/anime/animepahe/${searchTitle}`;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        console.log(`Here are the search results for ${searchTitle}:`, data);
+    } catch (error) {
+        console.error("Oops, the API request failed:", error);
+    }
+}
