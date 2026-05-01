@@ -226,68 +226,49 @@ async function loadDetails() {
     if(!title || title === "null") return;
 
     const epList = document.getElementById('ep-list');
-    if (epList) epList.innerHTML = "<p style='color: gray;'>Searching MangaDex for chapters...</p>";
+    if (epList) epList.innerHTML = "<p style='color: gray;'>Loading chapters via secure server...</p>";
 
-    // 1. Get high-quality metadata from Jikan (MAL)
+    // 1. Get high-quality metadata from Jikan (This usually works fine directly)
     try {
         const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
         const mal = await res.json();
-        
         if (mal.data && mal.data[0]) {
             const manga = mal.data[0];
             document.getElementById('det-title').innerText = manga.title;
             document.getElementById('det-syn').innerText = manga.synopsis || "No description available.";
             document.getElementById('det-thumb').src = manga.images.jpg.large_image_url;
-            
-            const ratingElement = document.getElementById('det-rating');
-            if (ratingElement) ratingElement.innerHTML = `⭐️ ${manga.score || 'N/A'} / 10`;
-            
-            const genres = manga.genres.map(g => g.name).join(', ');
-            document.getElementById('det-genre').innerText = "GENRE: " + (genres || "N/A");
+            document.getElementById('det-genre').innerText = "GENRE: " + manga.genres.map(g => g.name).join(', ');
         }
-    } catch (e) { console.error("Jikan detail load failed", e); }
+    } catch (e) { console.error("Metadata load failed", e); }
 
-    // 2. Fetch actual Chapters from MangaDex
+    // 2. Fetch Chapters using your Vercel Backend Proxy
     try {
-        // We use "title" from the URL for a broad search
-        const searchRes = await fetch(`https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=5&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`);
+        // Find the Manga ID first
+        const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
         const searchData = await searchRes.json();
 
         if (searchData.data && searchData.data.length > 0) {
-            // We take the first result that MangaDex thinks matches best
             const mangaId = searchData.data[0].id;
-            
-            // Get chapters: English only, sorted by chapter ascending
-            const feedRes = await fetch(`https://api.mangadex.org/manga/${mangaId}/feed?translatedLanguage[]=en&order[chapter]=asc&limit=100&includeExternalUrl=0`);
+
+            // Use the same proxy to get the chapters
+            const feedRes = await fetch(`/api/search?mangaId=${mangaId}`);
             const feedData = await feedRes.json();
 
-            if (epList) {
-                if (!feedData.data || feedData.data.length === 0) {
-                    epList.innerHTML = "<p style='color: gray;'>Found the manga, but no English chapters are available on MangaDex.</p>";
-                    return;
-                }
-
+            if (epList && feedData.data) {
                 epList.innerHTML = ""; 
                 feedData.data.forEach(chapter => {
-                    const attrs = chapter.attributes;
-                    const chapNum = attrs.chapter || "???";
-                    const chapTitle = attrs.title ? `: ${attrs.title}` : "";
-
                     const btn = document.createElement('div');
                     btn.className = 'ep-btn';
-                    btn.innerText = `Chapter ${chapNum}${chapTitle}`;
-                    
-                    // Link to the MangaDex reader
+                    btn.innerText = `Chapter ${chapter.attributes.chapter || '?'}: ${chapter.attributes.title || 'No Title'}`;
                     btn.onclick = () => window.open(`https://mangadex.org/chapter/${chapter.id}`, '_blank');
                     epList.appendChild(btn);
                 });
             }
         } else {
-            if (epList) epList.innerHTML = "<p style='color: gray;'>MangaDex couldn't find a match for this title.</p>";
+            epList.innerHTML = "<p style='color: gray;'>No chapters found.</p>";
         }
     } catch (err) {
-        console.error("MangaDex fetch failed", err);
-        if (epList) epList.innerHTML = `<p style='color: #ff4757;'>Error connecting to MangaDex. Please refresh.</p>`;
+        epList.innerHTML = "<p style='color: #ff4757;'>Server connection failed. Try again in a moment.</p>";
     }
 }
 // --- 5. WATCHLIST & PROFILE ---
