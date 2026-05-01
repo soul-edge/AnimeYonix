@@ -384,39 +384,59 @@ window.onload = function() {
     if (document.getElementById('mainPlayer')) loadVideo();
 };
 
-// --- 7. API SEARCH LOGIC ---
+// --- 7. API SEARCH LOGIC (With Fallback Backup) ---
 async function searchAnimeAPI() {
     const query = document.getElementById('userSearch').value;
     
     // If the user clears the search bar, go back to the normal Firebase view
-    if (query.trim() === "") {
+    if (query.trim() === "") { 
         applyFilters(); 
-        return;
+        return; 
     }
 
     const grid = document.getElementById('episodeGrid');
     const header = document.querySelector('section h2');
-    
-    // Show a loading state so the user knows it's working
     if (header) header.innerText = "Searching the Web...";
-    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Fetching data from API...</p>";
+    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Searching Servers...</p>";
 
+    // --- ATTEMPT 1: AnimePahe ---
     try {
-        const url = `https://api.consumet.org/anime/animepahe/${encodeURIComponent(query)}`;
-        const response = await fetch(url);
-        const data = await response.json();
+        console.log("Trying AnimePahe...");
+        const url1 = `https://api.consumet.org/anime/animepahe/${encodeURIComponent(query)}`;
+        const response1 = await fetch(url1);
+        
+        if (!response1.ok) throw new Error("AnimePahe failed"); 
+        
+        const data1 = await response1.json();
+        renderResults(data1.results, query);
 
-        // Convert the API data to match your Firebase format
-        const formattedResults = data.results.map(apiAnime => ({
-            title: apiAnime.title,
-            mainThumbnail: apiAnime.image // Consumet calls it 'image', your grid calls it 'mainThumbnail'
-        }));
+    } catch (error1) {
+        
+        // --- ATTEMPT 2: The Backup (HiAnime) ---
+        console.log("AnimePahe failed! Switching to backup (HiAnime)...");
+        try {
+            const url2 = `https://api.consumet.org/anime/hianime/${encodeURIComponent(query)}`;
+            const response2 = await fetch(url2);
+            
+            if (!response2.ok) throw new Error("HiAnime failed too");
+            
+            const data2 = await response2.json();
+            renderResults(data2.results, query);
 
-        // Send the internet results into your custom grid!
-        renderGrid(formattedResults, `API Results for "${query}"`, "episodeGrid");
-
-    } catch (error) {
-        console.error("Oops, the API request failed:", error);
-        grid.innerHTML = "<p style='color: #ff4757; padding-left: 20px;'>Search failed. The API might be down.</p>";
+        } catch (error2) {
+            
+            // --- TOTAL FAILURE ---
+            console.error("Both APIs are down.");
+            grid.innerHTML = "<p style='color: #ff4757; padding-left: 20px;'>Search failed. The public servers are currently down.</p>";
+        }
     }
+}
+
+// This helper function makes the code above much cleaner!
+function renderResults(apiResults, query) {
+    const formattedResults = apiResults.map(apiAnime => ({
+        title: apiAnime.title,
+        mainThumbnail: apiAnime.image 
+    }));
+    renderGrid(formattedResults, `API Results for "${query}"`, "episodeGrid");
 }
