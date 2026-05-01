@@ -384,7 +384,7 @@ window.onload = function() {
     if (document.getElementById('mainPlayer')) loadVideo();
 };
 
-// --- 7. API SEARCH LOGIC (Bulletproof MangaDex API) ---
+// --- 7. API SEARCH LOGIC (CORS Proxy Version) ---
 async function searchAnimeAPI() { 
     const query = document.getElementById('userSearch').value;
     
@@ -396,29 +396,30 @@ async function searchAnimeAPI() {
     const grid = document.getElementById('episodeGrid');
     const header = document.querySelector('section h2');
     
-    if (header) header.innerText = "Searching Official MangaDex...";
-    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Fetching manga directly from source...</p>";
+    if (header) header.innerText = "Searching MangaDex...";
+    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Bypassing browser security blocks...</p>";
 
     try {
-        const url = `https://api.mangadex.org/manga?title=${encodeURIComponent(query)}&includes[]=cover_art&limit=12`;
+        // 1. The target MangaDex link
+        const targetUrl = `https://api.mangadex.org/manga?title=${encodeURIComponent(query)}&includes[]=cover_art&limit=12`;
+        
+        // 2. The Magic Trick: Wrap it in the CORS proxy!
+        const url = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+        
         const response = await fetch(url);
         
-        if (!response.ok) throw new Error("MangaDex API Request Failed"); 
+        if (!response.ok) throw new Error("Proxy Request Failed"); 
         
         const jsonResponse = await response.json();
 
-        // The Super-Safe Translator Loop
+        // 3. The Super-Safe Translator Loop
         const formattedResults = jsonResponse.data.map(manga => {
-            
-            // 1. Safely grab the title
             const titleObj = manga.attributes.title;
             const title = titleObj ? (titleObj.en || Object.values(titleObj)[0]) : "Unknown Title";
 
-            // 2. Safely hunt for the cover art (The ?. stops it from crashing if data is missing!)
             const coverRel = manga.relationships.find(rel => rel.type === 'cover_art');
             const coverFileName = coverRel?.attributes?.fileName;
 
-            // 3. Build the image link or use the default placeholder
             const mainThumbnail = coverFileName 
                 ? `https://uploads.mangadex.org/covers/${manga.id}/${coverFileName}.256.jpg` 
                 : 'https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600&auto=format&fit=crop'; 
@@ -426,12 +427,11 @@ async function searchAnimeAPI() {
             return { title, mainThumbnail };
         });
 
-        // Send the formatted results to your custom grid!
+        // Send the formatted results to your custom grid
         renderGrid(formattedResults, `Manga Results for "${query}"`, "episodeGrid");
 
     } catch (error) {
-        console.error("Direct MangaDex fetch failed:", error);
-        // This will now print the exact bug to the screen if it ever crashes again!
+        console.error("Proxy fetch failed:", error);
         grid.innerHTML = `
             <div style='padding-left: 20px;'>
                 <p style='color: #ff4757; font-weight: bold;'>Search failed.</p>
