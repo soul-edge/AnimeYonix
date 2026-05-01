@@ -384,8 +384,8 @@ window.onload = function() {
     if (document.getElementById('mainPlayer')) loadVideo();
 };
 
-// --- 7. API SEARCH LOGIC (Using Vercel Backend Proxy) ---
-async function searchAnimeAPI() {
+// --- 7. API SEARCH LOGIC (MangaDex) ---
+async function searchAnimeAPI() { 
     const query = document.getElementById('userSearch').value;
     
     // If the user clears the search bar, go back to the normal Firebase view
@@ -396,29 +396,32 @@ async function searchAnimeAPI() {
 
     const grid = document.getElementById('episodeGrid');
     const header = document.querySelector('section h2');
-    if (header) header.innerText = "Searching the Web...";
-    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Asking our backend server...</p>";
+    
+    if (header) header.innerText = "Searching MangaDex...";
+    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Fetching manga...</p>";
 
     try {
-        // Look here! We are no longer calling api.consumet.org.
-        // We are calling our OWN backend file located at /api/search
-        const url = `/api/search?q=${encodeURIComponent(query)}`;
+        // Using your brand new MangaDex endpoint!
+        const url = `https://api.consumet.org/manga/mangadex/${encodeURIComponent(query)}`;
         const response = await fetch(url);
         
-        if (!response.ok) throw new Error("Backend failed"); 
+        if (!response.ok) throw new Error("API Request Failed"); 
         
         const data = await response.json();
-        
-        // Convert the data and render it
-        const formattedResults = data.results.map(apiAnime => ({
-            title: apiAnime.title,
-            mainThumbnail: apiAnime.image 
+
+        // Convert the Manga data to match your grid's format
+        const formattedResults = data.results.map(apiManga => ({
+            // MangaDex sometimes returns titles in an object (e.g., title.en). 
+            // We'll grab the English title, or fallback to the default title.
+            title: apiManga.title, 
+            mainThumbnail: apiManga.image 
         }));
-        
-        renderGrid(formattedResults, `Proxy Results for "${query}"`, "episodeGrid");
+
+        // Send the internet results into your custom grid!
+        renderGrid(formattedResults, `Manga Results for "${query}"`, "episodeGrid");
 
     } catch (error) {
-        console.error("Proxy failure:", error);
-        grid.innerHTML = "<p style='color: #ff4757; padding-left: 20px;'>Search failed. The proxy server might be down.</p>";
+        console.error("Oops, the API request failed:", error);
+        grid.innerHTML = "<p style='color: #ff4757; padding-left: 20px;'>Search failed. Please try again.</p>";
     }
 }
