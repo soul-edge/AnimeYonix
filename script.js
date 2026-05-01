@@ -117,9 +117,9 @@ async function loadDetails() {
     if(!title || title === "null") return;
 
     const epList = document.getElementById('ep-list');
-    if (epList) epList.innerHTML = "<p style='color: gray;'>Loading all chapters...</p>";
+    if (epList) epList.innerHTML = "<p style='color: gray;'>Loading full chapter history...</p>";
 
-    // Jikan Metadata
+    // 1. Fetch Metadata (Jikan)
     try {
         const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
         const mal = await res.json();
@@ -130,9 +130,9 @@ async function loadDetails() {
             document.getElementById('det-thumb').src = manga.images.jpg.large_image_url;
             document.getElementById('det-genre').innerText = "GENRE: " + manga.genres.map(g => g.name).join(', ');
         }
-    } catch (e) { console.error("Metadata load failed", e); }
+    } catch (e) { console.error("Metadata failed", e); }
 
-    // MangaDex Chapters
+    // 2. Fetch Chapters (MangaDex via Proxy)
     try {
         const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
         const searchData = await searchRes.json();
@@ -140,23 +140,26 @@ async function loadDetails() {
         if (searchData.data && searchData.data.length > 0) {
             const mangaId = searchData.data[0].id;
 
-            // Sort by chapter number ascending and bump limit to 500
-            const feedUrl = `/api/search?mangaId=${mangaId}&translatedLanguage[]=en&includeExternalUrl=1&limit=500&order[chapter]=asc`;
+            // CRITICAL: We force the order to 'asc' to get Ch. 1, 2, 3... and limit to 500 to fill the gap
+            const feedUrl = `/api/search?mangaId=${mangaId}&limit=500&order[chapter]=asc`;
             const feedRes = await fetch(feedUrl);
             const feedData = await feedRes.json();
 
             if (epList && feedData.data) {
                 epList.innerHTML = ""; 
-                feedData.data.forEach(chapter => {
+                
+                // Filter for English locally just in case the proxy missed it
+                const englishChapters = feedData.data.filter(ch => ch.attributes.translatedLanguage === 'en');
+
+                englishChapters.forEach(chapter => {
                     const attrs = chapter.attributes;
-                    const externalUrl = attrs.externalUrl;
                     const btn = document.createElement('div');
                     btn.className = 'ep-btn';
                     btn.innerText = `Ch. ${attrs.chapter || '?'}`;
                     
                     btn.onclick = () => {
-                        if (externalUrl) {
-                            window.open(externalUrl, '_blank');
+                        if (attrs.externalUrl) {
+                            window.open(attrs.externalUrl, '_blank');
                         } else {
                             window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${attrs.chapter}`;
                         }
@@ -167,7 +170,10 @@ async function loadDetails() {
         } else {
             if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found.</p>";
         }
-    } catch (err) { if (epList) epList.innerHTML = "<p style='color: #ff4757;'>Error loading chapters.</p>"; }
+    } catch (err) { 
+        console.error("Chapter fetch error:", err);
+        if (epList) epList.innerHTML = "<p style='color: #ff4757;'>Failed to bridge chapters. Try refreshing.</p>"; 
+    }
 }
 
 // --- 4. PRO MANGA READER ---
