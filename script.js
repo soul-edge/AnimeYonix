@@ -226,7 +226,7 @@ async function loadDetails() {
     if(!title || title === "null") return;
 
     const epList = document.getElementById('ep-list');
-    if (epList) epList.innerHTML = "<p style='color: gray;'>Looking for chapters...</p>";
+    if (epList) epList.innerHTML = "<p style='color: gray;'>Searching MangaDex for chapters...</p>";
 
     // 1. Get high-quality metadata from Jikan (MAL)
     try {
@@ -249,36 +249,47 @@ async function loadDetails() {
 
     // 2. Fetch actual Chapters from MangaDex
     try {
-        const searchRes = await fetch(`https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=1`);
+        // We use "title" from the URL for a broad search
+        const searchRes = await fetch(`https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=5&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`);
         const searchData = await searchRes.json();
 
         if (searchData.data && searchData.data.length > 0) {
+            // We take the first result that MangaDex thinks matches best
             const mangaId = searchData.data[0].id;
-            const feedRes = await fetch(`https://api.mangadex.org/manga/${mangaId}/feed?translatedLanguage[]=en&order[chapter]=asc&limit=100`);
+            
+            // Get chapters: English only, sorted by chapter ascending
+            const feedRes = await fetch(`https://api.mangadex.org/manga/${mangaId}/feed?translatedLanguage[]=en&order[chapter]=asc&limit=100&includeExternalUrl=0`);
             const feedData = await feedRes.json();
 
-            if (epList && feedData.data) {
+            if (epList) {
+                if (!feedData.data || feedData.data.length === 0) {
+                    epList.innerHTML = "<p style='color: gray;'>Found the manga, but no English chapters are available on MangaDex.</p>";
+                    return;
+                }
+
                 epList.innerHTML = ""; 
                 feedData.data.forEach(chapter => {
                     const attrs = chapter.attributes;
-                    const chapNum = attrs.chapter;
-                    const chapTitle = attrs.title || `Chapter ${chapNum}`;
+                    const chapNum = attrs.chapter || "???";
+                    const chapTitle = attrs.title ? `: ${attrs.title}` : "";
 
                     const btn = document.createElement('div');
                     btn.className = 'ep-btn';
-                    btn.innerText = `Ch. ${chapNum}: ${chapTitle}`;
+                    btn.innerText = `Chapter ${chapNum}${chapTitle}`;
+                    
+                    // Link to the MangaDex reader
                     btn.onclick = () => window.open(`https://mangadex.org/chapter/${chapter.id}`, '_blank');
                     epList.appendChild(btn);
                 });
             }
         } else {
-            if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found on MangaDex.</p>";
+            if (epList) epList.innerHTML = "<p style='color: gray;'>MangaDex couldn't find a match for this title.</p>";
         }
     } catch (err) {
         console.error("MangaDex fetch failed", err);
+        if (epList) epList.innerHTML = `<p style='color: #ff4757;'>Error connecting to MangaDex. Please refresh.</p>`;
     }
 }
-
 // --- 5. WATCHLIST & PROFILE ---
 async function toggleWatchlist() {
     if(!currentUserUID) return alert("Log in first!");
