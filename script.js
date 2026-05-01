@@ -384,7 +384,7 @@ window.onload = function() {
     if (document.getElementById('mainPlayer')) loadVideo();
 };
 
-// --- 7. API SEARCH LOGIC (Triple-Layered Fallback) ---
+// --- 7. API SEARCH LOGIC (Using Vercel Backend Proxy) ---
 async function searchAnimeAPI() {
     const query = document.getElementById('userSearch').value;
     
@@ -397,68 +397,28 @@ async function searchAnimeAPI() {
     const grid = document.getElementById('episodeGrid');
     const header = document.querySelector('section h2');
     if (header) header.innerText = "Searching the Web...";
-    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Checking Server 1...</p>";
+    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Asking our backend server...</p>";
 
-    // --- ATTEMPT 1: AnimePahe ---
     try {
-        console.log("Trying AnimePahe...");
-        const url1 = `https://api.consumet.org/anime/animepahe/${encodeURIComponent(query)}`;
-        const response1 = await fetch(url1);
+        // Look here! We are no longer calling api.consumet.org.
+        // We are calling our OWN backend file located at /api/search
+        const url = `/api/search?q=${encodeURIComponent(query)}`;
+        const response = await fetch(url);
         
-        if (!response1.ok) throw new Error("AnimePahe failed"); 
+        if (!response.ok) throw new Error("Backend failed"); 
         
-        const data1 = await response1.json();
-        renderResults(data1.results, query);
+        const data = await response.json();
+        
+        // Convert the data and render it
+        const formattedResults = data.results.map(apiAnime => ({
+            title: apiAnime.title,
+            mainThumbnail: apiAnime.image 
+        }));
+        
+        renderGrid(formattedResults, `Proxy Results for "${query}"`, "episodeGrid");
 
-    } catch (error1) {
-        
-        // --- ATTEMPT 2: HiAnime ---
-        console.log("AnimePahe failed! Switching to backup 1 (HiAnime)...");
-        grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Checking Server 2...</p>";
-        
-        try {
-            const url2 = `https://api.consumet.org/anime/hianime/${encodeURIComponent(query)}`;
-            const response2 = await fetch(url2);
-            
-            if (!response2.ok) throw new Error("HiAnime failed");
-            
-            const data2 = await response2.json();
-            renderResults(data2.results, query);
-
-        } catch (error2) {
-            
-            // --- ATTEMPT 3: AnimeSaturn ---
-            console.log("HiAnime failed! Switching to backup 2 (AnimeSaturn)...");
-            grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Checking Server 3...</p>";
-            
-            try {
-                const url3 = `https://api.consumet.org/anime/animesaturn/${encodeURIComponent(query)}`;
-                const response3 = await fetch(url3);
-                
-                if (!response3.ok) throw new Error("AnimeSaturn failed");
-                
-                const data3 = await response3.json();
-                renderResults(data3.results, query);
-
-            } catch (error3) {
-                
-                // --- TOTAL FAILURE ---
-                console.error("All three APIs failed. This is likely a CORS block by Consumet.");
-                grid.innerHTML = `
-                    <div style='padding-left: 20px;'>
-                        <p style='color: #ff4757; font-weight: bold;'>Search failed.</p>
-                        <p style='color: gray; font-size: 0.9rem;'>All three servers are down, or the public API is blocking your browser (CORS).</p>
-                    </div>`;
-            }
-        }
+    } catch (error) {
+        console.error("Proxy failure:", error);
+        grid.innerHTML = "<p style='color: #ff4757; padding-left: 20px;'>Search failed. The proxy server might be down.</p>";
     }
-}
-
-// Helper function to render the grid
-function renderResults(apiResults, query) {
-    const formattedResults = apiResults.map(apiAnime => ({
-        title: apiAnime.title,
-        mainThumbnail: apiAnime.image 
-    }));
-    renderGrid(formattedResults, `API Results for "${query}"`, "episodeGrid");
 }
