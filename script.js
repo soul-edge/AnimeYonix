@@ -228,7 +228,6 @@ async function loadDetails() {
     const epList = document.getElementById('ep-list');
     if (epList) epList.innerHTML = "<p style='color: gray;'>Loading chapters via secure server...</p>";
 
-    // 1. Get high-quality metadata from Jikan (This usually works fine directly)
     try {
         const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
         const mal = await res.json();
@@ -241,16 +240,12 @@ async function loadDetails() {
         }
     } catch (e) { console.error("Metadata load failed", e); }
 
-    // 2. Fetch Chapters using your Vercel Backend Proxy
     try {
-        // Find the Manga ID first
         const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
         const searchData = await searchRes.json();
 
         if (searchData.data && searchData.data.length > 0) {
             const mangaId = searchData.data[0].id;
-
-            // Use the same proxy to get the chapters
             const feedRes = await fetch(`/api/search?mangaId=${mangaId}`);
             const feedData = await feedRes.json();
 
@@ -260,7 +255,11 @@ async function loadDetails() {
                     const btn = document.createElement('div');
                     btn.className = 'ep-btn';
                     btn.innerText = `Chapter ${chapter.attributes.chapter || '?'}: ${chapter.attributes.title || 'No Title'}`;
-                    btn.onclick = () => window.open(`https://mangadex.org/chapter/${chapter.id}`, '_blank');
+                    
+                    // INTERNAL READER TRIGGER: Send to watch.html with chapterId
+                    btn.onclick = () => {
+                        window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${chapter.attributes.chapter}`;
+                    };
                     epList.appendChild(btn);
                 });
             }
@@ -271,6 +270,7 @@ async function loadDetails() {
         epList.innerHTML = "<p style='color: #ff4757;'>Server connection failed. Try again in a moment.</p>";
     }
 }
+
 // --- 5. WATCHLIST & PROFILE ---
 async function toggleWatchlist() {
     if(!currentUserUID) return alert("Log in first!");
@@ -327,7 +327,70 @@ async function loadProfile() {
     renderGrid(items, "My List", "profileGrid");
 }
 
-// --- 6. STARTUP & SEARCH TRIGGER ---
+// --- 6. MANGA READER LOGIC ---
+async function loadMangaReader() {
+    const params = new URLSearchParams(window.location.search);
+    const chapterId = params.get('chapterId');
+    const title = params.get('title');
+    const ep = params.get('ep');
+    const playerContainer = document.getElementById('mainPlayer'); 
+    
+    if (!chapterId || !playerContainer) return;
+
+    // Set titles
+    document.getElementById('playingTitle').innerText = decodeURIComponent(title);
+    document.getElementById('playingEp').innerText = "Chapter " + ep;
+
+    // Hide Video, create Manga Container
+    playerContainer.style.display = "none"; 
+    let mangaView = document.getElementById('mangaView');
+    if(!mangaView) {
+        mangaView = document.createElement('div');
+        mangaView.id = "mangaView";
+        mangaView.style.cssText = "width:100%; max-width:900px; margin:20px auto; display:flex; flex-direction:column; gap:0;";
+        playerContainer.parentElement.appendChild(mangaView);
+    }
+    mangaView.innerHTML = "<p style='color:white; text-align:center;'>Loading pages...</p>";
+
+    try {
+        const res = await fetch(`/api/search?chapterId=${chapterId}`);
+        const serverData = await res.json();
+        
+        const hash = serverData.chapter.hash;
+        const pages = serverData.chapter.data; 
+        const baseUrl = serverData.baseUrl;
+
+        mangaView.innerHTML = ""; // Clear loading
+        pages.forEach(page => {
+            const img = document.createElement('img');
+            // Using wsrv.nl proxy to bypass hotlink protection
+            const rawUrl = `${baseUrl}/data/${hash}/${page}`;
+            img.src = `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}`;
+            img.style.width = "100%";
+            img.style.display = "block";
+            img.loading = "lazy"; 
+            mangaView.appendChild(img);
+        });
+
+    } catch (err) {
+        console.error("Reader failed", err);
+        mangaView.innerHTML = "<p style='color:red; text-align:center;'>Failed to load manga pages.</p>";
+    }
+}
+
+function loadVideo() {
+    const params = new URLSearchParams(window.location.search);
+    const videoUrl = params.get('url');
+    const title = params.get('title');
+    const ep = params.get('ep');
+    if(videoUrl && document.getElementById('mainPlayer')) {
+        document.getElementById('mainPlayer').src = videoUrl;
+        document.getElementById('playingTitle').innerText = decodeURIComponent(title);
+        document.getElementById('playingEp').innerText = "Episode " + ep;
+    }
+}
+
+// --- 7. STARTUP & SEARCH TRIGGER ---
 async function searchAnimeAPI() { 
     const query = document.getElementById('userSearch').value;
     if (query.trim() === "") { loadTopManga(); return; }
@@ -358,4 +421,14 @@ window.onload = function() {
     }
     if (document.getElementById('adminManageList')) displayAdminManager();
     if (document.getElementById('det-title')) loadDetails();
+    
+    // Check for Reader vs Video
+    if (document.getElementById('playingTitle')) {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('chapterId')) {
+            loadMangaReader();
+        } else if (params.get('url')) {
+            loadVideo();
+        }
+    }
 };
