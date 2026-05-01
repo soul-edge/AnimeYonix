@@ -76,7 +76,7 @@ if (typeof firebase.auth === 'function') {
     });
 }
 
-// --- 2. ADMIN LOGIC ---
+// --- 2. ADMIN LOGIC (MANUAL FIREBASE OVERRIDES) ---
 async function saveEpisode() {
     try {
         const title = document.getElementById('title').value.trim();
@@ -147,7 +147,7 @@ async function deleteAnime(title) {
     }
 }
 
-// --- 3. HOMEPAGE & FILTER LOGIC (API POWERED) ---
+// --- 3. HOMEPAGE & FILTER LOGIC (JIKAN API) ---
 let activeLetter = 'All'; 
 
 function buildLetterFilter() {
@@ -178,18 +178,10 @@ async function applyFilters(selectedLetter = 'All') {
 
     try {
         let url = `https://api.jikan.moe/v4/manga?limit=12&order_by=popularity`;
-
-        if (query.trim() !== "") {
-            url += `&q=${encodeURIComponent(query)}`;
-        }
-
-        if (selectedLetter && selectedLetter !== 'All' && selectedLetter !== '#') {
-            url += `&letter=${selectedLetter}`;
-        }
+        if (query.trim() !== "") url += `&q=${encodeURIComponent(query)}`;
+        if (selectedLetter && selectedLetter !== 'All' && selectedLetter !== '#') url += `&letter=${selectedLetter}`;
 
         const response = await fetch(url);
-        if (!response.ok) throw new Error("Filter Request Failed"); 
-        
         const jsonResponse = await response.json();
 
         const formattedResults = jsonResponse.data.map(manga => ({
@@ -198,10 +190,8 @@ async function applyFilters(selectedLetter = 'All') {
         }));
 
         renderGrid(formattedResults, `Filtered Results`, "episodeGrid");
-
     } catch (error) {
         console.error("Filter fetch failed:", error);
-        if (grid) grid.innerHTML = "<p style='color: #ff4757; padding-left: 20px;'>Search failed. Please try again.</p>";
     }
 }
 
@@ -211,11 +201,6 @@ function renderGrid(animeArray, sectionTitle, targetID) {
     if (header && targetID === "episodeGrid") header.innerText = sectionTitle;
     if(!grid) return;
     grid.innerHTML = ""; 
-
-    if (animeArray.length === 0) {
-        grid.innerHTML = "<p style='color: gray; padding-left: 20px;'>No results found.</p>";
-        return;
-    }
 
     animeArray.forEach(anime => {
         const card = document.createElement('div');
@@ -234,13 +219,16 @@ function renderGrid(animeArray, sectionTitle, targetID) {
     });
 }
 
-// --- 4. DETAILS PAGE LOGIC ---
+// --- 4. DETAILS PAGE LOGIC (HYBRID JIKAN + MANGADEX) ---
 async function loadDetails() {
     const params = new URLSearchParams(window.location.search);
     const title = decodeURIComponent(params.get('title'));
     if(!title || title === "null") return;
 
-    // First try Jikan for high quality metadata
+    const epList = document.getElementById('ep-list');
+    if (epList) epList.innerHTML = "<p style='color: gray;'>Looking for chapters...</p>";
+
+    // 1. Get high-quality metadata from Jikan (MAL)
     try {
         const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
         const mal = await res.json();
@@ -252,41 +240,51 @@ async function loadDetails() {
             document.getElementById('det-thumb').src = manga.images.jpg.large_image_url;
             
             const ratingElement = document.getElementById('det-rating');
-            if (ratingElement) ratingElement.innerHTML = `⭐️ ${manga.score || 'N/A'} / 10 <span style="font-size:0.8rem;color:gray;">(MAL)</span>`;
+            if (ratingElement) ratingElement.innerHTML = `⭐️ ${manga.score || 'N/A'} / 10`;
             
-            // Handle genres
             const genres = manga.genres.map(g => g.name).join(', ');
             document.getElementById('det-genre').innerText = "GENRE: " + (genres || "N/A");
         }
     } catch (e) { console.error("Jikan detail load failed", e); }
 
-    // Then check Firebase for custom chapters/episodes
-    const docRef = db.collection("animeLibrary").doc(title);
-    const docSnap = await docRef.get();
+    // 2. Fetch actual Chapters from MangaDex
+    try {
+        const searchRes = await fetch(`https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=1`);
+        const searchData = await searchRes.json();
 
-    if(docSnap.exists) {
-        const anime = docSnap.data();
-        const epList = document.getElementById('ep-list');
-        if(epList && anime.episodes) {
-            epList.innerHTML = ""; 
-            anime.episodes.sort((a,b) => a.number - b.number).forEach(ep => {
-                const btn = document.createElement('div');
-                btn.className = 'ep-btn';
-                btn.innerText = "Read/Watch " + ep.number;
-                btn.onclick = () => window.location.href = `watch.html?url=${encodeURIComponent(ep.link)}&title=${encodeURIComponent(title)}&ep=${ep.number}`;
-                epList.appendChild(btn);
-            });
+        if (searchData.data && searchData.data.length > 0) {
+            const mangaId = searchData.data[0].id;
+            const feedRes = await fetch(`https://api.mangadex.org/manga/${mangaId}/feed?translatedLanguage[]=en&order[chapter]=asc&limit=100`);
+            const feedData = await feedRes.json();
+
+            if (epList && feedData.data) {
+                epList.innerHTML = ""; 
+                feedData.data.forEach(chapter => {
+                    const attrs = chapter.attributes;
+                    const chapNum = attrs.chapter;
+                    const chapTitle = attrs.title || `Chapter ${chapNum}`;
+
+                    const btn = document.createElement('div');
+                    btn.className = 'ep-btn';
+                    btn.innerText = `Ch. ${chapNum}: ${chapTitle}`;
+                    btn.onclick = () => window.open(`https://mangadex.org/chapter/${chapter.id}`, '_blank');
+                    epList.appendChild(btn);
+                });
+            }
+        } else {
+            if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found on MangaDex.</p>";
         }
+    } catch (err) {
+        console.error("MangaDex fetch failed", err);
     }
 }
 
-// --- 4.5 WATCHLIST LOGIC ---
+// --- 5. WATCHLIST & PROFILE ---
 async function toggleWatchlist() {
     if(!currentUserUID) return alert("Log in first!");
     const title = document.getElementById('det-title').innerText;
     const userRef = db.collection("users").doc(currentUserUID);
     const doc = await userRef.get();
-    
     let list = (doc.exists) ? (doc.data().watchlist || []) : [];
 
     if(list.includes(title)) {
@@ -305,21 +303,17 @@ async function checkWatchlistStatus(title) {
     const btn = document.getElementById('watchlist-btn');
     if(!btn) return;
     btn.style.display = "inline-block";
-
     const doc = await db.collection("users").doc(currentUserUID).get();
     if(doc.exists && doc.data().watchlist && doc.data().watchlist.includes(title)) {
-        btn.innerHTML = "💔 Remove";
-        btn.style.background = "#ff4757";
+        btn.innerHTML = "💔 Remove"; btn.style.background = "#ff4757";
     } else {
-        btn.innerHTML = "❤️ Add to List";
-        btn.style.background = "#444";
+        btn.innerHTML = "❤️ Add to List"; btn.style.background = "#444";
     }
 }
 
 async function loadProfile() {
     const profileGrid = document.getElementById('profileGrid');
     if(!profileGrid || !currentUserUID) return;
-
     profileGrid.innerHTML = "<p style='color:white;'>Loading...</p>";
     const userDoc = await db.collection("users").doc(currentUserUID).get();
     
@@ -331,66 +325,38 @@ async function loadProfile() {
     const titles = userDoc.data().watchlist;
     let items = [];
     for (let t of titles) {
-        // Try Firebase first for the thumbnail
         const doc = await db.collection("animeLibrary").doc(t).get();
         if(doc.exists) {
-            let d = doc.data();
-            d.title = t;
-            items.push(d);
+            let d = doc.data(); d.title = t; items.push(d);
         } else {
-            // Fallback: If not in Firebase, we can't show a thumbnail easily without another API call
             items.push({ title: t, mainThumbnail: 'https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600&auto=format&fit=crop' });
         }
     }
     renderGrid(items, "My List", "profileGrid");
 }
 
-// --- 5. WATCH PAGE ---
-function loadVideo() {
-    const params = new URLSearchParams(window.location.search);
-    const videoUrl = params.get('url');
-    const title = params.get('title');
-    const ep = params.get('ep');
-    if(videoUrl && document.getElementById('mainPlayer')) {
-        document.getElementById('mainPlayer').src = videoUrl;
-        document.getElementById('playingTitle').innerText = decodeURIComponent(title);
-        document.getElementById('playingEp').innerText = "Episode " + ep;
-    }
-}
-
-// --- 6. API SEARCH LOGIC ---
+// --- 6. STARTUP & SEARCH TRIGGER ---
 async function searchAnimeAPI() { 
     const query = document.getElementById('userSearch').value;
-    if (query.trim() === "") { 
-        loadTopManga(); 
-        return; 
-    }
+    if (query.trim() === "") { loadTopManga(); return; }
     applyFilters(); 
 }
 
-// --- 7. STARTUP LOGIC ---
 async function loadTopManga() {
     const grid = document.getElementById('episodeGrid');
     const header = document.querySelector('section h2');
-    
     if (header) header.innerText = "Top Trending Manga";
     if (grid) grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Loading trending manga...</p>";
 
     try {
         const response = await fetch('https://api.jikan.moe/v4/top/manga?limit=12');
-        if (!response.ok) throw new Error("Failed to load top manga");
-        
         const jsonResponse = await response.json();
-        
         const formattedResults = jsonResponse.data.map(manga => ({
             title: manga.title, 
             mainThumbnail: manga.images.jpg.large_image_url 
         }));
-
         renderGrid(formattedResults, "Top Trending Manga", "episodeGrid");
-    } catch (error) {
-        console.error("Startup fetch failed:", error);
-    }
+    } catch (error) { console.error("Startup fetch failed:", error); }
 }
 
 window.onload = function() {
@@ -400,5 +366,4 @@ window.onload = function() {
     }
     if (document.getElementById('adminManageList')) displayAdminManager();
     if (document.getElementById('det-title')) loadDetails();
-    if (document.getElementById('mainPlayer')) loadVideo();
 };
