@@ -76,7 +76,7 @@ if (typeof firebase.auth === 'function') {
     });
 }
 
-// --- 2. ADMIN LOGIC ---
+// --- 2. ADMIN LOGIC (FOR MANUAL OVERRIDES) ---
 async function saveEpisode() {
     try {
         const title = document.getElementById('title').value.trim();
@@ -147,7 +147,7 @@ async function deleteAnime(title) {
     }
 }
 
-// --- 3. HOMEPAGE & FILTER LOGIC ---
+// --- 3. HOMEPAGE & FILTER LOGIC (JIKAN API) ---
 let activeLetter = 'All'; 
 
 function buildLetterFilter() {
@@ -226,6 +226,7 @@ async function loadDetails() {
     const epList = document.getElementById('ep-list');
     if (epList) epList.innerHTML = "<p style='color: gray;'>Loading chapters via secure server...</p>";
 
+    // 1. Get high-quality metadata from Jikan
     try {
         const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
         const mal = await res.json();
@@ -238,6 +239,7 @@ async function loadDetails() {
         }
     } catch (e) { console.error("Metadata load failed", e); }
 
+    // 2. Fetch Chapters using Proxy
     try {
         const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
         const searchData = await searchRes.json();
@@ -278,12 +280,12 @@ async function loadMangaReader() {
     document.getElementById('playingTitle').innerText = decodeURIComponent(title);
     document.getElementById('playingEp').innerText = "Chapter " + ep;
 
-    playerContainer.style.display = "none"; // Hide Video Player
+    playerContainer.style.display = "none"; 
     let mangaView = document.getElementById('mangaView');
     if(!mangaView) {
         mangaView = document.createElement('div');
         mangaView.id = "mangaView";
-        mangaView.style.cssText = "width:100%; max-width:900px; margin:20px auto; display:flex; flex-direction:column; gap:0;";
+        mangaView.style.cssText = "width:100%; max-width:900px; margin:20px auto; display:flex; flex-direction:column; gap:0; background:#000;";
         playerContainer.parentElement.appendChild(mangaView);
     }
     mangaView.innerHTML = "<p style='color:white; text-align:center;'>Loading pages...</p>";
@@ -291,21 +293,22 @@ async function loadMangaReader() {
     try {
         const res = await fetch(`/api/search?chapterId=${chapterId}`);
         const serverData = await res.json();
+        
+        const host = serverData.baseUrl;
         const hash = serverData.chapter.hash;
-        const pages = serverData.chapter.data; 
-        const baseUrl = serverData.baseUrl;
+        const pageFiles = serverData.chapter.data; 
 
-        mangaView.innerHTML = "";
-        pages.forEach(page => {
+        mangaView.innerHTML = ""; 
+        pageFiles.forEach(file => {
             const img = document.createElement('img');
-            const rawUrl = `${baseUrl}/data/${hash}/${page}`;
-            img.src = `https://wsrv.nl/?url=${encodeURIComponent(rawUrl)}`;
+            const fullMangaDexUrl = `${host}/data/${hash}/${file}`;
+            img.src = `https://wsrv.nl/?url=${encodeURIComponent(fullMangaDexUrl)}`;
             img.style.width = "100%";
             img.style.display = "block";
             img.loading = "lazy"; 
             mangaView.appendChild(img);
         });
-    } catch (err) { mangaView.innerHTML = "<p style='color:red; text-align:center;'>Failed to load pages.</p>"; }
+    } catch (err) { mangaView.innerHTML = "<p style='color:red; text-align:center;'>Access Error. Refreshing helps.</p>"; }
 }
 
 function loadVideo() {
@@ -322,7 +325,63 @@ function loadVideo() {
     }
 }
 
-// --- 6. STARTUP & SEARCH ---
+// --- 6. WATCHLIST & PROFILE ---
+async function toggleWatchlist() {
+    if(!currentUserUID) return alert("Log in first!");
+    const title = document.getElementById('det-title').innerText;
+    const userRef = db.collection("users").doc(currentUserUID);
+    const doc = await userRef.get();
+    let list = (doc.exists) ? (doc.data().watchlist || []) : [];
+
+    if(list.includes(title)) {
+        list = list.filter(t => t !== title);
+        alert("Removed.");
+    } else {
+        list.push(title);
+        alert("Added!");
+    }
+    await userRef.set({ watchlist: list }, { merge: true });
+    checkWatchlistStatus(title);
+}
+
+async function checkWatchlistStatus(title) {
+    if(!currentUserUID) return;
+    const btn = document.getElementById('watchlist-btn');
+    if(!btn) return;
+    btn.style.display = "inline-block";
+    const doc = await db.collection("users").doc(currentUserUID).get();
+    if(doc.exists && doc.data().watchlist && doc.data().watchlist.includes(title)) {
+        btn.innerHTML = "💔 Remove"; btn.style.background = "#ff4757";
+    } else {
+        btn.innerHTML = "❤️ Add to List"; btn.style.background = "#444";
+    }
+}
+
+async function loadProfile() {
+    const profileGrid = document.getElementById('profileGrid');
+    if(!profileGrid || !currentUserUID) return;
+    profileGrid.innerHTML = "<p style='color:white;'>Loading...</p>";
+    const userDoc = await db.collection("users").doc(currentUserUID).get();
+    
+    if(!userDoc.exists || !userDoc.data().watchlist || userDoc.data().watchlist.length === 0) {
+        profileGrid.innerHTML = "<p style='color:gray;'>Your list is empty.</p>";
+        return;
+    }
+
+    const titles = userDoc.data().watchlist;
+    let items = [];
+    for (let t of titles) {
+        const doc = await db.collection("animeLibrary").doc(t).get();
+        if(doc.exists) {
+            let d = doc.data(); d.title = t; items.push(d);
+        } else {
+            items.push({ title: t, mainThumbnail: 'https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600&auto=format&fit=crop' });
+        }
+    }
+    renderGrid(items, "My List", "profileGrid");
+}
+
+// --- 7. STARTUP & SEARCH TRIGGER ---
 async function searchAnimeAPI() { 
     const query = document.getElementById('userSearch').value;
     if (query.trim() === "") { loadTopManga(); return; }
