@@ -117,62 +117,54 @@ async function loadDetails() {
     if(!title || title === "null") return;
 
     const epList = document.getElementById('ep-list');
-    if (epList) epList.innerHTML = "<p style='color: gray;'>Loading full chapter history...</p>";
+    if (epList) epList.innerHTML = "<p style='color: gray;'>Optimizing chapter list...</p>";
 
-    // 1. Fetch Metadata (Jikan)
     try {
-        const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
-        const mal = await res.json();
-        if (mal.data && mal.data[0]) {
-            const manga = mal.data[0];
-            document.getElementById('det-title').innerText = manga.title;
-            document.getElementById('det-syn').innerText = manga.synopsis || "No description.";
-            document.getElementById('det-thumb').src = manga.images.jpg.large_image_url;
-            document.getElementById('det-genre').innerText = "GENRE: " + manga.genres.map(g => g.name).join(', ');
-        }
-    } catch (e) { console.error("Metadata failed", e); }
-
-    // 2. Fetch Chapters (MangaDex via Proxy)
-    try {
+        // 1. Search for the Manga ID
         const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
         const searchData = await searchRes.json();
+        if (!searchData.data || searchData.data.length === 0) return;
+        const mangaId = searchData.data[0].id;
 
-        if (searchData.data && searchData.data.length > 0) {
-            const mangaId = searchData.data[0].id;
+        // 2. Fetch Chapters with explicit Ascending Order and higher limit
+        // We add 'contentRating' to ensure Berserk's mature chapters aren't hidden
+        const feedUrl = `/api/search?mangaId=${mangaId}&limit=500&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`;
+        const feedRes = await fetch(feedUrl);
+        const feedData = await feedRes.json();
 
-            // CRITICAL: Force order to 'asc' and limit to 500 to fill the gaps
-            const feedUrl = `/api/search?mangaId=${mangaId}&limit=500&order[chapter]=asc`;
-            const feedRes = await fetch(feedUrl);
-            const feedData = await feedRes.json();
+        if (epList && feedData.data) {
+            epList.innerHTML = ""; 
+            
+            // 3. SMART FILTER: Only show one version of each chapter number
+            // This prevents duplicates from scan groups from pushing out real chapters
+            const seenChapters = new Set();
+            
+            feedData.data.forEach(chapter => {
+                const attrs = chapter.attributes;
+                const chapNum = attrs.chapter;
 
-            if (epList && feedData.data) {
-                epList.innerHTML = ""; 
-                
-                // Final safety filter for English
-                const englishChapters = feedData.data.filter(ch => ch.attributes.translatedLanguage === 'en');
+                // Only process if it's English and we haven't added this chapter number yet
+                if (attrs.translatedLanguage === 'en' && chapNum && !seenChapters.has(chapNum)) {
+                    seenChapters.add(chapNum);
 
-                englishChapters.forEach(chapter => {
-                    const attrs = chapter.attributes;
                     const btn = document.createElement('div');
                     btn.className = 'ep-btn';
-                    btn.innerText = `Ch. ${attrs.chapter || '?'}`;
+                    btn.innerText = `Ch. ${chapNum}`;
                     
                     btn.onclick = () => {
                         if (attrs.externalUrl) {
                             window.open(attrs.externalUrl, '_blank');
                         } else {
-                            window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${attrs.chapter}`;
+                            window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${chapNum}`;
                         }
                     };
                     epList.appendChild(btn);
-                });
-            }
-        } else {
-            if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found.</p>";
+                }
+            });
         }
-    } catch (err) { 
-        console.error("Chapter fetch error:", err);
-        if (epList) epList.innerHTML = "<p style='color: #ff4757;'>Failed to bridge chapters. Try refreshing.</p>"; 
+    } catch (err) {
+        console.error("Fetch failed", err);
+        if (epList) epList.innerHTML = "<p style='color: red;'>Failed to load. Please refresh.</p>";
     }
 }
 // --- 4. PRO MANGA READER ---
