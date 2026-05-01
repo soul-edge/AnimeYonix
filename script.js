@@ -384,16 +384,39 @@ window.onload = function() {
     if (document.getElementById('mainPlayer')) loadVideo();
 };
 
-// --- 7. API EXPERIMENTATION (Consumet) ---
-// Note: Open your browser Developer Console (F12) and type searchAnimeAPI("naruto") to test this!
-async function searchAnimeAPI(searchTitle) {
-    const url = `https://api.consumet.org/anime/animepahe/${searchTitle}`;
+// --- 7. API SEARCH LOGIC ---
+async function searchAnimeAPI() {
+    const query = document.getElementById('userSearch').value;
+    
+    // If the user clears the search bar, go back to the normal Firebase view
+    if (query.trim() === "") {
+        applyFilters(); 
+        return;
+    }
+
+    const grid = document.getElementById('episodeGrid');
+    const header = document.querySelector('section h2');
+    
+    // Show a loading state so the user knows it's working
+    if (header) header.innerText = "Searching the Web...";
+    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Fetching data from API...</p>";
 
     try {
+        const url = `https://api.consumet.org/anime/animepahe/${encodeURIComponent(query)}`;
         const response = await fetch(url);
         const data = await response.json();
-        console.log(`Here are the search results for ${searchTitle}:`, data);
+
+        // Convert the API data to match your Firebase format
+        const formattedResults = data.results.map(apiAnime => ({
+            title: apiAnime.title,
+            mainThumbnail: apiAnime.image // Consumet calls it 'image', your grid calls it 'mainThumbnail'
+        }));
+
+        // Send the internet results into your custom grid!
+        renderGrid(formattedResults, `API Results for "${query}"`, "episodeGrid");
+
     } catch (error) {
         console.error("Oops, the API request failed:", error);
+        grid.innerHTML = "<p style='color: #ff4757; padding-left: 20px;'>Search failed. The API might be down.</p>";
     }
 }
