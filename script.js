@@ -384,7 +384,7 @@ window.onload = function() {
     if (document.getElementById('mainPlayer')) loadVideo();
 };
 
-// --- 7. API SEARCH LOGIC (CORS Proxy Version) ---
+// --- 7. API SEARCH LOGIC (AllOrigins Proxy Version) ---
 async function searchAnimeAPI() { 
     const query = document.getElementById('userSearch').value;
     
@@ -397,22 +397,25 @@ async function searchAnimeAPI() {
     const header = document.querySelector('section h2');
     
     if (header) header.innerText = "Searching MangaDex...";
-    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Bypassing browser security blocks...</p>";
+    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Routing through stable proxy...</p>";
 
     try {
         // 1. The target MangaDex link
         const targetUrl = `https://api.mangadex.org/manga?title=${encodeURIComponent(query)}&includes[]=cover_art&limit=12`;
         
-        // 2. The Magic Trick: Wrap it in the CORS proxy!
-        const url = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+        // 2. Wrap it in the highly stable AllOrigins proxy
+        const url = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
         
         const response = await fetch(url);
         
-        if (!response.ok) throw new Error("Proxy Request Failed"); 
+        if (!response.ok) throw new Error("AllOrigins Proxy Failed"); 
         
-        const jsonResponse = await response.json();
+        const proxyData = await response.json();
+        
+        // 3. Open the "envelope" AllOrigins gives us
+        const jsonResponse = JSON.parse(proxyData.contents);
 
-        // 3. The Super-Safe Translator Loop
+        // 4. The Super-Safe Translator Loop
         const formattedResults = jsonResponse.data.map(manga => {
             const titleObj = manga.attributes.title;
             const title = titleObj ? (titleObj.en || Object.values(titleObj)[0]) : "Unknown Title";
@@ -431,7 +434,7 @@ async function searchAnimeAPI() {
         renderGrid(formattedResults, `Manga Results for "${query}"`, "episodeGrid");
 
     } catch (error) {
-        console.error("Proxy fetch failed:", error);
+        console.error("AllOrigins proxy fetch failed:", error);
         grid.innerHTML = `
             <div style='padding-left: 20px;'>
                 <p style='color: #ff4757; font-weight: bold;'>Search failed.</p>
