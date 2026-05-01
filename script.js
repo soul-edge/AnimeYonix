@@ -140,7 +140,7 @@ async function loadDetails() {
         if (searchData.data && searchData.data.length > 0) {
             const mangaId = searchData.data[0].id;
 
-            // CRITICAL: We force the order to 'asc' to get Ch. 1, 2, 3... and limit to 500 to fill the gap
+            // CRITICAL: Force order to 'asc' and limit to 500 to fill the gaps
             const feedUrl = `/api/search?mangaId=${mangaId}&limit=500&order[chapter]=asc`;
             const feedRes = await fetch(feedUrl);
             const feedData = await feedRes.json();
@@ -148,7 +148,7 @@ async function loadDetails() {
             if (epList && feedData.data) {
                 epList.innerHTML = ""; 
                 
-                // Filter for English locally just in case the proxy missed it
+                // Final safety filter for English
                 const englishChapters = feedData.data.filter(ch => ch.attributes.translatedLanguage === 'en');
 
                 englishChapters.forEach(chapter => {
@@ -175,7 +175,6 @@ async function loadDetails() {
         if (epList) epList.innerHTML = "<p style='color: #ff4757;'>Failed to bridge chapters. Try refreshing.</p>"; 
     }
 }
-
 // --- 4. PRO MANGA READER ---
 async function loadMangaReader() {
     const params = new URLSearchParams(window.location.search);
