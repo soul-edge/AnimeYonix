@@ -384,11 +384,10 @@ window.onload = function() {
     if (document.getElementById('mainPlayer')) loadVideo();
 };
 
-// --- 7. API SEARCH LOGIC (MangaDex) ---
+// --- 7. API SEARCH LOGIC (Official MangaDex API) ---
 async function searchAnimeAPI() { 
     const query = document.getElementById('userSearch').value;
     
-    // If the user clears the search bar, go back to the normal Firebase view
     if (query.trim() === "") { 
         applyFilters(); 
         return; 
@@ -397,31 +396,42 @@ async function searchAnimeAPI() {
     const grid = document.getElementById('episodeGrid');
     const header = document.querySelector('section h2');
     
-    if (header) header.innerText = "Searching MangaDex...";
-    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Fetching manga...</p>";
+    if (header) header.innerText = "Searching Official MangaDex...";
+    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Fetching manga directly from source...</p>";
 
     try {
-        // Using your brand new MangaDex endpoint!
-        const url = `https://api.consumet.org/manga/mangadex/${encodeURIComponent(query)}`;
+        // 1. Bypass Consumet completely. Ask MangaDex directly!
+        // We use &includes[]=cover_art so they send the poster data alongside the title.
+        const url = `https://api.mangadex.org/manga?title=${encodeURIComponent(query)}&includes[]=cover_art&limit=12`;
         const response = await fetch(url);
         
-        if (!response.ok) throw new Error("API Request Failed"); 
+        if (!response.ok) throw new Error("MangaDex API Request Failed"); 
         
-        const data = await response.json();
+        const jsonResponse = await response.json();
 
-        // Convert the Manga data to match your grid's format
-        const formattedResults = data.results.map(apiManga => ({
-            // MangaDex sometimes returns titles in an object (e.g., title.en). 
-            // We'll grab the English title, or fallback to the default title.
-            title: apiManga.title, 
-            mainThumbnail: apiManga.image 
-        }));
+        // 2. Format the data. MangaDex nests their data a bit deeper than others.
+        const formattedResults = jsonResponse.data.map(manga => {
+            
+            // Get the title (Try English first, fallback to whatever language is default)
+            const title = manga.attributes.title.en || Object.values(manga.attributes.title)[0] || "Unknown Title";
 
-        // Send the internet results into your custom grid!
+            // Find the cover art file name hidden inside the "relationships" array
+            const coverRel = manga.relationships.find(rel => rel.type === 'cover_art');
+            const coverFileName = coverRel ? coverRel.attributes.fileName : null;
+
+            // Build the official MangaDex image URL (they use a separate upload server for images)
+            const mainThumbnail = coverFileName 
+                ? `https://uploads.mangadex.org/covers/${manga.id}/${coverFileName}.256.jpg` 
+                : 'https://images.unsplash.com/photo-1541562232579-512a21360020?q=80&w=600&auto=format&fit=crop'; // Your default fallback image
+
+            return { title, mainThumbnail };
+        });
+
+        // 3. Send the formatted results to your custom grid!
         renderGrid(formattedResults, `Manga Results for "${query}"`, "episodeGrid");
 
     } catch (error) {
-        console.error("Oops, the API request failed:", error);
+        console.error("Direct MangaDex fetch failed:", error);
         grid.innerHTML = "<p style='color: #ff4757; padding-left: 20px;'>Search failed. Please try again.</p>";
     }
 }
