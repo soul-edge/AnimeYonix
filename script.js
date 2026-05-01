@@ -384,7 +384,7 @@ window.onload = function() {
     if (document.getElementById('mainPlayer')) loadVideo();
 };
 
-// --- 7. API SEARCH LOGIC (With Fallback Backup) ---
+// --- 7. API SEARCH LOGIC (Triple-Layered Fallback) ---
 async function searchAnimeAPI() {
     const query = document.getElementById('userSearch').value;
     
@@ -397,7 +397,7 @@ async function searchAnimeAPI() {
     const grid = document.getElementById('episodeGrid');
     const header = document.querySelector('section h2');
     if (header) header.innerText = "Searching the Web...";
-    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Searching Servers...</p>";
+    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Checking Server 1...</p>";
 
     // --- ATTEMPT 1: AnimePahe ---
     try {
@@ -412,27 +412,49 @@ async function searchAnimeAPI() {
 
     } catch (error1) {
         
-        // --- ATTEMPT 2: The Backup (HiAnime) ---
-        console.log("AnimePahe failed! Switching to backup (HiAnime)...");
+        // --- ATTEMPT 2: HiAnime ---
+        console.log("AnimePahe failed! Switching to backup 1 (HiAnime)...");
+        grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Checking Server 2...</p>";
+        
         try {
             const url2 = `https://api.consumet.org/anime/hianime/${encodeURIComponent(query)}`;
             const response2 = await fetch(url2);
             
-            if (!response2.ok) throw new Error("HiAnime failed too");
+            if (!response2.ok) throw new Error("HiAnime failed");
             
             const data2 = await response2.json();
             renderResults(data2.results, query);
 
         } catch (error2) {
             
-            // --- TOTAL FAILURE ---
-            console.error("Both APIs are down.");
-            grid.innerHTML = "<p style='color: #ff4757; padding-left: 20px;'>Search failed. The public servers are currently down.</p>";
+            // --- ATTEMPT 3: AnimeSaturn ---
+            console.log("HiAnime failed! Switching to backup 2 (AnimeSaturn)...");
+            grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Checking Server 3...</p>";
+            
+            try {
+                const url3 = `https://api.consumet.org/anime/animesaturn/${encodeURIComponent(query)}`;
+                const response3 = await fetch(url3);
+                
+                if (!response3.ok) throw new Error("AnimeSaturn failed");
+                
+                const data3 = await response3.json();
+                renderResults(data3.results, query);
+
+            } catch (error3) {
+                
+                // --- TOTAL FAILURE ---
+                console.error("All three APIs failed. This is likely a CORS block by Consumet.");
+                grid.innerHTML = `
+                    <div style='padding-left: 20px;'>
+                        <p style='color: #ff4757; font-weight: bold;'>Search failed.</p>
+                        <p style='color: gray; font-size: 0.9rem;'>All three servers are down, or the public API is blocking your browser (CORS).</p>
+                    </div>`;
+            }
         }
     }
 }
 
-// This helper function makes the code above much cleaner!
+// Helper function to render the grid
 function renderResults(apiResults, query) {
     const formattedResults = apiResults.map(apiAnime => ({
         title: apiAnime.title,
