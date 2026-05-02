@@ -8,7 +8,6 @@ module.exports = async function (req, res) {
 
     try {
         if (q) {
-            // 1. SEARCH MANGAPILL
             const response = await fetch(`https://mangapill.com/search?q=${encodeURIComponent(q)}`, { headers });
             const html = await response.text();
 
@@ -33,7 +32,6 @@ module.exports = async function (req, res) {
             return res.status(200).json(results);
         } 
         else if (mangaId) {
-            // 2. SCRAPE CHAPTERS
             const targetUrl = `https://mangapill.com${decodeURIComponent(mangaId)}`;
             const response = await fetch(targetUrl, { headers });
             const html = await response.text();
@@ -62,21 +60,24 @@ module.exports = async function (req, res) {
             return res.status(200).json(chapters);
         }
         else if (chapterId) {
-            // 3. INDESTRUCTIBLE IMAGE SCRAPER
+            // 3. THE SNIPER SCRAPER
             const targetUrl = `https://mangapill.com${decodeURIComponent(chapterId)}`;
             const response = await fetch(targetUrl, { headers });
             const html = await response.text();
 
             const images = [];
-            const imgTags = [...html.matchAll(/<img[^>]+>/gi)];
             
-            for (let tag of imgTags) {
-                const srcMatch = tag[0].match(/(?:src|data-src)="([^"]+)"/i);
+            // Slice the HTML exactly where MangaPill hides their comic pages
+            const pictureBlocks = html.split('<picture');
+
+            for (let i = 1; i < pictureBlocks.length; i++) {
+                const block = pictureBlocks[i];
+                // Grab the raw image source
+                const srcMatch = block.match(/(?:data-src|src)="([^"]+)"/i);
+                
                 if (srcMatch) {
                     const url = srcMatch[1];
-                    if (url.includes('http') && !url.includes('logo') && !url.includes('icon') && !url.includes('avatar')) {
-                        if (!images.includes(url)) images.push(url);
-                    }
+                    if (!images.includes(url)) images.push(url);
                 }
             }
 
