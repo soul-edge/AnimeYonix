@@ -189,7 +189,7 @@ async function loadDetails() {
     }
 }
 
-// --- 4. THE MANGA READER ---
+// --- 4. THE MANGA READER (VERCEL PROXY MODE) ---
 async function loadMangaReader() {
     const params = new URLSearchParams(window.location.search);
     const chapterId = params.get('chapterId');
@@ -233,8 +233,8 @@ async function loadMangaReader() {
         pageFiles.forEach(imgUrl => {
             const img = document.createElement('img');
             
-            // Re-engage the wsrv proxy to bypass the CDN Hotlink Protection!
-            img.src = `https://wsrv.nl/?url=${encodeURIComponent(imgUrl)}`; 
+            // Re-route the image through YOUR custom Vercel proxy to bypass CDN Hotlink Protection!
+            img.src = `/api/search?proxyImage=${encodeURIComponent(imgUrl)}`; 
             
             img.style.cssText = "width:100%; max-width:900px; display:block; margin:0 auto 5px; min-height:400px; background:#111; color:gray; text-align:center; line-height:400px;";
             img.alt = "Loading page...";
@@ -256,6 +256,7 @@ async function loadMangaReader() {
         mangaView.innerHTML = `<p style='color:red; text-align:center; padding:50px;'>${err.message}. Please refresh.</p>`;
     }
 }
+
 // --- 5. UTILS & INIT (CRASH PROOF) ---
 async function loadTopManga() {
     const grid = document.getElementById('episodeGrid');
