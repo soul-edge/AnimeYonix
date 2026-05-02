@@ -110,19 +110,16 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
     });
 }
 
-// --- 3. DETAILS & CHAPTERS (ULTRA FETCH) ---
-// Helper to bypass browser blocks using AllOrigins (JSON specific)
-const proxyUrl = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-
+// --- 3. DETAILS & CHAPTERS (SMART MANGADEX PULL) ---
 async function loadDetails() {
     const params = new URLSearchParams(window.location.search);
     const title = decodeURIComponent(params.get('title'));
     if(!title || title === "null") return;
 
     const epList = document.getElementById('ep-list');
-    if (epList) epList.innerHTML = "<p style='color: gray;'>Bypassing Cloudflare...</p>";
+    if (epList) epList.innerHTML = "<p style='color: gray;'>Establishing secure connection...</p>";
 
-    // Metadata (Jikan)
+    // Metadata (Jikan API)
     try {
         const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
         if (res.ok) {
@@ -137,59 +134,77 @@ async function loadDetails() {
         }
     } catch (e) { console.warn("Metadata skipped"); }
 
-    // Chapters via AllOrigins Proxy
+    // Direct MangaDex Smart Loop
     try {
-        if (epList) epList.innerHTML = "<p style='color: var(--accent);'>Fetching complete database...</p>";
+        if (epList) epList.innerHTML = "<p style='color: var(--accent);'>Executing measured data pull...</p>";
 
-        // Search ComicK (.io domain)
-        const searchUrl = `https://api.comick.io/v1.0/search?q=${encodeURIComponent(title)}&limit=1`;
-        const searchRes = await fetch(proxyUrl(searchUrl));
-        if (!searchRes.ok) throw new Error("Search Proxy blocked");
+        const searchUrl = `https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=1&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`;
+        const searchRes = await fetch(searchUrl);
+        
+        if (!searchRes.ok) throw new Error(`Search Blocked: ${searchRes.status}`);
         
         const searchData = await searchRes.json();
-        
-        if (!searchData || searchData.length === 0) {
-            if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found.</p>";
+
+        if (!searchData.data || searchData.data.length === 0) {
+            if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found on MangaDex.</p>";
             return;
         }
 
-        const mangaHid = searchData[0].hid;
+        const mangaId = searchData.data[0].id;
+        let allChapters = [];
+        let offset = 0;
+        let total = 1;
 
-        // Fetch massive chapter list 
-        const feedUrl = `https://api.comick.io/comic/${mangaHid}/chapters?lang=en&limit=99999`;
-        const feedRes = await fetch(proxyUrl(feedUrl));
-        if (!feedRes.ok) throw new Error("Chapter Proxy blocked");
+        // Loop chunks of 500 with rate-limit survival
+        while (offset < total) {
+            const feedUrl = `https://api.mangadex.org/manga/${mangaId}/feed?translatedLanguage[]=en&limit=500&offset=${offset}&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includeExternalUrl=1`;
+            const feedRes = await fetch(feedUrl);
+            
+            if (feedRes.status === 429) {
+                console.warn("Rate limit hit. Cooling down...");
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                continue; 
+            }
+            if (!feedRes.ok) throw new Error(`Server Error: ${feedRes.status}`);
 
-        const feedData = await feedRes.json();
-        const allChapters = feedData.chapters || [];
+            const feedData = await feedRes.json();
+            total = feedData.total || 0;
+            if (feedData.data) allChapters.push(...feedData.data);
+            
+            offset += 500;
+            await new Promise(resolve => setTimeout(resolve, 400));
+            if (offset > 5000) break; 
+        }
 
         if (epList && allChapters.length > 0) {
             epList.innerHTML = ""; 
             const chapterMap = new Map();
 
             allChapters.forEach(chapter => {
-                if (!chapter.chap) return; 
+                const attrs = chapter.attributes;
+                if (attrs.translatedLanguage !== 'en' || !attrs.chapter) return;
 
-                const chapNumFloat = parseFloat(chapter.chap);
+                const chapNumFloat = parseFloat(attrs.chapter);
                 if (isNaN(chapNumFloat)) return; 
 
                 if (!chapterMap.has(chapNumFloat)) {
                     chapterMap.set(chapNumFloat, chapter);
                 } else {
                     const existing = chapterMap.get(chapNumFloat);
-                    if (!existing.title && chapter.title) {
+                    if (!existing.attributes.title && attrs.title) {
                         chapterMap.set(chapNumFloat, chapter); 
                     }
                 }
             });
 
             const sortedChapters = Array.from(chapterMap.values()).sort((a, b) => {
-                return parseFloat(a.chap) - parseFloat(b.chap);
+                return parseFloat(a.attributes.chapter) - parseFloat(b.attributes.chapter);
             });
 
             sortedChapters.forEach(chapter => {
-                const chapNum = chapter.chap;
-                const displayTitle = chapter.title ? ` - ${chapter.title}` : ''; 
+                const attrs = chapter.attributes;
+                const chapNum = attrs.chapter;
+                const displayTitle = attrs.title ? ` - ${attrs.title}` : ''; 
 
                 const btn = document.createElement('div');
                 btn.className = 'ep-btn';
@@ -197,7 +212,11 @@ async function loadDetails() {
                 btn.style.textAlign = "left"; 
                 
                 btn.onclick = () => {
-                    window.location.href = `watch.html?chapterId=${chapter.hid}&title=${encodeURIComponent(title)}&ep=${chapNum}`;
+                    if (attrs.externalUrl) {
+                        window.open(attrs.externalUrl, '_blank'); 
+                    } else {
+                        window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${chapNum}`;
+                    }
                 };
                 epList.appendChild(btn);
             });
@@ -241,19 +260,19 @@ async function loadMangaReader() {
     window.scrollTo(0, 0);
 
     try {
-        // Fetch images via AllOrigins Proxy
-        const imageListUrl = `https://api.comick.io/chapter/${chapterId}`;
-        const res = await fetch(proxyUrl(imageListUrl));
-        if (!res.ok) throw new Error("Image Server Proxy blocked");
+        const res = await fetch(`https://api.mangadex.org/at-home/server/${chapterId}`);
+        if (!res.ok) throw new Error("Image Server Blocked");
 
         const serverData = await res.json();
-        const pageFiles = serverData.chapter.md_images; 
+        const host = serverData.baseUrl;
+        const hash = serverData.chapter.hash;
+        const pageFiles = serverData.chapter.data;
 
         mangaView.innerHTML = ""; 
         
-        pageFiles.forEach(imgData => {
+        pageFiles.forEach(file => {
             const img = document.createElement('img');
-            const fullUrl = `https://meo.comick.pictures/${imgData.b2key}`;
+            const fullUrl = `${host}/data/${hash}/${file}`;
             
             img.src = `https://wsrv.nl/?url=${encodeURIComponent(fullUrl)}&default=${encodeURIComponent(fullUrl)}`;
             img.style.cssText = "width:100%; display:block; margin:0; border:none;";
