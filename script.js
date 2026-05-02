@@ -111,8 +111,8 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
 }
 
 // --- 3. DETAILS & CHAPTERS (ULTRA FETCH) ---
-// Helper to safely encode URLs for the proxy
-const proxyUrl = (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+// Helper to bypass browser blocks using AllOrigins (JSON specific)
+const proxyUrl = (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
 
 async function loadDetails() {
     const params = new URLSearchParams(window.location.search);
@@ -137,12 +137,13 @@ async function loadDetails() {
         }
     } catch (e) { console.warn("Metadata skipped"); }
 
-    // Chapters via CorsProxy
+    // Chapters via AllOrigins Proxy
     try {
         if (epList) epList.innerHTML = "<p style='color: var(--accent);'>Fetching complete database...</p>";
 
-        // Search ComicK via Proxy
-        const searchRes = await fetch(proxyUrl(`https://api.comick.app/v1.0/search?q=${encodeURIComponent(title)}&limit=1`));
+        // Search ComicK (.io domain)
+        const searchUrl = `https://api.comick.io/v1.0/search?q=${encodeURIComponent(title)}&limit=1`;
+        const searchRes = await fetch(proxyUrl(searchUrl));
         if (!searchRes.ok) throw new Error("Search Proxy blocked");
         
         const searchData = await searchRes.json();
@@ -154,8 +155,9 @@ async function loadDetails() {
 
         const mangaHid = searchData[0].hid;
 
-        // Fetch massive chapter list via Proxy
-        const feedRes = await fetch(proxyUrl(`https://api.comick.app/comic/${mangaHid}/chapters?lang=en&limit=99999`));
+        // Fetch massive chapter list 
+        const feedUrl = `https://api.comick.io/comic/${mangaHid}/chapters?lang=en&limit=99999`;
+        const feedRes = await fetch(proxyUrl(feedUrl));
         if (!feedRes.ok) throw new Error("Chapter Proxy blocked");
 
         const feedData = await feedRes.json();
@@ -239,8 +241,9 @@ async function loadMangaReader() {
     window.scrollTo(0, 0);
 
     try {
-        // Fetch images via Proxy
-        const res = await fetch(proxyUrl(`https://api.comick.app/chapter/${chapterId}`));
+        // Fetch images via AllOrigins Proxy
+        const imageListUrl = `https://api.comick.io/chapter/${chapterId}`;
+        const res = await fetch(proxyUrl(imageListUrl));
         if (!res.ok) throw new Error("Image Server Proxy blocked");
 
         const serverData = await res.json();
