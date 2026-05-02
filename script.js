@@ -110,16 +110,16 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
     });
 }
 
-// --- 3. DETAILS & CHAPTERS (SMART MANGADEX PULL) ---
+// --- 3. DETAILS & CHAPTERS (CUSTOM SCRAPER) ---
 async function loadDetails() {
     const params = new URLSearchParams(window.location.search);
     const title = decodeURIComponent(params.get('title'));
     if(!title || title === "null") return;
 
     const epList = document.getElementById('ep-list');
-    if (epList) epList.innerHTML = "<p style='color: gray;'>Establishing secure connection...</p>";
+    if (epList) epList.innerHTML = "<p style='color: gray;'>Scraping database...</p>";
 
-    // Metadata (Jikan API)
+    // Metadata (Jikan API remains for synopsis and images)
     try {
         const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
         if (res.ok) {
@@ -134,96 +134,50 @@ async function loadDetails() {
         }
     } catch (e) { console.warn("Metadata skipped"); }
 
-    // Direct MangaDex Smart Loop
+    // Connect to your custom Vercel Scraper
     try {
-        if (epList) epList.innerHTML = "<p style='color: var(--accent);'>Executing measured data pull...</p>";
-
-        const searchUrl = `https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=1&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`;
-        const searchRes = await fetch(searchUrl);
-        
-        if (!searchRes.ok) throw new Error(`Search Blocked: ${searchRes.status}`);
-        
+        // 1. Search for the Manga
+        const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
+        if (!searchRes.ok) throw new Error("Backend Scraper Error");
         const searchData = await searchRes.json();
 
-        if (!searchData.data || searchData.data.length === 0) {
-            if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found on MangaDex.</p>";
+        if (!searchData || searchData.length === 0) {
+            if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found.</p>";
             return;
         }
 
-        const mangaId = searchData.data[0].id;
-        let allChapters = [];
-        let offset = 0;
-        let total = 1;
+        const mangaId = searchData[0].id; // Grab the best match
 
-        // Loop chunks of 500 with rate-limit survival
-        while (offset < total) {
-            const feedUrl = `https://api.mangadex.org/manga/${mangaId}/feed?translatedLanguage[]=en&limit=500&offset=${offset}&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includeExternalUrl=1`;
-            const feedRes = await fetch(feedUrl);
-            
-            if (feedRes.status === 429) {
-                console.warn("Rate limit hit. Cooling down...");
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                continue; 
-            }
-            if (!feedRes.ok) throw new Error(`Server Error: ${feedRes.status}`);
+        // 2. Scrape the Chapter List
+        if (epList) epList.innerHTML = "<p style='color: var(--accent);'>Compiling chapters...</p>";
+        const chapterRes = await fetch(`/api/search?mangaId=${mangaId}`);
+        const chapters = await chapterRes.json();
 
-            const feedData = await feedRes.json();
-            total = feedData.total || 0;
-            if (feedData.data) allChapters.push(...feedData.data);
-            
-            offset += 500;
-            await new Promise(resolve => setTimeout(resolve, 400));
-            if (offset > 5000) break; 
-        }
-
-        if (epList && allChapters.length > 0) {
+        if (epList && chapters.length > 0) {
             epList.innerHTML = ""; 
-            const chapterMap = new Map();
+            
+            // Sort ascending (1, 2, 3...) because Manganato lists newest first
+            const sortedChapters = chapters.sort((a, b) => a.chap - b.chap);
 
-            allChapters.forEach(chapter => {
-                const attrs = chapter.attributes;
-                if (attrs.translatedLanguage !== 'en' || !attrs.chapter) return;
-
-                const chapNumFloat = parseFloat(attrs.chapter);
-                if (isNaN(chapNumFloat)) return; 
-
-                if (!chapterMap.has(chapNumFloat)) {
-                    chapterMap.set(chapNumFloat, chapter);
-                } else {
-                    const existing = chapterMap.get(chapNumFloat);
-                    if (!existing.attributes.title && attrs.title) {
-                        chapterMap.set(chapNumFloat, chapter); 
-                    }
-                }
-            });
-
-            const sortedChapters = Array.from(chapterMap.values()).sort((a, b) => {
-                return parseFloat(a.attributes.chapter) - parseFloat(b.attributes.chapter);
-            });
-
+            // Filter out duplicate logic isn't needed here because Manganato compiles their own lists cleanly!
             sortedChapters.forEach(chapter => {
-                const attrs = chapter.attributes;
-                const chapNum = attrs.chapter;
-                const displayTitle = attrs.title ? ` - ${attrs.title}` : ''; 
-
                 const btn = document.createElement('div');
                 btn.className = 'ep-btn';
-                btn.innerText = `Ch. ${chapNum}${displayTitle}`;
+                btn.innerText = chapter.title; // Manganato provides nice, clean titles already
                 btn.style.textAlign = "left"; 
                 
                 btn.onclick = () => {
-                    if (attrs.externalUrl) {
-                        window.open(attrs.externalUrl, '_blank'); 
-                    } else {
-                        window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${chapNum}`;
-                    }
+                    // Send the custom chapter ID to the reader
+                    window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${chapter.chap}`;
                 };
                 epList.appendChild(btn);
             });
+        } else {
+            if (epList) epList.innerHTML = "<p style='color: gray;'>Failed to extract chapters.</p>";
         }
 
     } catch (err) {
-        console.error("System Crash:", err);
+        console.error("Scraper Crash:", err);
         if (epList) epList.innerHTML = `<p style='color: #ff4757; font-weight: bold;'>Error: ${err.message}. Please refresh.</p>`;
     }
 }
@@ -256,28 +210,27 @@ async function loadMangaReader() {
         mangaView.style.cssText = "width:100%; max-width:900px; margin:0 auto; background:#000;";
         document.querySelector('.player-container').appendChild(mangaView);
     }
-    mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Assembling pages...</p>";
+    mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Stealing high-quality pages...</p>";
     window.scrollTo(0, 0);
 
     try {
-        const res = await fetch(`https://api.mangadex.org/at-home/server/${chapterId}`);
-        if (!res.ok) throw new Error("Image Server Blocked");
-
-        const serverData = await res.json();
-        const host = serverData.baseUrl;
-        const hash = serverData.chapter.hash;
-        const pageFiles = serverData.chapter.data;
+        // Scrape the images via Backend
+        const res = await fetch(`/api/search?chapterId=${chapterId}`);
+        if (!res.ok) throw new Error("Image Scraper Failed");
+        
+        const data = await res.json();
+        const pageFiles = data.images; 
 
         mangaView.innerHTML = ""; 
         
-        pageFiles.forEach(file => {
+        pageFiles.forEach(imgUrl => {
             const img = document.createElement('img');
-            const fullUrl = `${host}/data/${hash}/${file}`;
             
-            img.src = `https://wsrv.nl/?url=${encodeURIComponent(fullUrl)}&default=${encodeURIComponent(fullUrl)}`;
+            // Manganato protects their images, so wsrv.nl is REQUIRED here to bypass the block
+            img.src = `https://wsrv.nl/?url=${encodeURIComponent(imgUrl)}&default=${encodeURIComponent(imgUrl)}`;
             img.style.cssText = "width:100%; display:block; margin:0; border:none;";
             img.loading = "lazy";
-            img.onerror = () => { img.src = fullUrl; }; 
+            img.onerror = () => { img.src = imgUrl; }; 
             
             mangaView.appendChild(img);
         });
