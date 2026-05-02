@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async function (req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     const { q, mangaId, chapterId } = req.query;
 
@@ -8,14 +8,13 @@ export default async function handler(req, res) {
 
     try {
         if (q) {
-            // 1. SEARCH MANGAPILL (No Cloudflare Bot Blocks!)
+            // 1. SEARCH MANGAPILL
             const response = await fetch(`https://mangapill.com/search?q=${encodeURIComponent(q)}`, { headers });
             const html = await response.text();
 
             if (html.includes("Cloudflare")) throw new Error("Cloudflare blocked Vercel.");
 
             const results = [];
-            // Slice the raw code perfectly to grab the link and the title
             const blocks = html.split('href="/manga/');
             
             for (let i = 1; i < blocks.length; i++) {
@@ -50,7 +49,6 @@ export default async function handler(req, res) {
                 if (idMatch && titleMatch) {
                     const id = encodeURIComponent('/chapters/' + idMatch[1]);
                     const title = titleMatch[1].trim();
-                    // Extract the chapter number mathematically so your UI sorts it perfectly
                     const numMatch = title.match(/(\d+(\.\d+)?)/);
                     const chapNum = numMatch ? parseFloat(numMatch[1]) : 0;
                     
@@ -63,4 +61,32 @@ export default async function handler(req, res) {
             if (chapters.length === 0) throw new Error("No chapters found.");
             return res.status(200).json(chapters);
         }
-      else if (chapterId)
+        else if (chapterId) {
+            // 3. INDESTRUCTIBLE IMAGE SCRAPER
+            const targetUrl = `https://mangapill.com${decodeURIComponent(chapterId)}`;
+            const response = await fetch(targetUrl, { headers });
+            const html = await response.text();
+
+            const images = [];
+            const imgTags = [...html.matchAll(/<img[^>]+>/gi)];
+            
+            for (let tag of imgTags) {
+                const srcMatch = tag[0].match(/(?:src|data-src)="([^"]+)"/i);
+                if (srcMatch) {
+                    const url = srcMatch[1];
+                    if (url.includes('http') && !url.includes('logo') && !url.includes('icon') && !url.includes('avatar')) {
+                        if (!images.includes(url)) images.push(url);
+                    }
+                }
+            }
+
+            if (images.length === 0) throw new Error("Image Scraper failed: Could not find manga pages.");
+            return res.status(200).json({ images });
+        }
+        else {
+            return res.status(400).json({ error: "Missing parameters" });
+        }
+    } catch (error) {
+        return res.status(500).json({ error: error.message });
+    }
+};
