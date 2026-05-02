@@ -110,7 +110,7 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
     });
 }
 
-// --- 3. DETAILS & CHAPTERS (CUSTOM SCRAPER) ---
+// --- 3. DETAILS & CHAPTERS (MANGAPILL NINJA SCRAPER) ---
 async function loadDetails() {
     const params = new URLSearchParams(window.location.search);
     const title = decodeURIComponent(params.get('title'));
@@ -119,7 +119,7 @@ async function loadDetails() {
     const epList = document.getElementById('ep-list');
     if (epList) epList.innerHTML = "<p style='color: gray;'>Scraping database...</p>";
 
-    // Metadata (Jikan API remains for synopsis and images)
+    // Metadata (Jikan)
     try {
         const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
         if (res.ok) {
@@ -134,9 +134,8 @@ async function loadDetails() {
         }
     } catch (e) { console.warn("Metadata skipped"); }
 
-    // Connect to your custom Vercel Scraper
     try {
-        // 1. Search for the Manga
+        // 1. Search for Manga
         const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
         if (!searchRes.ok) throw new Error("Backend Scraper Error");
         const searchData = await searchRes.json();
@@ -146,28 +145,26 @@ async function loadDetails() {
             return;
         }
 
-        const mangaId = searchData[0].id; // Grab the best match
+        const mangaId = searchData[0].id;
 
-        // 2. Scrape the Chapter List
+        // 2. Scrape Chapter List
         if (epList) epList.innerHTML = "<p style='color: var(--accent);'>Compiling chapters...</p>";
-        const chapterRes = await fetch(`/api/search?mangaId=${mangaId}`);
+        const chapterRes = await fetch(`/api/search?mangaId=${encodeURIComponent(mangaId)}`);
         const chapters = await chapterRes.json();
 
         if (epList && chapters.length > 0) {
             epList.innerHTML = ""; 
             
-            // Sort ascending (1, 2, 3...) because Manganato lists newest first
+            // Sort ascending (Ch 1, 2, 3...)
             const sortedChapters = chapters.sort((a, b) => a.chap - b.chap);
 
-            // Filter out duplicate logic isn't needed here because Manganato compiles their own lists cleanly!
             sortedChapters.forEach(chapter => {
                 const btn = document.createElement('div');
                 btn.className = 'ep-btn';
-                btn.innerText = chapter.title; // Manganato provides nice, clean titles already
+                btn.innerText = chapter.title; 
                 btn.style.textAlign = "left"; 
                 
                 btn.onclick = () => {
-                    // Send the custom chapter ID to the reader
                     window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${chapter.chap}`;
                 };
                 epList.appendChild(btn);
@@ -214,8 +211,8 @@ async function loadMangaReader() {
     window.scrollTo(0, 0);
 
     try {
-        // Scrape the images via Backend
-        const res = await fetch(`/api/search?chapterId=${chapterId}`);
+        // THE FIX IS HERE: encodeURIComponent securely wraps the slashes in the ID
+        const res = await fetch(`/api/search?chapterId=${encodeURIComponent(chapterId)}`);
         if (!res.ok) throw new Error("Image Scraper Failed");
         
         const data = await res.json();
@@ -226,7 +223,6 @@ async function loadMangaReader() {
         pageFiles.forEach(imgUrl => {
             const img = document.createElement('img');
             
-            // Manganato protects their images, so wsrv.nl is REQUIRED here to bypass the block
             img.src = `https://wsrv.nl/?url=${encodeURIComponent(imgUrl)}&default=${encodeURIComponent(imgUrl)}`;
             img.style.cssText = "width:100%; display:block; margin:0; border:none;";
             img.loading = "lazy";
