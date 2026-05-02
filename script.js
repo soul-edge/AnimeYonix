@@ -221,6 +221,8 @@ async function loadMangaReader() {
     const mainPlayer = document.getElementById('mainPlayer');
     
     if (!chapterId) return;
+
+    // Clear video styling constraints
     if (mainPlayer) mainPlayer.remove();
     if (wrapper) {
         wrapper.style.paddingBottom = "0";
@@ -239,27 +241,34 @@ async function loadMangaReader() {
         mangaView.style.cssText = "width:100%; max-width:900px; margin:0 auto; background:#000;";
         document.querySelector('.player-container').appendChild(mangaView);
     }
-    mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Loading pages...</p>";
+    mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Assembling high-quality pages...</p>";
     window.scrollTo(0, 0);
 
     try {
-        const res = await fetch(`/api/search?chapterId=${chapterId}`);
+        // Fetch image data directly from ComicK
+        const res = await fetch(`https://api.comick.app/chapter/${chapterId}`);
+        if (!res.ok) throw new Error("Failed to connect to image server");
+        
         const serverData = await res.json();
-        const host = serverData.baseUrl;
-        const hash = serverData.chapter.hash;
-        const pageFiles = serverData.chapter.data; 
+        const pageFiles = serverData.chapter.md_images; 
 
         mangaView.innerHTML = ""; 
-        pageFiles.forEach(file => {
+        
+        pageFiles.forEach(imgData => {
             const img = document.createElement('img');
-            const fullUrl = `${host}/data/${hash}/${file}`;
+            // ComicK's dedicated image server
+            const fullUrl = `https://meo.comick.pictures/${imgData.b2key}`;
+            
+            // We still use wsrv.nl to ensure total stability and bypass any browser blocks
             img.src = `https://wsrv.nl/?url=${encodeURIComponent(fullUrl)}&default=${encodeURIComponent(fullUrl)}`;
             img.style.cssText = "width:100%; display:block; margin:0; border:none;";
             img.loading = "lazy";
-            img.onerror = () => { img.src = fullUrl; }; 
+            img.onerror = () => { img.src = fullUrl; }; // Fallback to direct link
+            
             mangaView.appendChild(img);
         });
 
+        // Add back button
         const endBtn = document.createElement('button');
         endBtn.innerText = "Back to Details";
         endBtn.className = "btn";
@@ -270,7 +279,8 @@ async function loadMangaReader() {
         mangaView.appendChild(endBtn);
 
     } catch (err) {
-        mangaView.innerHTML = "<p style='color:red; text-align:center; padding:50px;'>Reader error. Please refresh.</p>";
+        console.error("Reader Error:", err);
+        mangaView.innerHTML = "<p style='color:red; text-align:center; padding:50px;'>Image server failed. Please refresh.</p>";
     }
 }
 
