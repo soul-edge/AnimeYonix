@@ -189,7 +189,7 @@ async function loadDetails() {
     }
 }
 
-// --- 4. THE MANGA READER (STEALTH MODE INCLUDED) ---
+// --- 4. THE MANGA READER ---
 async function loadMangaReader() {
     const params = new URLSearchParams(window.location.search);
     const chapterId = params.get('chapterId');
@@ -222,14 +222,6 @@ async function loadMangaReader() {
     window.scrollTo(0, 0);
 
     try {
-        // Ultimate Stealth Mode: Bypass Hotlink Protection without a proxy
-        if (!document.querySelector('meta[name="referrer"]')) {
-            const meta = document.createElement('meta');
-            meta.name = "referrer";
-            meta.content = "no-referrer";
-            document.head.appendChild(meta);
-        }
-
         const res = await fetch(`/api/search?chapterId=${encodeURIComponent(chapterId)}`);
         if (!res.ok) throw new Error("Image Scraper Failed");
         
@@ -241,10 +233,9 @@ async function loadMangaReader() {
         pageFiles.forEach(imgUrl => {
             const img = document.createElement('img');
             
-            // Direct connection to MangaPill's high-speed servers!
-            img.src = imgUrl; 
+            // Re-engage the wsrv proxy to bypass the CDN Hotlink Protection!
+            img.src = `https://wsrv.nl/?url=${encodeURIComponent(imgUrl)}`; 
             
-            // Added a min-height so you can visually see the layout loading
             img.style.cssText = "width:100%; max-width:900px; display:block; margin:0 auto 5px; min-height:400px; background:#111; color:gray; text-align:center; line-height:400px;";
             img.alt = "Loading page...";
             img.loading = "lazy";
@@ -265,7 +256,6 @@ async function loadMangaReader() {
         mangaView.innerHTML = `<p style='color:red; text-align:center; padding:50px;'>${err.message}. Please refresh.</p>`;
     }
 }
-
 // --- 5. UTILS & INIT (CRASH PROOF) ---
 async function loadTopManga() {
     const grid = document.getElementById('episodeGrid');
