@@ -1,13 +1,33 @@
 module.exports = async function (req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    const { q, mangaId, chapterId } = req.query;
+    const { q, mangaId, chapterId, proxyImage } = req.query;
 
+    // THE VIP PASS: We tell MangaPill we are officially browsing their website
     const headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36",
+        "Referer": "https://mangapill.com/"
     };
 
     try {
-        if (q) {
+        // --- 4. THE INVISIBLE IMAGE PROXY ---
+        if (proxyImage) {
+            const targetUrl = decodeURIComponent(proxyImage);
+            const response = await fetch(targetUrl, { headers });
+            
+            if (!response.ok) throw new Error("MangaPill blocked the proxy.");
+            
+            // Convert the raw image data into a readable format for your site
+            const arrayBuffer = await response.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            
+            // Tell the browser this is an image, and cache it so it loads instantly next time
+            res.setHeader('Content-Type', response.headers.get('content-type') || 'image/jpeg');
+            res.setHeader('Cache-Control', 'public, max-age=86400');
+            
+            return res.status(200).send(buffer);
+        }
+        // --- 1. SEARCH MANGAPILL ---
+        else if (q) {
             const response = await fetch(`https://mangapill.com/search?q=${encodeURIComponent(q)}`, { headers });
             const html = await response.text();
 
@@ -31,6 +51,7 @@ module.exports = async function (req, res) {
             if (results.length === 0) throw new Error("No manga found.");
             return res.status(200).json(results);
         } 
+        // --- 2. SCRAPE CHAPTERS ---
         else if (mangaId) {
             const targetUrl = `https://mangapill.com${decodeURIComponent(mangaId)}`;
             const response = await fetch(targetUrl, { headers });
@@ -59,20 +80,17 @@ module.exports = async function (req, res) {
             if (chapters.length === 0) throw new Error("No chapters found.");
             return res.status(200).json(chapters);
         }
+        // --- 3. THE SNIPER SCRAPER ---
         else if (chapterId) {
-            // 3. THE SNIPER SCRAPER
             const targetUrl = `https://mangapill.com${decodeURIComponent(chapterId)}`;
             const response = await fetch(targetUrl, { headers });
             const html = await response.text();
 
             const images = [];
-            
-            // Slice the HTML exactly where MangaPill hides their comic pages
             const pictureBlocks = html.split('<picture');
 
             for (let i = 1; i < pictureBlocks.length; i++) {
                 const block = pictureBlocks[i];
-                // Grab the raw image source
                 const srcMatch = block.match(/(?:data-src|src)="([^"]+)"/i);
                 
                 if (srcMatch) {
@@ -81,7 +99,7 @@ module.exports = async function (req, res) {
                 }
             }
 
-            if (images.length === 0) throw new Error("Image Scraper failed: Could not find manga pages.");
+            if (images.length === 0) throw new Error("Image Scraper failed.");
             return res.status(200).json({ images });
         }
         else {
