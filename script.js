@@ -42,7 +42,7 @@ if (typeof firebase.auth === 'function') {
     });
 }
 
-// --- 2. HOMEPAGE & SEARCH (JIKAN API) ---
+// --- 2. HOMEPAGE & SEARCH (JIKAN API - CRASH PROOF) ---
 let activeLetter = 'All'; 
 
 function buildLetterFilter() {
@@ -69,7 +69,7 @@ async function applyFilters(selectedLetter = 'All') {
     const header = document.querySelector('section h2');
     
     if (header) header.innerText = "Filtering Manga...";
-    if (grid) grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Searching...</p>";
+    if (grid) grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Searching database...</p>";
 
     try {
         let url = `https://api.jikan.moe/v4/manga?limit=12&order_by=popularity`;
@@ -77,13 +77,23 @@ async function applyFilters(selectedLetter = 'All') {
         if (selectedLetter && selectedLetter !== 'All') url += `&letter=${selectedLetter}`;
 
         const response = await fetch(url);
+        
+        // Catch Jikan API Rate Limits so it doesn't break your site
+        if (response.status === 429) throw new Error("Database cooling down from too many searches. Give it 30 seconds!");
+        if (!response.ok) throw new Error("Search failed to connect.");
+
         const jsonResponse = await response.json();
+        if (!jsonResponse.data) throw new Error("No data received.");
+
         const formattedResults = jsonResponse.data.map(manga => ({
             title: manga.title, 
             mainThumbnail: manga.images.jpg.large_image_url 
         }));
         renderGrid(formattedResults, `Results`, "episodeGrid");
-    } catch (error) { console.error("Filter error:", error); }
+    } catch (error) { 
+        console.error("Filter error:", error); 
+        if (grid) grid.innerHTML = `<p style='color: #ff4757; padding-left: 20px; font-weight: bold;'>${error.message}</p>`;
+    }
 }
 
 function renderGrid(mangaArray, sectionTitle, targetID) {
@@ -179,7 +189,39 @@ async function loadDetails() {
     }
 }
 
-try {
+// --- 4. THE MANGA READER (STEALTH MODE INCLUDED) ---
+async function loadMangaReader() {
+    const params = new URLSearchParams(window.location.search);
+    const chapterId = params.get('chapterId');
+    const title = params.get('title');
+    const ep = params.get('ep');
+    const wrapper = document.querySelector('.video-wrapper');
+    const mainPlayer = document.getElementById('mainPlayer');
+    
+    if (!chapterId) return;
+
+    if (mainPlayer) mainPlayer.remove();
+    if (wrapper) {
+        wrapper.style.paddingBottom = "0";
+        wrapper.style.height = "auto";
+        wrapper.style.background = "transparent";
+        wrapper.style.boxShadow = "none";
+    }
+
+    document.getElementById('playingTitle').innerText = decodeURIComponent(title);
+    document.getElementById('playingEp').innerText = "Chapter " + ep;
+
+    let mangaView = document.getElementById('mangaView');
+    if(!mangaView) {
+        mangaView = document.createElement('div');
+        mangaView.id = "mangaView";
+        mangaView.style.cssText = "width:100%; max-width:900px; margin:0 auto; background:#000;";
+        document.querySelector('.player-container').appendChild(mangaView);
+    }
+    mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Stealing high-quality pages...</p>";
+    window.scrollTo(0, 0);
+
+    try {
         // Ultimate Stealth Mode: Bypass Hotlink Protection without a proxy
         if (!document.querySelector('meta[name="referrer"]')) {
             const meta = document.createElement('meta');
@@ -222,19 +264,34 @@ try {
     } catch (err) {
         mangaView.innerHTML = `<p style='color:red; text-align:center; padding:50px;'>${err.message}. Please refresh.</p>`;
     }
-// --- 5. UTILS & INIT ---
+}
+
+// --- 5. UTILS & INIT (CRASH PROOF) ---
 async function loadTopManga() {
     const grid = document.getElementById('episodeGrid');
-    if (grid) grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Loading trending...</p>";
+    if (!grid) return;
+    
+    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Loading trending...</p>";
+    
     try {
         const response = await fetch('https://api.jikan.moe/v4/top/manga?limit=12');
+        
+        // Catch Rate Limits here too!
+        if (response.status === 429) throw new Error("Database cooling down from too many refreshes. Give it 30 seconds!");
+        if (!response.ok) throw new Error("Failed to load trending manga.");
+
         const jsonResponse = await response.json();
+        if (!jsonResponse.data) throw new Error("No data received.");
+
         const formattedResults = jsonResponse.data.map(manga => ({
             title: manga.title, 
             mainThumbnail: manga.images.jpg.large_image_url 
         }));
         renderGrid(formattedResults, "Top Trending Manga", "episodeGrid");
-    } catch (error) { console.error("Startup fetch error:", error); }
+    } catch (error) { 
+        console.error("Startup fetch error:", error); 
+        if (grid) grid.innerHTML = `<p style='color: #ff4757; padding-left: 20px; font-weight: bold;'>${error.message}</p>`;
+    }
 }
 
 async function searchAnimeAPI() { 
