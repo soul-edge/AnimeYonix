@@ -1,27 +1,37 @@
 export default async function handler(req, res) {
+    // 1. Tell the browser this proxy is safe (Bypasses CORS)
     res.setHeader('Access-Control-Allow-Origin', '*');
     
-    // We now accept 'limit' and 'offset' from the frontend
-    const { q, mangaId, chapterId, limit = 500, offset = 0 } = req.query;
+    // We look for ComicK's specific parameters now (mangaHid)
+    const { q, mangaHid, chapterId } = req.query;
 
     try {
         let targetUrl;
         
-        if (chapterId) {
-            targetUrl = `https://api.mangadex.org/at-home/server/${chapterId}`;
+        // 2. Route the requests to ComicK's fast servers
+        if (q) {
+            // Search for Manga to get the HID
+            targetUrl = `https://api.comick.app/v1.0/search?q=${encodeURIComponent(q)}&limit=1`;
         } 
-        else if (mangaId) {
-            // ALL parameters (Mature content, external URLs, limits) are hardcoded here safely
-            targetUrl = `https://api.mangadex.org/manga/${mangaId}/feed?translatedLanguage[]=en&order[chapter]=asc&limit=${limit}&offset=${offset}&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includeExternalUrl=1`;
+        else if (mangaHid) {
+            // Fetch all 99,999 chapters in ONE request (No loops needed!)
+            targetUrl = `https://api.comick.app/comic/${mangaHid}/chapters?lang=en&limit=99999`;
+        } 
+        else if (chapterId) {
+            // Fetch the image data for the reader
+            targetUrl = `https://api.comick.app/chapter/${chapterId}`;
         } 
         else {
-            targetUrl = `https://api.mangadex.org/manga?title=${encodeURIComponent(q)}&limit=1&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica`;
+            return res.status(400).json({ error: "Missing parameters" });
         }
 
         const response = await fetch(targetUrl);
+        if (!response.ok) throw new Error(`ComicK rejected the request: ${response.status}`);
+        
         const data = await response.json();
         res.status(200).json(data);
+        
     } catch (error) {
-        res.status(500).json({ error: "Failed to reach MangaDex" });
+        res.status(500).json({ error: "Proxy connection failed." });
     }
 }
