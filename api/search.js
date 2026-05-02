@@ -3,117 +3,87 @@ export default async function handler(req, res) {
     const { q, mangaId, chapterId } = req.query;
 
     const headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Referer": "https://manganato.com/"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36"
     };
 
     try {
-        // --- 1. SEARCH SCRAPER ---
         if (q) {
-            const searchTerm = q.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
-            const response = await fetch(`https://manganato.com/search/story/${searchTerm}`, { headers });
+            // 1. SEARCH MANGAPILL (No Cloudflare Bot Blocks!)
+            const response = await fetch(`https://mangapill.com/search?q=${encodeURIComponent(q)}`, { headers });
             const html = await response.text();
 
-            if (html.includes("Just a moment...") || html.includes("Cloudflare")) {
-                throw new Error("Cloudflare Firewall blocked Vercel's IP.");
-            }
+            if (html.includes("Cloudflare")) throw new Error("Cloudflare blocked Vercel.");
 
             const results = [];
-            const blocks = html.split('<a '); // Slice the website by links
+            // Slice the raw code perfectly to grab the link and the title
+            const blocks = html.split('href="/manga/');
             
-            for (let block of blocks) {
-                // If the link goes to a manga...
-                if (block.includes('href="') && block.includes('manga-')) {
-                    const hrefMatch = block.match(/href="([^"]+manga-[^"]+)"/);
-                    const titleMatch = block.match(/title="([^"]+)"/);
-                    
-                    if (hrefMatch && titleMatch) {
-                        const id = hrefMatch[1].split('/').pop(); // Grab "manga-xx1234"
-                        const title = titleMatch[1];
-                        
-                        // Save it (and prevent duplicates)
-                        if (id.startsWith('manga-') && !results.find(r => r.id === id)) {
-                            results.push({ id, title });
-                        }
-                    }
+            for (let i = 1; i < blocks.length; i++) {
+                const block = blocks[i];
+                const idMatch = block.match(/^([^"]+)"/);
+                const titleMatch = block.match(/<img[^>]+alt="([^"]+)"/);
+                
+                if (idMatch && titleMatch) {
+                    const id = encodeURIComponent('/manga/' + idMatch[1]);
+                    const title = titleMatch[1];
+                    if (!results.find(r => r.id === id)) results.push({ id, title });
                 }
             }
 
-            if (results.length === 0) throw new Error("Scraper failed: Manganato blocked the search query.");
+            if (results.length === 0) throw new Error("No manga found.");
             return res.status(200).json(results);
         } 
-        
-        // --- 2. CHAPTER SCRAPER ---
         else if (mangaId) {
-            let response = await fetch(`https://chapmanganato.to/${mangaId}`, { headers });
-            let html = await response.text();
-            
-            if (html.includes("404 - PAGE NOT FOUND") || html.includes("404 Not Found")) {
-               response = await fetch(`https://manganato.com/${mangaId}`, { headers });
-               html = await response.text();
-            }
-
-            if (html.includes("Just a moment...") || html.includes("Cloudflare")) {
-                throw new Error("Cloudflare Firewall blocked Vercel's IP.");
-            }
+            // 2. SCRAPE CHAPTERS
+            const targetUrl = `https://mangapill.com${decodeURIComponent(mangaId)}`;
+            const response = await fetch(targetUrl, { headers });
+            const html = await response.text();
 
             const chapters = [];
-            const blocks = html.split('<a '); // Slice the website by links
+            const blocks = html.split('href="/chapters/');
             
-            for (let block of blocks) {
-                // If the link goes to a chapter...
-                if (block.includes('href="') && block.includes('chapter-')) {
-                    const hrefMatch = block.match(/href="([^"]+chapter-[^"]+)"/);
-                    const titleMatch = block.match(/title="([^"]+)"/);
+            for (let i = 1; i < blocks.length; i++) {
+                const block = blocks[i];
+                const idMatch = block.match(/^([^"]+)"/);
+                const titleMatch = block.match(/>([^<]+)<\/a>/);
+                
+                if (idMatch && titleMatch) {
+                    const id = encodeURIComponent('/chapters/' + idMatch[1]);
+                    const title = titleMatch[1].trim();
+                    // Extract the chapter number mathematically so your UI sorts it perfectly
+                    const numMatch = title.match(/(\d+(\.\d+)?)/);
+                    const chapNum = numMatch ? parseFloat(numMatch[1]) : 0;
                     
-                    if (hrefMatch && titleMatch) {
-                        const fullLink = hrefMatch[1];
-                        const cId = fullLink.split('/').slice(-2).join('/'); // "manga-xx/chapter-1"
-                        const cTitle = titleMatch[1];
-                        
-                        // Find the chapter number for sorting
-                        const numMatch = cTitle.match(/Chapter (\d+(\.\d+)?)/i) || fullLink.match(/chapter-(\d+(\.\d+)?)/i);
-                        const cNum = numMatch ? parseFloat(numMatch[1]) : 0;
-                        
-                        if (!chapters.find(c => c.id === cId)) {
-                            chapters.push({ id: cId, title: cTitle, chap: cNum });
-                        }
+                    if (!chapters.find(c => c.id === id)) {
+                        chapters.push({ id, title, chap: chapNum });
                     }
                 }
             }
 
-            if (chapters.length === 0) throw new Error("Scraper found no chapters. Layout changed.");
+            if (chapters.length === 0) throw new Error("No chapters found.");
             return res.status(200).json(chapters);
         }
-        
-        // --- 3. IMAGE SCRAPER ---
         else if (chapterId) {
-            const response = await fetch(`https://chapmanganato.to/${chapterId}`, { headers });
+            // 3. SCRAPE IMAGES
+            const targetUrl = `https://mangapill.com${decodeURIComponent(chapterId)}`;
+            const response = await fetch(targetUrl, { headers });
             const html = await response.text();
-            
-            if (html.includes("Just a moment...")) throw new Error("Cloudflare blocked image scraping.");
-
-            // Find the container holding the images
-            const readerSection = html.split('container-chapter-reader')[1] || html.split('panel-read-story')[1] || html;
 
             const images = [];
-            const blocks = readerSection.split('<img '); // Slice by image tags
+            // MangaPill uses lazy-loading, so we grab the raw "data-src" links
+            const blocks = html.split('data-src="'); 
             
-            for (let block of blocks) {
-                if (block.includes('src="')) {
-                    const srcMatch = block.match(/src="([^"]+)"/);
-                    // Filter out UI icons and logos, keep only manga pages
-                    if (srcMatch && !srcMatch[1].includes('logo') && !srcMatch[1].includes('icon')) {
-                        images.push(srcMatch[1]);
-                    }
+            for (let i = 1; i < blocks.length; i++) {
+                const block = blocks[i];
+                const urlMatch = block.match(/^([^"]+cdn\.mangapill\.com[^"]+)"/);
+                if (urlMatch) {
+                    if (!images.includes(urlMatch[1])) images.push(urlMatch[1]);
                 }
             }
-            
-            if (images.length === 0) throw new Error("Could not extract image links.");
+
+            if (images.length === 0) throw new Error("No images found.");
             return res.status(200).json({ images });
         }
-        
         else {
             return res.status(400).json({ error: "Missing parameters" });
         }
