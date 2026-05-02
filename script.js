@@ -117,9 +117,9 @@ async function loadDetails() {
     if(!title || title === "null") return;
 
     const epList = document.getElementById('ep-list');
-    if (epList) epList.innerHTML = "<p style='color: gray;'>Downloading full chapter database...</p>";
+    if (epList) epList.innerHTML = "<p style='color: gray;'>Connecting directly to MangaDex...</p>";
 
-    // 1. Get Metadata (Jikan)
+    // 1. Get Metadata (Jikan API)
     try {
         const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
         const mal = await res.json();
@@ -132,74 +132,81 @@ async function loadDetails() {
         }
     } catch (e) { console.error("Metadata failed", e); }
 
-    // 2. Fetch Chapters using Pagination (The Loop)
+    // 2. Direct MangaDex Fetch (Bypassing Vercel Proxy to avoid caching issues)
     try {
-        const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
+        // Search MangaDex directly
+        const searchUrl = `https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=1&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`;
+        const searchRes = await fetch(searchUrl);
         const searchData = await searchRes.json();
-        
+
         if (!searchData.data || searchData.data.length === 0) {
-            if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found.</p>";
+            if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found on MangaDex.</p>";
             return;
         }
 
         const mangaId = searchData.data[0].id;
         let allChapters = [];
         let offset = 0;
-        let total = 1; // Start at 1 to enter the loop
+        let total = 1;
 
-        // Loop chunks of 500 until we have every single chapter (Crucial for One Piece)
+        // The Smart Loop
         while (offset < total) {
-            const feedRes = await fetch(`/api/search?mangaId=${mangaId}&limit=500&offset=${offset}`);
+            const feedUrl = `https://api.mangadex.org/manga/${mangaId}/feed?translatedLanguage[]=en&limit=500&offset=${offset}&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includeExternalUrl=1`;
+            const feedRes = await fetch(feedUrl);
             const feedData = await feedRes.json();
-            
-            total = feedData.total || 0; 
+
+            total = feedData.total || 0;
             if (feedData.data) allChapters.push(...feedData.data);
             offset += 500;
+
+            // Safety break to prevent true infinite loops
+            if (offset > 5000) break;
         }
 
         if (epList && allChapters.length > 0) {
             epList.innerHTML = ""; 
-            
-            // 3. SMART FILTER: Remove duplicates and bad titles
+
             const chapterMap = new Map();
-            
+
             allChapters.forEach(chapter => {
                 const attrs = chapter.attributes;
-                if (attrs.translatedLanguage !== 'en' || !attrs.chapter) return; // Skip non-English or unnumbered
+                if (attrs.translatedLanguage !== 'en' || !attrs.chapter) return;
 
-                const chapNumFloat = parseFloat(attrs.chapter); // Convert "10.5" string to actual number
+                const chapNumFloat = parseFloat(attrs.chapter);
+                
+                // CRITICAL FIX: If the chapter number is "null" or text, skip it so it doesn't break the math!
+                if (isNaN(chapNumFloat)) return; 
 
-                // If we haven't seen this chapter yet, or if the new one has a better title, keep it
+                // Weed out duplicates, keep the ones with proper titles
                 if (!chapterMap.has(chapNumFloat)) {
                     chapterMap.set(chapNumFloat, chapter);
                 } else {
                     const existing = chapterMap.get(chapNumFloat);
                     if (!existing.attributes.title && attrs.title) {
-                        chapterMap.set(chapNumFloat, chapter); // Swap for the one with a real title
+                        chapterMap.set(chapNumFloat, chapter); 
                     }
                 }
             });
 
-            // 4. MATHEMATICAL SORT: Force them in strict numerical order
+            // Mathematical Sort (1, 2, 3...)
             const sortedChapters = Array.from(chapterMap.values()).sort((a, b) => {
                 return parseFloat(a.attributes.chapter) - parseFloat(b.attributes.chapter);
             });
 
-            // 5. Render Buttons
+            // Render Buttons
             sortedChapters.forEach(chapter => {
                 const attrs = chapter.attributes;
                 const chapNum = attrs.chapter;
-                // If the group gave it a weird title, we still show the Ch number clearly
                 const displayTitle = attrs.title ? ` - ${attrs.title}` : ''; 
 
                 const btn = document.createElement('div');
                 btn.className = 'ep-btn';
                 btn.innerText = `Ch. ${chapNum}${displayTitle}`;
-                btn.style.textAlign = "left"; // Looks cleaner with titles
+                btn.style.textAlign = "left"; 
                 
                 btn.onclick = () => {
                     if (attrs.externalUrl) {
-                        window.open(attrs.externalUrl, '_blank');
+                        window.open(attrs.externalUrl, '_blank'); // Opens MangaPlus links safely
                     } else {
                         window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${chapNum}`;
                     }
