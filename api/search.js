@@ -63,31 +63,4 @@ export default async function handler(req, res) {
             if (chapters.length === 0) throw new Error("No chapters found.");
             return res.status(200).json(chapters);
         }
-        else if (chapterId) {
-            // 3. SCRAPE IMAGES
-            const targetUrl = `https://mangapill.com${decodeURIComponent(chapterId)}`;
-            const response = await fetch(targetUrl, { headers });
-            const html = await response.text();
-
-            const images = [];
-            // MangaPill uses lazy-loading, so we grab the raw "data-src" links
-            const blocks = html.split('data-src="'); 
-            
-            for (let i = 1; i < blocks.length; i++) {
-                const block = blocks[i];
-                const urlMatch = block.match(/^([^"]+cdn\.mangapill\.com[^"]+)"/);
-                if (urlMatch) {
-                    if (!images.includes(urlMatch[1])) images.push(urlMatch[1]);
-                }
-            }
-
-            if (images.length === 0) throw new Error("No images found.");
-            return res.status(200).json({ images });
-        }
-        else {
-            return res.status(400).json({ error: "Missing parameters" });
-        }
-    } catch (error) {
-        return res.status(500).json({ error: error.message });
-    }
-}
+      else if (chapterId)
