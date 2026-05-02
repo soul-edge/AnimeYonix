@@ -117,26 +117,32 @@ async function loadDetails() {
     if(!title || title === "null") return;
 
     const epList = document.getElementById('ep-list');
-    if (epList) epList.innerHTML = "<p style='color: gray;'>Connecting directly to MangaDex...</p>";
+    if (epList) epList.innerHTML = "<p style='color: gray;'>Establishing secure connection...</p>";
 
     // 1. Get Metadata (Jikan API)
     try {
         const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
-        const mal = await res.json();
-        if (mal.data && mal.data[0]) {
-            const manga = mal.data[0];
-            document.getElementById('det-title').innerText = manga.title;
-            document.getElementById('det-syn').innerText = manga.synopsis || "No description.";
-            document.getElementById('det-thumb').src = manga.images.jpg.large_image_url;
-            document.getElementById('det-genre').innerText = "GENRE: " + manga.genres.map(g => g.name).join(', ');
+        if (res.ok) {
+            const mal = await res.json();
+            if (mal.data && mal.data[0]) {
+                const manga = mal.data[0];
+                document.getElementById('det-title').innerText = manga.title;
+                document.getElementById('det-syn').innerText = manga.synopsis || "No description.";
+                document.getElementById('det-thumb').src = manga.images.jpg.large_image_url;
+                document.getElementById('det-genre').innerText = "GENRE: " + manga.genres.map(g => g.name).join(', ');
+            }
         }
-    } catch (e) { console.error("Metadata failed", e); }
+    } catch (e) { console.warn("Metadata skipped"); }
 
-    // 2. Direct MangaDex Fetch (Bypassing Vercel Proxy to avoid caching issues)
+    let allChapters = []; // We declare this OUTSIDE so we can rescue the data if it crashes
+
+    // 2. Direct MangaDex Fetch
     try {
-        // Search MangaDex directly
         const searchUrl = `https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=1&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`;
         const searchRes = await fetch(searchUrl);
+        
+        if (!searchRes.ok) throw new Error(`Search Blocked: Error ${searchRes.status}`);
+        
         const searchData = await searchRes.json();
 
         if (!searchData.data || searchData.data.length === 0) {
@@ -145,79 +151,84 @@ async function loadDetails() {
         }
 
         const mangaId = searchData.data[0].id;
-        let allChapters = [];
         let offset = 0;
         let total = 1;
 
-        // The Smart Loop
+        if (epList) epList.innerHTML = "<p style='color: var(--accent);'>Downloading chapters safely...</p>";
+
+        // The Rate-Limited Loop
         while (offset < total) {
             const feedUrl = `https://api.mangadex.org/manga/${mangaId}/feed?translatedLanguage[]=en&limit=500&offset=${offset}&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includeExternalUrl=1`;
             const feedRes = await fetch(feedUrl);
-            const feedData = await feedRes.json();
+            
+            if (!feedRes.ok) throw new Error(`MangaDex Server Error ${feedRes.status}`);
 
+            const feedData = await feedRes.json();
             total = feedData.total || 0;
             if (feedData.data) allChapters.push(...feedData.data);
+            
             offset += 500;
 
-            // Safety break to prevent true infinite loops
-            if (offset > 5000) break;
-        }
-
-        if (epList && allChapters.length > 0) {
-            epList.innerHTML = ""; 
-
-            const chapterMap = new Map();
-
-            allChapters.forEach(chapter => {
-                const attrs = chapter.attributes;
-                if (attrs.translatedLanguage !== 'en' || !attrs.chapter) return;
-
-                const chapNumFloat = parseFloat(attrs.chapter);
-                
-                // CRITICAL FIX: If the chapter number is "null" or text, skip it so it doesn't break the math!
-                if (isNaN(chapNumFloat)) return; 
-
-                // Weed out duplicates, keep the ones with proper titles
-                if (!chapterMap.has(chapNumFloat)) {
-                    chapterMap.set(chapNumFloat, chapter);
-                } else {
-                    const existing = chapterMap.get(chapNumFloat);
-                    if (!existing.attributes.title && attrs.title) {
-                        chapterMap.set(chapNumFloat, chapter); 
-                    }
-                }
-            });
-
-            // Mathematical Sort (1, 2, 3...)
-            const sortedChapters = Array.from(chapterMap.values()).sort((a, b) => {
-                return parseFloat(a.attributes.chapter) - parseFloat(b.attributes.chapter);
-            });
-
-            // Render Buttons
-            sortedChapters.forEach(chapter => {
-                const attrs = chapter.attributes;
-                const chapNum = attrs.chapter;
-                const displayTitle = attrs.title ? ` - ${attrs.title}` : ''; 
-
-                const btn = document.createElement('div');
-                btn.className = 'ep-btn';
-                btn.innerText = `Ch. ${chapNum}${displayTitle}`;
-                btn.style.textAlign = "left"; 
-                
-                btn.onclick = () => {
-                    if (attrs.externalUrl) {
-                        window.open(attrs.externalUrl, '_blank'); // Opens MangaPlus links safely
-                    } else {
-                        window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${chapNum}`;
-                    }
-                };
-                epList.appendChild(btn);
-            });
+            // Pause for 300ms to avoid DDoS bans
+            await new Promise(resolve => setTimeout(resolve, 300));
+            if (offset > 5000) break; // Safety net
         }
 
     } catch (err) {
-        console.error("Reader Error:", err);
-        if (epList) epList.innerHTML = "<p style='color: red;'>Failed to load database. Please refresh.</p>";
+        console.error("Fetch interrupted:", err);
+        // If it crashes but we have 0 chapters, show the real error.
+        if (allChapters.length === 0) {
+            if (epList) epList.innerHTML = `<p style='color: #ff4757; font-weight: bold;'>Error: ${err.message}. Please refresh.</p>`;
+            return;
+        }
+        // Otherwise, ignore the crash and render what we captured below!
+    }
+
+    // 3. Render whatever we captured (Even if the loop crashed halfway)
+    if (epList && allChapters.length > 0) {
+        epList.innerHTML = ""; 
+        const chapterMap = new Map();
+
+        allChapters.forEach(chapter => {
+            const attrs = chapter.attributes;
+            if (attrs.translatedLanguage !== 'en' || !attrs.chapter) return;
+
+            const chapNumFloat = parseFloat(attrs.chapter);
+            if (isNaN(chapNumFloat)) return; 
+
+            if (!chapterMap.has(chapNumFloat)) {
+                chapterMap.set(chapNumFloat, chapter);
+            } else {
+                const existing = chapterMap.get(chapNumFloat);
+                if (!existing.attributes.title && attrs.title) {
+                    chapterMap.set(chapNumFloat, chapter); 
+                }
+            }
+        });
+
+        const sortedChapters = Array.from(chapterMap.values()).sort((a, b) => {
+            return parseFloat(a.attributes.chapter) - parseFloat(b.attributes.chapter);
+        });
+
+        sortedChapters.forEach(chapter => {
+            const attrs = chapter.attributes;
+            const chapNum = attrs.chapter;
+            const displayTitle = attrs.title ? ` - ${attrs.title}` : ''; 
+
+            const btn = document.createElement('div');
+            btn.className = 'ep-btn';
+            btn.innerText = `Ch. ${chapNum}${displayTitle}`;
+            btn.style.textAlign = "left"; 
+            
+            btn.onclick = () => {
+                if (attrs.externalUrl) {
+                    window.open(attrs.externalUrl, '_blank'); 
+                } else {
+                    window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${chapNum}`;
+                }
+            };
+            epList.appendChild(btn);
+        });
     }
 }
 // --- 4. PRO MANGA READER ---
