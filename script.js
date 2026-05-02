@@ -111,15 +111,18 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
 }
 
 // --- 3. DETAILS & CHAPTERS (ULTRA FETCH) ---
+// Helper to safely encode URLs for the proxy
+const proxyUrl = (url) => `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
+
 async function loadDetails() {
     const params = new URLSearchParams(window.location.search);
     const title = decodeURIComponent(params.get('title'));
     if(!title || title === "null") return;
 
     const epList = document.getElementById('ep-list');
-    if (epList) epList.innerHTML = "<p style='color: gray;'>Establishing secure connection...</p>";
+    if (epList) epList.innerHTML = "<p style='color: gray;'>Bypassing Cloudflare...</p>";
 
-    // 1. Get Metadata (Keep Jikan for your UI layout)
+    // Metadata (Jikan)
     try {
         const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
         if (res.ok) {
@@ -134,16 +137,16 @@ async function loadDetails() {
         }
     } catch (e) { console.warn("Metadata skipped"); }
 
-    // 2. Fetch from ComicK directly (Bypassing Vercel completely)
+    // Chapters via CorsProxy
     try {
         if (epList) epList.innerHTML = "<p style='color: var(--accent);'>Fetching complete database...</p>";
 
-        // Search for the ComicK ID (hid)
-        const searchUrl = `https://api.comick.app/v1.0/search?q=${encodeURIComponent(title)}&limit=1`;
-        const searchRes = await fetch(searchUrl);
-        if (!searchRes.ok) throw new Error("Could not find manga on ComicK");
+        // Search ComicK via Proxy
+        const searchRes = await fetch(proxyUrl(`https://api.comick.app/v1.0/search?q=${encodeURIComponent(title)}&limit=1`));
+        if (!searchRes.ok) throw new Error("Search Proxy blocked");
         
         const searchData = await searchRes.json();
+        
         if (!searchData || searchData.length === 0) {
             if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found.</p>";
             return;
@@ -151,10 +154,9 @@ async function loadDetails() {
 
         const mangaHid = searchData[0].hid;
 
-        // Fetch ALL chapters in one massive, fast request
-        const feedUrl = `https://api.comick.app/comic/${mangaHid}/chapters?lang=en&limit=99999`;
-        const feedRes = await fetch(feedUrl);
-        if (!feedRes.ok) throw new Error("Failed to load chapter list");
+        // Fetch massive chapter list via Proxy
+        const feedRes = await fetch(proxyUrl(`https://api.comick.app/comic/${mangaHid}/chapters?lang=en&limit=99999`));
+        if (!feedRes.ok) throw new Error("Chapter Proxy blocked");
 
         const feedData = await feedRes.json();
         const allChapters = feedData.chapters || [];
@@ -163,14 +165,12 @@ async function loadDetails() {
             epList.innerHTML = ""; 
             const chapterMap = new Map();
 
-            // Filter out duplicates and bad data
             allChapters.forEach(chapter => {
-                if (!chapter.chap) return; // Skip promo art or unnumbered extras
+                if (!chapter.chap) return; 
 
                 const chapNumFloat = parseFloat(chapter.chap);
                 if (isNaN(chapNumFloat)) return; 
 
-                // If multiple groups upload Ch 1, keep the one that actually bothered to name it
                 if (!chapterMap.has(chapNumFloat)) {
                     chapterMap.set(chapNumFloat, chapter);
                 } else {
@@ -181,12 +181,10 @@ async function loadDetails() {
                 }
             });
 
-            // Mathematical Sort
             const sortedChapters = Array.from(chapterMap.values()).sort((a, b) => {
                 return parseFloat(a.chap) - parseFloat(b.chap);
             });
 
-            // Render UI
             sortedChapters.forEach(chapter => {
                 const chapNum = chapter.chap;
                 const displayTitle = chapter.title ? ` - ${chapter.title}` : ''; 
@@ -197,21 +195,18 @@ async function loadDetails() {
                 btn.style.textAlign = "left"; 
                 
                 btn.onclick = () => {
-                    // Send the ComicK HID to the reader
                     window.location.href = `watch.html?chapterId=${chapter.hid}&title=${encodeURIComponent(title)}&ep=${chapNum}`;
                 };
                 epList.appendChild(btn);
             });
-        } else {
-            if (epList) epList.innerHTML = "<p style='color: gray;'>No English chapters found.</p>";
         }
 
     } catch (err) {
-        console.error("ComicK Error:", err);
+        console.error("System Crash:", err);
         if (epList) epList.innerHTML = `<p style='color: #ff4757; font-weight: bold;'>Error: ${err.message}. Please refresh.</p>`;
     }
 }
-// --- 4. PRO MANGA READER ---
+
 async function loadMangaReader() {
     const params = new URLSearchParams(window.location.search);
     const chapterId = params.get('chapterId');
@@ -222,7 +217,6 @@ async function loadMangaReader() {
     
     if (!chapterId) return;
 
-    // Clear video styling constraints
     if (mainPlayer) mainPlayer.remove();
     if (wrapper) {
         wrapper.style.paddingBottom = "0";
@@ -241,14 +235,14 @@ async function loadMangaReader() {
         mangaView.style.cssText = "width:100%; max-width:900px; margin:0 auto; background:#000;";
         document.querySelector('.player-container').appendChild(mangaView);
     }
-    mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Assembling high-quality pages...</p>";
+    mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Assembling pages...</p>";
     window.scrollTo(0, 0);
 
     try {
-        // Fetch image data directly from ComicK
-        const res = await fetch(`https://api.comick.app/chapter/${chapterId}`);
-        if (!res.ok) throw new Error("Failed to connect to image server");
-        
+        // Fetch images via Proxy
+        const res = await fetch(proxyUrl(`https://api.comick.app/chapter/${chapterId}`));
+        if (!res.ok) throw new Error("Image Server Proxy blocked");
+
         const serverData = await res.json();
         const pageFiles = serverData.chapter.md_images; 
 
@@ -256,19 +250,16 @@ async function loadMangaReader() {
         
         pageFiles.forEach(imgData => {
             const img = document.createElement('img');
-            // ComicK's dedicated image server
             const fullUrl = `https://meo.comick.pictures/${imgData.b2key}`;
             
-            // We still use wsrv.nl to ensure total stability and bypass any browser blocks
             img.src = `https://wsrv.nl/?url=${encodeURIComponent(fullUrl)}&default=${encodeURIComponent(fullUrl)}`;
             img.style.cssText = "width:100%; display:block; margin:0; border:none;";
             img.loading = "lazy";
-            img.onerror = () => { img.src = fullUrl; }; // Fallback to direct link
+            img.onerror = () => { img.src = fullUrl; }; 
             
             mangaView.appendChild(img);
         });
 
-        // Add back button
         const endBtn = document.createElement('button');
         endBtn.innerText = "Back to Details";
         endBtn.className = "btn";
@@ -279,8 +270,7 @@ async function loadMangaReader() {
         mangaView.appendChild(endBtn);
 
     } catch (err) {
-        console.error("Reader Error:", err);
-        mangaView.innerHTML = "<p style='color:red; text-align:center; padding:50px;'>Image server failed. Please refresh.</p>";
+        mangaView.innerHTML = "<p style='color:red; text-align:center; padding:50px;'>Reader error. Please refresh.</p>";
     }
 }
 
