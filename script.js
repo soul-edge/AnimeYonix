@@ -119,7 +119,7 @@ async function loadDetails() {
     const epList = document.getElementById('ep-list');
     if (epList) epList.innerHTML = "<p style='color: gray;'>Establishing secure connection...</p>";
 
-    // 1. Get Metadata (Jikan API)
+    // 1. Get Metadata (Keep Jikan for your UI layout)
     try {
         const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
         if (res.ok) {
@@ -134,101 +134,81 @@ async function loadDetails() {
         }
     } catch (e) { console.warn("Metadata skipped"); }
 
-    let allChapters = []; // We declare this OUTSIDE so we can rescue the data if it crashes
-
-    // 2. Direct MangaDex Fetch
+    // 2. Fetch from ComicK directly (Bypassing Vercel completely)
     try {
-        const searchUrl = `https://api.mangadex.org/manga?title=${encodeURIComponent(title)}&limit=1&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`;
+        if (epList) epList.innerHTML = "<p style='color: var(--accent);'>Fetching complete database...</p>";
+
+        // Search for the ComicK ID (hid)
+        const searchUrl = `https://api.comick.app/v1.0/search?q=${encodeURIComponent(title)}&limit=1`;
         const searchRes = await fetch(searchUrl);
-        
-        if (!searchRes.ok) throw new Error(`Search Blocked: Error ${searchRes.status}`);
+        if (!searchRes.ok) throw new Error("Could not find manga on ComicK");
         
         const searchData = await searchRes.json();
-
-        if (!searchData.data || searchData.data.length === 0) {
-            if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found on MangaDex.</p>";
+        if (!searchData || searchData.length === 0) {
+            if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found.</p>";
             return;
         }
 
-        const mangaId = searchData.data[0].id;
-        let offset = 0;
-        let total = 1;
+        const mangaHid = searchData[0].hid;
 
-        if (epList) epList.innerHTML = "<p style='color: var(--accent);'>Downloading chapters safely...</p>";
+        // Fetch ALL chapters in one massive, fast request
+        const feedUrl = `https://api.comick.app/comic/${mangaHid}/chapters?lang=en&limit=99999`;
+        const feedRes = await fetch(feedUrl);
+        if (!feedRes.ok) throw new Error("Failed to load chapter list");
 
-        // The Rate-Limited Loop
-        while (offset < total) {
-            const feedUrl = `https://api.mangadex.org/manga/${mangaId}/feed?translatedLanguage[]=en&limit=500&offset=${offset}&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&includeExternalUrl=1`;
-            const feedRes = await fetch(feedUrl);
-            
-            if (!feedRes.ok) throw new Error(`MangaDex Server Error ${feedRes.status}`);
+        const feedData = await feedRes.json();
+        const allChapters = feedData.chapters || [];
 
-            const feedData = await feedRes.json();
-            total = feedData.total || 0;
-            if (feedData.data) allChapters.push(...feedData.data);
-            
-            offset += 500;
+        if (epList && allChapters.length > 0) {
+            epList.innerHTML = ""; 
+            const chapterMap = new Map();
 
-            // Pause for 300ms to avoid DDoS bans
-            await new Promise(resolve => setTimeout(resolve, 300));
-            if (offset > 5000) break; // Safety net
+            // Filter out duplicates and bad data
+            allChapters.forEach(chapter => {
+                if (!chapter.chap) return; // Skip promo art or unnumbered extras
+
+                const chapNumFloat = parseFloat(chapter.chap);
+                if (isNaN(chapNumFloat)) return; 
+
+                // If multiple groups upload Ch 1, keep the one that actually bothered to name it
+                if (!chapterMap.has(chapNumFloat)) {
+                    chapterMap.set(chapNumFloat, chapter);
+                } else {
+                    const existing = chapterMap.get(chapNumFloat);
+                    if (!existing.title && chapter.title) {
+                        chapterMap.set(chapNumFloat, chapter); 
+                    }
+                }
+            });
+
+            // Mathematical Sort
+            const sortedChapters = Array.from(chapterMap.values()).sort((a, b) => {
+                return parseFloat(a.chap) - parseFloat(b.chap);
+            });
+
+            // Render UI
+            sortedChapters.forEach(chapter => {
+                const chapNum = chapter.chap;
+                const displayTitle = chapter.title ? ` - ${chapter.title}` : ''; 
+
+                const btn = document.createElement('div');
+                btn.className = 'ep-btn';
+                btn.innerText = `Ch. ${chapNum}${displayTitle}`;
+                btn.style.textAlign = "left"; 
+                
+                btn.onclick = () => {
+                    // Send the ComicK HID to the reader
+                    window.location.href = `watch.html?chapterId=${chapter.hid}&title=${encodeURIComponent(title)}&ep=${chapNum}`;
+                };
+                epList.appendChild(btn);
+            });
+        } else {
+            if (epList) epList.innerHTML = "<p style='color: gray;'>No English chapters found.</p>";
         }
 
     } catch (err) {
-        console.error("Fetch interrupted:", err);
-        // If it crashes but we have 0 chapters, show the real error.
-        if (allChapters.length === 0) {
-            if (epList) epList.innerHTML = `<p style='color: #ff4757; font-weight: bold;'>Error: ${err.message}. Please refresh.</p>`;
-            return;
-        }
-        // Otherwise, ignore the crash and render what we captured below!
-    }
-
-    // 3. Render whatever we captured (Even if the loop crashed halfway)
-    if (epList && allChapters.length > 0) {
-        epList.innerHTML = ""; 
-        const chapterMap = new Map();
-
-        allChapters.forEach(chapter => {
-            const attrs = chapter.attributes;
-            if (attrs.translatedLanguage !== 'en' || !attrs.chapter) return;
-
-            const chapNumFloat = parseFloat(attrs.chapter);
-            if (isNaN(chapNumFloat)) return; 
-
-            if (!chapterMap.has(chapNumFloat)) {
-                chapterMap.set(chapNumFloat, chapter);
-            } else {
-                const existing = chapterMap.get(chapNumFloat);
-                if (!existing.attributes.title && attrs.title) {
-                    chapterMap.set(chapNumFloat, chapter); 
-                }
-            }
-        });
-
-        const sortedChapters = Array.from(chapterMap.values()).sort((a, b) => {
-            return parseFloat(a.attributes.chapter) - parseFloat(b.attributes.chapter);
-        });
-
-        sortedChapters.forEach(chapter => {
-            const attrs = chapter.attributes;
-            const chapNum = attrs.chapter;
-            const displayTitle = attrs.title ? ` - ${attrs.title}` : ''; 
-
-            const btn = document.createElement('div');
-            btn.className = 'ep-btn';
-            btn.innerText = `Ch. ${chapNum}${displayTitle}`;
-            btn.style.textAlign = "left"; 
-            
-            btn.onclick = () => {
-                if (attrs.externalUrl) {
-                    window.open(attrs.externalUrl, '_blank'); 
-                } else {
-                    window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${chapNum}`;
-                }
-            };
-            epList.appendChild(btn);
-        });
+        console.error("ComicK Error:", err);
+        if (epList) epList.innerHTML = `<p style='color: #ff4757; font-weight: bold;'>Error: ${err.message}. Please refresh.</p>`;
     }
 }
 // --- 4. PRO MANGA READER ---
