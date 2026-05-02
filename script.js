@@ -117,10 +117,10 @@ async function loadDetails() {
     if(!title || title === "null") return;
 
     const epList = document.getElementById('ep-list');
-    if (epList) epList.innerHTML = "<p style='color: gray;'>Fetching full history...</p>";
+    if (epList) epList.innerHTML = "<p style='color: gray;'>Downloading full chapter database...</p>";
 
+    // 1. Get Metadata (Jikan)
     try {
-        // 1. Get Metadata (Jikan)
         const res = await fetch(`https://api.jikan.moe/v4/manga?q=${encodeURIComponent(title)}&limit=1`);
         const mal = await res.json();
         if (mal.data && mal.data[0]) {
@@ -130,51 +130,87 @@ async function loadDetails() {
             document.getElementById('det-thumb').src = manga.images.jpg.large_image_url;
             document.getElementById('det-genre').innerText = "GENRE: " + manga.genres.map(g => g.name).join(', ');
         }
+    } catch (e) { console.error("Metadata failed", e); }
 
-        // 2. Search for MangaDex ID
+    // 2. Fetch Chapters using Pagination (The Loop)
+    try {
         const searchRes = await fetch(`/api/search?q=${encodeURIComponent(title)}`);
         const searchData = await searchRes.json();
-        if (!searchData.data || searchData.data.length === 0) return;
+        
+        if (!searchData.data || searchData.data.length === 0) {
+            if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found.</p>";
+            return;
+        }
+
         const mangaId = searchData.data[0].id;
+        let allChapters = [];
+        let offset = 0;
+        let total = 1; // Start at 1 to enter the loop
 
-        // 3. Fetch Chapters with "Mature" support and High Limit
-        // This ensures Berserk's chapters aren't hidden by the API
-        const feedUrl = `/api/search?mangaId=${mangaId}&limit=500&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic`;
-        const feedRes = await fetch(feedUrl);
-        const feedData = await feedRes.json();
+        // Loop chunks of 500 until we have every single chapter (Crucial for One Piece)
+        while (offset < total) {
+            const feedRes = await fetch(`/api/search?mangaId=${mangaId}&limit=500&offset=${offset}`);
+            const feedData = await feedRes.json();
+            
+            total = feedData.total || 0; 
+            if (feedData.data) allChapters.push(...feedData.data);
+            offset += 500;
+        }
 
-        if (epList && feedData.data) {
+        if (epList && allChapters.length > 0) {
             epList.innerHTML = ""; 
             
-            // SMART FILTER: Only show ONE button per chapter number
-            // This stops duplicate uploads from pushing out real chapters
-            const seenChapters = new Set();
+            // 3. SMART FILTER: Remove duplicates and bad titles
+            const chapterMap = new Map();
             
-            feedData.data.forEach(chapter => {
+            allChapters.forEach(chapter => {
                 const attrs = chapter.attributes;
-                const chapNum = attrs.chapter;
+                if (attrs.translatedLanguage !== 'en' || !attrs.chapter) return; // Skip non-English or unnumbered
 
-                if (attrs.translatedLanguage === 'en' && chapNum && !seenChapters.has(chapNum)) {
-                    seenChapters.add(chapNum);
+                const chapNumFloat = parseFloat(attrs.chapter); // Convert "10.5" string to actual number
 
-                    const btn = document.createElement('div');
-                    btn.className = 'ep-btn';
-                    btn.innerText = `Ch. ${chapNum}`;
-                    
-                    btn.onclick = () => {
-                        if (attrs.externalUrl) {
-                            window.open(attrs.externalUrl, '_blank');
-                        } else {
-                            window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${chapNum}`;
-                        }
-                    };
-                    epList.appendChild(btn);
+                // If we haven't seen this chapter yet, or if the new one has a better title, keep it
+                if (!chapterMap.has(chapNumFloat)) {
+                    chapterMap.set(chapNumFloat, chapter);
+                } else {
+                    const existing = chapterMap.get(chapNumFloat);
+                    if (!existing.attributes.title && attrs.title) {
+                        chapterMap.set(chapNumFloat, chapter); // Swap for the one with a real title
+                    }
                 }
             });
+
+            // 4. MATHEMATICAL SORT: Force them in strict numerical order
+            const sortedChapters = Array.from(chapterMap.values()).sort((a, b) => {
+                return parseFloat(a.attributes.chapter) - parseFloat(b.attributes.chapter);
+            });
+
+            // 5. Render Buttons
+            sortedChapters.forEach(chapter => {
+                const attrs = chapter.attributes;
+                const chapNum = attrs.chapter;
+                // If the group gave it a weird title, we still show the Ch number clearly
+                const displayTitle = attrs.title ? ` - ${attrs.title}` : ''; 
+
+                const btn = document.createElement('div');
+                btn.className = 'ep-btn';
+                btn.innerText = `Ch. ${chapNum}${displayTitle}`;
+                btn.style.textAlign = "left"; // Looks cleaner with titles
+                
+                btn.onclick = () => {
+                    if (attrs.externalUrl) {
+                        window.open(attrs.externalUrl, '_blank');
+                    } else {
+                        window.location.href = `watch.html?chapterId=${chapter.id}&title=${encodeURIComponent(title)}&ep=${chapNum}`;
+                    }
+                };
+                epList.appendChild(btn);
+            });
         }
+
     } catch (err) {
         console.error("Reader Error:", err);
-        if (epList) epList.innerHTML = "<p style='color: red;'>Failed to load. Please refresh.</p>";
+        if (epList) epList.innerHTML = "<p style='color: red;'>Failed to load database. Please refresh.</p>";
     }
 }
 // --- 4. PRO MANGA READER ---
