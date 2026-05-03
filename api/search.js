@@ -8,17 +8,20 @@ module.exports = async function (req, res) {
         "Referer": "https://mangapill.com/"
     };
 
-    // --- THE UPGRADED STRICT EXTRACTOR ---
+    // --- THE APEX EXTRACTOR ---
     function extractCards(html) {
         const results = [];
         const links = html.split('<a ');
 
         for (let link of links) {
             const insideLink = link.split('</a>')[0];
-            const hrefMatch = insideLink.match(/href="(\/manga\/[^"]+)"/);
-            if (!hrefMatch) continue;
+            
+            // Accept both Manga links AND Chapter links!
+            const mangaMatch = insideLink.match(/href="(\/manga\/[^"]+)"/);
+            const chapterMatch = insideLink.match(/href="\/chapters\/(\d+)-[^"]+"/);
+            
+            if (!mangaMatch && !chapterMatch) continue;
 
-            const id = hrefMatch[1];
             const imgMatch = insideLink.match(/<img[^>]+(?:data-src|src)="([^"]+)"/i);
             const titleMatch = insideLink.match(/<img[^>]+(?:alt|title)="([^"]+)"/i);
 
@@ -30,13 +33,17 @@ module.exports = async function (req, res) {
                     .replace(/&amp;/g, '&')
                     .trim();
 
-                // 1. YOUR MAGIC DE-DUPLICATOR IS BACK! (Fixes "Berserk Berserk")
+                // Clean the title and remove the echo
                 title = title.replace(/^(.+?)(?:\s+\1)+$/, '$1').trim();
-                
-                // 2. Clean up "Chapter X" from titles
                 title = title.replace(/\s+Chapter\s+\d+(\.\d+)?$/i, '').trim();
 
-                if (!results.find(r => r.id === id)) {
+                // Reverse-engineer the Manga ID if it's a chapter link
+                const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+                const id = mangaMatch ? mangaMatch[1] : `/manga/${chapterMatch[1]}/${slug}`;
+                const mangaIdNum = id.split('/')[2];
+
+                // Check for duplicates using the unique ID number
+                if (!results.find(r => r.id.includes(`/${mangaIdNum}/`))) {
                     results.push({ id, title, thumbnail });
                 }
             }
@@ -57,43 +64,31 @@ module.exports = async function (req, res) {
             return res.status(200).send(buffer);
         }
         
-        // --- 2. NEW: REAL-TIME HOMEPAGE SCRAPER (FIXED GRID POPULATION) ---
+        // --- 2. NEW: REAL-TIME HOMEPAGE SCRAPER WITH SAFETY NETS ---
         else if (live === 'true') {
-            // Grid 1: Fetch the actual homepage for Recent Updates
+            // Fetch the Homepage
             const res1 = await fetch(`https://mangapill.com/`, { headers });
             const html1 = await res1.text();
-            const recent = extractCards(html1).slice(0, 15);
+            const homepageCards = extractCards(html1);
 
-            // Grid 2: Fetch the popular directory for Top Trending
-            const res2 = await fetch(`https://mangapill.com/manga`, { headers });
-            const html2 = await res2.text();
-            const trending = extractCards(html2).slice(0, 15);
+            // MangaPill's homepage has Recent Updates at the top, Popular at the bottom.
+            let recent = homepageCards.slice(0, 15);
+            let trending = homepageCards.slice(15, 30);
+
+            // Safety Net: If Trending is empty, fetch a popular search
+            if (trending.length < 5) {
+                const res2 = await fetch(`https://mangapill.com/search?q=demon`, { headers });
+                trending = extractCards(await res2.text()).slice(0, 15);
+            }
 
             // Grid 3: Fetch an action search for Recommendations
-            const res3 = await fetch(`https://mangapill.com/search?q=action`, { headers });
-            const html3 = await res3.text();
-            const recommended = extractCards(html3).slice(0, 15);
+            const res3 = await fetch(`https://mangapill.com/search?q=fantasy`, { headers });
+            const recommended = extractCards(await res3.text()).slice(0, 15);
 
-            // Send all 3 full arrays back to the frontend!
             return res.status(200).json({ recent, trending, recommended });
         }
 
-        // --- 3. TRENDING HOMEPAGE (STATIC FALLBACK) ---
-        else if (trending) {
-            let response = await fetch(`https://mangapill.com/manga`, { headers });
-            let html = await response.text();
-            let results = extractCards(html);
-
-            if (results.length === 0) {
-                response = await fetch(`https://mangapill.com/search?q=the`, { headers });
-                html = await response.text();
-                results = extractCards(html);
-            }
-
-            return res.status(200).json(results.slice(0, 12));
-        }
-
-        // --- 4. SEARCH ---
+        // --- 3. SEARCH ---
         else if (q) {
             const response = await fetch(`https://mangapill.com/search?q=${encodeURIComponent(q)}`, { headers });
             const html = await response.text();
@@ -103,7 +98,7 @@ module.exports = async function (req, res) {
             return res.status(200).json(results);
         } 
         
-        // --- 5. DETAILS & CHAPTERS ---
+        // --- 4. DETAILS & CHAPTERS ---
         else if (mangaId) {
             const targetUrl = `https://mangapill.com${decodeURIComponent(mangaId)}`;
             const response = await fetch(targetUrl, { headers });
@@ -139,7 +134,7 @@ module.exports = async function (req, res) {
             return res.status(200).json({ details: { description, genres }, chapters });
         }
         
-        // --- 6. IMAGE PAGES ---
+        // --- 5. IMAGE PAGES ---
         else if (chapterId) {
             const targetUrl = `https://mangapill.com${decodeURIComponent(chapterId)}`;
             const response = await fetch(targetUrl, { headers });
