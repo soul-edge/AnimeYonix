@@ -60,35 +60,59 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
 .ep-btn { background: var(--bg-panel); padding: 12px; border-radius: 6px; text-align: center; cursor: pointer; transition: 0.2s; border: 1px solid #2a2a2a; }
 .ep-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
 
-/* --- READER HUD --- */
-.reader-hud { position: fixed; bottom: 20px; left: calc(50% + 120px); transform: translateX(-50%); background: rgba(20, 20, 20, 0.95); padding: 15px 30px; border-radius: 50px; display: flex; gap: 20px; align-items: center; border: 1px solid #333; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px); }
-.hud-btn { background: transparent; color: var(--text-main); border: none; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
-.hud-btn:hover { color: var(--accent); }
-.hud-btn.active-mode { color: var(--accent); font-weight: bold; }
-.hud-btn:disabled { color: #555; cursor: not-allowed; }
-.page-nav-zone { position: fixed; top: 0; height: 100vh; width: 40vw; z-index: 900; cursor: pointer; }
-.zone-left { left: 240px; }
-.zone-right { right: 0; }
-
 /* === MOBILE RESPONSIVENESS MAGIC === */
 @media (max-width: 768px) {
     .app-container { flex-direction: column; }
-    .sidebar { width: 260px; transform: translateX(-100%); } /* Hides sidebar off-screen */
-    .sidebar.mobile-active { transform: translateX(0); } /* Slides in when hamburger is clicked */
+    .sidebar { width: 260px; transform: translateX(-100%); } 
+    .sidebar.mobile-active { transform: translateX(0); } 
     .main-content { margin-left: 0; width: 100%; }
-    
     .topbar { padding: 15px 20px; justify-content: space-between; }
-    .menu-btn { display: block; } /* Show hamburger menu */
+    .menu-btn { display: block; } 
     .search-container { width: auto; flex-grow: 1; margin-left: 15px; }
-    
     .hero { margin: 0 15px 25px 15px; padding: 30px 20px; height: auto; text-align: center; justify-content: center; }
     .content-section { padding: 0 15px 30px 15px; }
-    
     .det-layout { flex-direction: column; margin: 0 15px 30px 15px; align-items: center; text-align: center; }
     .det-poster img { width: 200px; }
-    
-    .reader-hud { width: 90%; left: 50%; transform: translateX(-50%); justify-content: space-between; padding: 10px 20px; bottom: 10px; border-radius: 12px; }
-    .hud-btn span { display: none; } /* Hide text on HUD buttons to save space */
-    .page-nav-zone { width: 50vw; }
-    .zone-left { left: 0; }
 }
+
+/* =========================================
+   NEW NATIVE READER APP UI
+========================================= */
+.reader-body { background-color: #000; overflow-x: hidden; }
+
+/* Toolbars */
+.reader-topbar, .reader-bottombar {
+    position: fixed; left: 0; right: 0; background: rgba(20, 20, 20, 0.95);
+    z-index: 1000; transition: transform 0.3s ease; backdrop-filter: blur(10px);
+}
+.reader-topbar { top: 0; display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid #333; }
+.reader-bottombar { bottom: 0; display: flex; flex-direction: column; padding: 15px 20px 25px 20px; border-top: 1px solid #333; }
+
+/* Hidden state when reading */
+.ui-hidden .reader-topbar { transform: translateY(-100%); }
+.ui-hidden .reader-bottombar { transform: translateY(100%); }
+
+/* Topbar Typography */
+.r-title-group { flex-grow: 1; margin: 0 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r-title-group h1 { font-size: 1.1rem; color: #fff; margin: 0; font-weight: 600; }
+.r-title-group h2 { font-size: 0.85rem; color: #aaa; margin: 0; font-weight: 400; }
+
+/* Buttons */
+.r-icon-btn { background: transparent; border: none; color: #ddd; font-size: 1.3rem; cursor: pointer; padding: 10px; transition: 0.2s; display: flex; justify-content: center; align-items: center; }
+.r-icon-btn:hover { color: var(--accent); }
+.r-icon-btn.active-mode { color: var(--accent); }
+.nav-arrow { background: rgba(255, 255, 255, 0.1); border-radius: 50%; width: 40px; height: 40px; }
+
+/* Bottom Rows */
+.r-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 20px; }
+.r-settings-row { display: flex; justify-content: space-around; align-items: center; }
+
+/* The Progress Slider */
+.slider-container { display: flex; align-items: center; flex-grow: 1; gap: 15px; color: #ccc; font-size: 0.9rem; font-weight: bold; background: rgba(0,0,0,0.4); padding: 5px 15px; border-radius: 20px;}
+input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; outline: none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 4px; background: white; cursor: pointer; margin-top: -8px; border-radius: 2px;}
+input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #555; border-radius: 2px; }
+
+/* Viewport */
+.reader-viewport { width: 100%; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.reader-viewport img { max-width: 100%; object-fit: contain; cursor: pointer; user-select: none; }
