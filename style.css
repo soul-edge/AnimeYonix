@@ -1,13 +1,18 @@
 :root {
-    --bg-dark: #121212; /* Deep modern gray, not pure black */
-    --bg-panel: #1e1e1e; /* Sidebar and card background */
-    --accent: #ff6740; /* MangaDex-style orange/red accent */
+    --bg-dark: #121212; 
+    --bg-panel: #1e1e1e; 
+    --accent: #ff6740; 
     --text-main: #f0f0f0;
     --text-muted: #a0a0a0;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-body { background-color: var(--bg-dark); color: var(--text-main); }
+
+body { 
+    background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-dark) 100%); 
+    background-attachment: fixed;
+    color: var(--text-main); 
+}
 
 /* --- APP LAYOUT --- */
 .app-container { display: flex; min-height: 100vh; }
@@ -23,7 +28,10 @@ body { background-color: var(--bg-dark); color: var(--text-main); }
     flex-direction: column;
 }
 .logo-container { padding: 20px; font-size: 1.5rem; font-weight: bold; border-bottom: 1px solid #2a2a2a; }
-.logo-container .accent { color: var(--accent); }
+.logo-container .accent { 
+    color: var(--accent); 
+    text-shadow: 0 0 15px rgba(255, 103, 64, 0.6); 
+}
 
 .sidebar-nav { padding: 20px 0; display: flex; flex-direction: column; }
 .sidebar-nav a {
@@ -44,7 +52,7 @@ body { background-color: var(--bg-dark); color: var(--text-main); }
 
 /* --- MAIN CONTENT --- */
 .main-content {
-    margin-left: 240px; /* Offset for sidebar */
+    margin-left: 240px; 
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -55,7 +63,7 @@ body { background-color: var(--bg-dark); color: var(--text-main); }
     padding: 20px 40px;
     display: flex;
     justify-content: flex-end;
-    background-color: var(--bg-dark);
+    background: transparent;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -66,6 +74,7 @@ body { background-color: var(--bg-dark); color: var(--text-main); }
     border-radius: 8px;
     overflow: hidden;
     width: 400px;
+    border: 1px solid #2a2a2a;
 }
 .search-container input {
     background: transparent;
@@ -89,18 +98,19 @@ body { background-color: var(--bg-dark); color: var(--text-main); }
 .hero {
     height: 250px;
     margin: 0 40px 40px 40px;
-    background: linear-gradient(135deg, #2c1a16 0%, var(--bg-panel) 100%);
+    background: linear-gradient(135deg, rgba(255, 103, 64, 0.15) 0%, var(--bg-panel) 100%);
     border-radius: 12px;
     display: flex;
     align-items: center;
     padding: 50px;
     border-left: 5px solid var(--accent);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 .hero-content h1 { font-size: 2rem; margin-bottom: 10px; }
-.hero-content p { color: var(--text-muted); font-size: 1.1rem; }
+.hero-content p { color: var(--text-muted); font-size: 1.1rem; max-width: 600px; line-height: 1.5; }
 
-/* --- MANGA GRID (MANGADEX STYLE) --- */
-.content-section { padding: 0 40px 60px 40px; }
+/* --- MANGA GRID --- */
+.content-section { padding: 0 40px 40px 40px; }
 .content-section h2 { margin-bottom: 20px; font-size: 1.5rem; font-weight: 600; }
 
 .grid-container {
@@ -108,17 +118,24 @@ body { background-color: var(--bg-dark); color: var(--text-main); }
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 20px;
 }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .card {
     background: transparent;
     border-radius: 8px;
     cursor: pointer;
     transition: transform 0.2s;
+    animation: fadeIn 0.5s ease forwards;
 }
 .card:hover { transform: translateY(-5px); }
 
 .thumbnail-wrapper {
     width: 100%;
-    aspect-ratio: 2 / 3; /* Perfect manga cover ratio */
+    aspect-ratio: 2 / 3; 
     border-radius: 8px;
     overflow: hidden;
     position: relative;
@@ -139,8 +156,13 @@ body { background-color: var(--bg-dark); color: var(--text-main); }
     font-weight: 500;
     color: var(--text-main);
     display: -webkit-box;
-    -webkit-line-clamp: 2; /* Forces text to max 2 lines with '...' */
+    -webkit-line-clamp: 2; 
     -webkit-box-orient: vertical;
     overflow: hidden;
     line-height: 1.4;
 }
+
+/* Utilities for details/watch pages */
+.ep-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 20px; }
+.ep-btn { background: var(--bg-panel); padding: 12px; border-radius: 6px; text-align: center; cursor: pointer; transition: 0.2s; border: 1px solid #2a2a2a; }
+.ep-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
