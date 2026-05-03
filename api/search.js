@@ -1,6 +1,8 @@
 module.exports = async function (req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    const { q, mangaId, chapterId, proxyImage, trending } = req.query;
+    
+    // FIX: Added 'live' to the query parameters
+    const { q, mangaId, chapterId, proxyImage, trending, live } = req.query;
 
     const headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36",
@@ -51,14 +53,29 @@ module.exports = async function (req, res) {
             return res.status(200).send(buffer);
         }
         
-        // --- 2. TRENDING HOMEPAGE (FIXED) ---
+        // --- 2. NEW: REAL-TIME HOMEPAGE SCRAPER ---
+        else if (live === 'true') {
+            // Secretly fetch the actual MangaPill homepage
+            const response = await fetch(`https://mangapill.com/`, { headers });
+            const html = await response.text();
+            
+            // Send it through your Guillotine Extractor
+            const liveMangaList = extractCards(html);
+
+            // Slice the live data into 3 chunks for your 3 carousels!
+            return res.status(200).json({
+                recent: liveMangaList.slice(0, 15),
+                trending: liveMangaList.slice(15, 30),
+                recommended: liveMangaList.slice(30, 45)
+            });
+        }
+
+        // --- 3. TRENDING HOMEPAGE (STATIC FALLBACK) ---
         else if (trending) {
-            // Fetch the official Manga Directory instead of the Recent Updates homepage
             let response = await fetch(`https://mangapill.com/manga`, { headers });
             let html = await response.text();
             let results = extractCards(html);
 
-            // FALLBACK: If the directory is ever empty, automatically run a popular search to keep the homepage alive
             if (results.length === 0) {
                 response = await fetch(`https://mangapill.com/search?q=the`, { headers });
                 html = await response.text();
@@ -68,7 +85,7 @@ module.exports = async function (req, res) {
             return res.status(200).json(results.slice(0, 12));
         }
 
-        // --- 3. SEARCH ---
+        // --- 4. SEARCH ---
         else if (q) {
             const response = await fetch(`https://mangapill.com/search?q=${encodeURIComponent(q)}`, { headers });
             const html = await response.text();
@@ -78,7 +95,7 @@ module.exports = async function (req, res) {
             return res.status(200).json(results);
         } 
         
-        // --- 4. DETAILS & CHAPTERS ---
+        // --- 5. DETAILS & CHAPTERS ---
         else if (mangaId) {
             const targetUrl = `https://mangapill.com${decodeURIComponent(mangaId)}`;
             const response = await fetch(targetUrl, { headers });
@@ -114,7 +131,7 @@ module.exports = async function (req, res) {
             return res.status(200).json({ details: { description, genres }, chapters });
         }
         
-        // --- 5. IMAGE PAGES ---
+        // --- 6. IMAGE PAGES ---
         else if (chapterId) {
             const targetUrl = `https://mangapill.com${decodeURIComponent(chapterId)}`;
             const response = await fetch(targetUrl, { headers });
