@@ -125,7 +125,7 @@ async function loadLiveHomepage() {
         const response = await fetch('/api/search?live=true');
         const liveData = await response.json();
         
-        renderGrid(liveData.recent, "Recently Added (Live)", "recentGrid");
+        renderGrid(liveData.recent, "Recently Added", "recentGrid");
         renderGrid(liveData.trending, "Top Trending Right Now", "topRatedGrid");
         renderGrid(liveData.recommended, "MangaYonix Recommendations", "recommendedGrid");
         
