@@ -7,21 +7,38 @@ module.exports = async function (req, res) {
         "Referer": "https://mangapill.com/"
     };
 
-    // --- THE SURGICAL EXTRACTOR ---
-    // This guarantees the ID, Thumbnail, and Title are perfectly synced. No more Frankenstein mixed-up mangas!
+    // --- THE GUILLOTINE EXTRACTOR ---
+    // This chops the website into strict, isolated blocks. It is mathematically impossible 
+    // for Manga A's ID to mix with Manga B's image anymore.
     function extractCards(html) {
         const results = [];
-        const cardRegex = /<a[^>]+href="(\/manga\/[^"]+)"[^>]*>[\s\S]*?<img[^>]+(?:data-src|src)="([^"]+)"[^>]+(?:alt|title)="([^"]+)"/gi;
+        const cards = html.split('href="/manga/'); // Chop at the exact start of every manga link
         
-        let match;
-        while ((match = cardRegex.exec(html)) !== null) {
-            const id = match[1];
-            const thumbnail = match[2];
-            let title = match[3].trim();
+        for (let i = 1; i < cards.length; i++) {
+            const card = cards[i];
             
-            // Push to results if we haven't already grabbed this exact manga (Prevents duplicates!)
-            if (!results.find(r => r.id === id)) {
-                results.push({ id, title, thumbnail });
+            // Extract data strictly from within this one chopped block
+            const idMatch = card.match(/^([^"]+)"/); 
+            const imgMatch = card.match(/<img[^>]+(?:data-src|src)="([^"]+)"/i);
+            const titleMatch = card.match(/<img[^>]+(?:alt|title)="([^"]+)"/i);
+
+            if (idMatch && imgMatch && titleMatch) {
+                const id = '/manga/' + idMatch[1];
+                const thumbnail = imgMatch[1];
+                
+                // 1. Clean MangaPill's weird HTML formatting
+                let title = titleMatch[1]
+                    .replace(/&#39;/g, "'")
+                    .replace(/&quot;/g, '"')
+                    .replace(/&amp;/g, '&');
+                
+                // 2. Erase the double-text SEO bug using a smart regex
+                // If it says "JoJo Color JoJo Color", it cuts it down to just "JoJo Color"
+                title = title.replace(/^(.+?)(?:\s+\1)+$/, '$1').trim();
+
+                if (!results.find(r => r.id === id)) {
+                    results.push({ id, title, thumbnail });
+                }
             }
         }
         return results;
@@ -42,10 +59,11 @@ module.exports = async function (req, res) {
         
         // --- 2. TRENDING HOMEPAGE ---
         else if (trending) {
-            const response = await fetch(`https://mangapill.com/`, { headers });
+            // FIX: We now fetch the default Search page instead of the Homepage 
+            // so we get pure Series Titles instead of "Chapter 874" updates!
+            const response = await fetch(`https://mangapill.com/search`, { headers });
             const html = await response.text();
             
-            // Extract perfectly matched cards and only send the top 12 to your homepage
             const results = extractCards(html).slice(0, 12);
             return res.status(200).json(results);
         }
@@ -55,7 +73,6 @@ module.exports = async function (req, res) {
             const response = await fetch(`https://mangapill.com/search?q=${encodeURIComponent(q)}`, { headers });
             const html = await response.text();
             
-            // Extract perfectly matched cards from search results
             const results = extractCards(html);
             if (results.length === 0) throw new Error("No manga found.");
             return res.status(200).json(results);
@@ -67,32 +84,33 @@ module.exports = async function (req, res) {
             const response = await fetch(targetUrl, { headers });
             const html = await response.text();
 
-            // Extract Metadata Safely
             const descMatch = html.match(/<p[^>]*class="[^"]*text-sm[^"]*"[^>]*>([\s\S]*?)<\/p>/i);
             const description = descMatch ? descMatch[1].replace(/<[^>]+>/g, '').trim() : "No description available.";
             
             const genreMatches = [...html.matchAll(/href="\/search\?genre=[^"]+"[^>]*>([^<]+)<\/a>/g)];
             const genres = genreMatches.map(m => m[1]).join(', ') || "Manga";
 
-            // Extract Chapters Safely using Regex
             const chapters = [];
-            const chapRegex = /<a[^>]+href="(\/chapters\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
-            let cMatch;
+            const chapBlocks = html.split('href="/chapters/');
             
-            while ((cMatch = chapRegex.exec(html)) !== null) {
-                const id = cMatch[1];
-                const rawTitle = cMatch[2].replace(/<[^>]+>/g, '').trim(); 
+            for (let i = 1; i < chapBlocks.length; i++) {
+                const block = chapBlocks[i];
+                const idMatch = block.match(/^([^"]+)"/);
+                const titleMatch = block.match(/>([^<]+)<\/a>/);
                 
-                // Extract chapter number mathematically for perfect sorting
-                const numMatch = rawTitle.match(/(?:Chapter|Ch\.?)\s*(\d+(\.\d+)?)/i) || id.match(/chapter-(\d+(\.\d+)?)/i);
-                const chapNum = numMatch ? parseFloat(numMatch[1]) : 0;
-                
-                if (!chapters.find(c => c.id === id)) {
-                    chapters.push({ id, title: rawTitle, chap: chapNum });
+                if (idMatch && titleMatch) {
+                    const id = '/chapters/' + idMatch[1];
+                    const rawTitle = titleMatch[1].replace(/<[^>]+>/g, '').trim(); 
+                    
+                    const numMatch = rawTitle.match(/(?:Chapter|Ch\.?)\s*(\d+(\.\d+)?)/i) || id.match(/chapter-(\d+(\.\d+)?)/i);
+                    const chapNum = numMatch ? parseFloat(numMatch[1]) : 0;
+                    
+                    if (!chapters.find(c => c.id === id)) {
+                        chapters.push({ id, title: rawTitle, chap: chapNum });
+                    }
                 }
             }
             if (chapters.length === 0) throw new Error("No chapters found.");
-            
             return res.status(200).json({ details: { description, genres }, chapters });
         }
         
