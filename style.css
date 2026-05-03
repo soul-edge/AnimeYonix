@@ -24,9 +24,26 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
 .search-container button:hover { color: var(--accent); }
 
 /* --- HERO & GRIDS --- */
-.hero { height: 250px; margin: 0 40px 40px 40px; background: linear-gradient(135deg, rgba(255, 103, 64, 0.15) 0%, var(--bg-panel) 100%); border-radius: 12px; display: flex; align-items: center; padding: 50px; border-left: 5px solid var(--accent); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
-.hero-content h1 { font-size: 2rem; margin-bottom: 10px; }
-.hero-content p { color: var(--text-muted); font-size: 1.1rem; max-width: 600px; line-height: 1.5; }
+.hero { 
+    height: 280px; 
+    margin: 0 40px 40px 40px; 
+    /* The Magic Sauce: Gradient overlay for text readability + Solo Leveling Wallpaper */
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0.2)), 
+                url('https://images3.alphacoders.com/134/thumb-1920-1346679.jpg');
+    background-size: cover;
+    background-position: center 25%;
+    background-repeat: no-repeat;
+    
+    border-radius: 12px; 
+    display: flex; 
+    align-items: center; 
+    padding: 50px; 
+    border-left: 5px solid var(--accent); 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
+}
+.hero-content h1 { font-size: 2.2rem; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+.hero-content p { color: var(--text-main); font-size: 1.1rem; max-width: 600px; line-height: 1.5; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+
 .content-section { padding: 0 40px 40px 40px; }
 .content-section h2 { margin-bottom: 20px; font-size: 1.5rem; font-weight: 600; }
 .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
@@ -69,7 +86,14 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
     .topbar { padding: 15px 20px; justify-content: space-between; }
     .menu-btn { display: block; } 
     .search-container { width: auto; flex-grow: 1; margin-left: 15px; }
-    .hero { margin: 0 15px 25px 15px; padding: 30px 20px; height: auto; text-align: center; justify-content: center; }
+    .hero { 
+        margin: 0 15px 25px 15px; 
+        padding: 30px 20px; 
+        height: auto; 
+        text-align: center; 
+        justify-content: center;
+        background-position: center; /* Better center focus for mobile */
+    }
     .content-section { padding: 0 15px 30px 15px; }
     .det-layout { flex-direction: column; margin: 0 15px 30px 15px; align-items: center; text-align: center; }
     .det-poster img { width: 200px; }
