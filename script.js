@@ -21,6 +21,7 @@ function login() {
 function logout() { firebase.auth().signOut().then(() => { window.location.href = 'index.html'; }); }
 
 function showProfile() {
+    if(!document.getElementById('home-view')) return; // Prevents error on details page
     document.getElementById('home-view').style.display = 'none';
     document.getElementById('profile-view').style.display = 'block';
     document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
@@ -40,7 +41,10 @@ if (typeof firebase.auth === 'function') {
             if(navLogout) navLogout.style.display = 'flex'; 
             if(navProfile) {
                 navProfile.style.display = 'flex';
-                navProfile.onclick = (e) => { e.preventDefault(); showProfile(); };
+                // Only bind the onclick if we are actually on the homepage
+                if(document.getElementById('home-view')) {
+                    navProfile.onclick = (e) => { e.preventDefault(); showProfile(); };
+                }
             }
         } else {
             currentUserUID = null;
@@ -55,7 +59,10 @@ if (typeof firebase.auth === 'function') {
 async function toggleWishlist(mangaId, title, thumb) {
     if (!currentUserUID) return alert("You must be logged in to save to your Wishlist!");
     
-    const docRef = db.collection('users').doc(currentUserUID).collection('wishlist').doc(encodeURIComponent(mangaId));
+    // FIX: Firebase hates slashes in IDs. We change "/manga/123" to "_manga_123"
+    const safeDocId = mangaId.replace(/\//g, '_');
+    const docRef = db.collection('users').doc(currentUserUID).collection('wishlist').doc(safeDocId);
+    
     const doc = await docRef.get();
     const btn = document.getElementById('wishlist-btn');
     
@@ -73,6 +80,7 @@ async function toggleWishlist(mangaId, title, thumb) {
 async function loadWishlist() {
     if (!currentUserUID) return;
     const grid = document.getElementById('wishlistGrid');
+    if(!grid) return;
     grid.innerHTML = "<p style='color: gray;'>Loading your manga...</p>";
     
     try {
@@ -87,7 +95,8 @@ async function loadWishlist() {
 
 async function checkWishlistStatus(mangaId) {
     if (!currentUserUID) return;
-    const doc = await db.collection('users').doc(currentUserUID).collection('wishlist').doc(encodeURIComponent(mangaId)).get();
+    const safeDocId = mangaId.replace(/\//g, '_');
+    const doc = await db.collection('users').doc(currentUserUID).collection('wishlist').doc(safeDocId).get();
     const btn = document.getElementById('wishlist-btn');
     if (doc.exists && btn) btn.innerHTML = '<i class="fas fa-bookmark"></i> Saved to Wishlist';
 }
@@ -107,7 +116,16 @@ async function fetchSection(query, targetID, title) {
 }
 
 async function searchAnimeAPI() { 
-    const query = document.getElementById('userSearch').value;
+    const searchInput = document.getElementById('userSearch');
+    if (!searchInput) return;
+    const query = searchInput.value;
+    
+    // GLOBAL ROUTING FIX: If they search from the Details page, send them back to the Home page to see results!
+    if (!window.location.pathname.endsWith('index.html') && window.location.pathname !== '/' && !window.location.pathname.includes('vercel.app')) {
+        window.location.href = `index.html?search=${encodeURIComponent(query)}`;
+        return;
+    }
+
     if (query.trim() === "") return window.location.reload();
     
     document.getElementById('home-view').innerHTML = `<section class="content-section"><h2>Search Results</h2><div id="searchGrid" class="grid-container"><p style='color: lightgray;'>Searching database...</p></div></section>`;
@@ -160,7 +178,6 @@ async function loadDetails() {
         wBtn.style.marginTop = "15px";
         wBtn.onclick = () => toggleWishlist(mangaId, title, thumb);
         infoCol.appendChild(wBtn);
-        // Add slight delay to ensure Auth state is loaded before checking wishlist
         setTimeout(() => checkWishlistStatus(mangaId), 1000); 
     }
 
@@ -284,8 +301,8 @@ function updateHUDNavigation() {
     const btnPrev = document.getElementById('btn-prev-chap');
     const btnNext = document.getElementById('btn-next-chap');
     
-    btnPrev.disabled = currentIndex <= 0;
-    btnNext.disabled = currentIndex === -1 || currentIndex >= chapterListCache.length - 1;
+    if(btnPrev) btnPrev.disabled = currentIndex <= 0;
+    if(btnNext) btnNext.disabled = currentIndex === -1 || currentIndex >= chapterListCache.length - 1;
 }
 
 function changeChapter(direction) {
@@ -301,11 +318,21 @@ function changeChapter(direction) {
 
 // --- INIT APP ---
 window.onload = function() {
-    if (document.getElementById('recentGrid')) {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Check if we were redirected here from a Details Page Search!
+    if (urlParams.get('search') && document.getElementById('home-view')) {
+        document.getElementById('userSearch').value = urlParams.get('search');
+        searchAnimeAPI();
+    } else if (urlParams.get('view') === 'wishlist' && document.getElementById('home-view')) {
+        // Automatically open wishlist if returning from details page
+        setTimeout(showProfile, 500); 
+    } else if (document.getElementById('recentGrid')) {
         fetchSection('a', 'recentGrid', 'Recently Added'); 
         fetchSection('one piece', 'topRatedGrid', 'Top Rated Masterpieces');
         fetchSection('action', 'recommendedGrid', 'Recommended For You');
     }
+
     if (document.getElementById('det-title') || window.location.pathname.includes('details.html')) loadDetails();
     if (new URLSearchParams(window.location.search).get('chapterId')) loadMangaReader();
 };
