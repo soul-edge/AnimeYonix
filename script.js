@@ -18,7 +18,10 @@ function login() {
     const provider = new firebase.auth.GoogleAuthProvider();
     firebase.auth().signInWithPopup(provider).catch(err => alert("Login failed: " + err.message));
 }
-function logout() { firebase.auth().signOut().then(() => { window.location.href = 'index.html'; }); }
+
+function logout() { 
+    firebase.auth().signOut().then(() => { window.location.href = 'index.html'; }); 
+}
 
 function showProfile() {
     if(!document.getElementById('home-view')) return; // Prevents error on details page
@@ -102,7 +105,9 @@ async function checkWishlistStatus(mangaId) {
 }
 
 // --- HOMEPAGE LOGIC & CAROUSEL ---
-function scrollCarousel(id, amount) { document.getElementById(id).scrollBy({ left: amount, behavior: 'smooth' }); }
+function scrollCarousel(id, amount) { 
+    document.getElementById(id).scrollBy({ left: amount, behavior: 'smooth' }); 
+}
 
 async function fetchSection(query, targetID, title) {
     const grid = document.getElementById(targetID);
@@ -163,10 +168,16 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
 // --- DETAILS PAGE ---
 async function loadDetails() {
     const params = new URLSearchParams(window.location.search);
-    const mangaId = decodeURIComponent(params.get('id'));
-    const title = decodeURIComponent(params.get('title'));
-    const thumb = decodeURIComponent(params.get('thumb'));
-    if(!mangaId || mangaId === "null") return;
+    
+    // URLSearchParams automatically decodes, so we don't need decodeURIComponent here
+    const mangaId = params.get('id');
+    const title = params.get('title');
+    const thumb = params.get('thumb');
+    
+    if(!mangaId || mangaId === "null") {
+        window.location.href = 'index.html';
+        return;
+    }
 
     if (document.getElementById('det-title')) document.getElementById('det-title').innerText = title;
     if (document.getElementById('det-thumb')) document.getElementById('det-thumb').src = thumb;
@@ -203,7 +214,7 @@ async function loadDetails() {
                 epList.appendChild(btn);
             });
         }
-    } catch (err) { epList.innerHTML = `<p style='color: red;'>Error loading.</p>`; }
+    } catch (err) { epList.innerHTML = `<p style='color: red;'>Error loading chapters.</p>`; }
 }
 
 // --- READER STATE MACHINE ---
@@ -216,13 +227,18 @@ let currentMangaId = "";
 
 async function loadMangaReader() {
     const params = new URLSearchParams(window.location.search);
-    currentChapterId = decodeURIComponent(params.get('chapterId'));
-    currentMangaId = decodeURIComponent(params.get('mangaId'));
-    const title = decodeURIComponent(params.get('title'));
     
-    if (!currentChapterId) return;
+    currentChapterId = params.get('chapterId');
+    currentMangaId = params.get('mangaId');
+    const title = params.get('title');
+    const ep = params.get('ep');
+    
+    if (!currentChapterId) {
+        window.location.href = 'index.html';
+        return;
+    }
 
-    if (document.getElementById('playingTitle')) document.getElementById('playingTitle').innerText = title + " - Chapter " + params.get('ep');
+    if (document.getElementById('playingTitle')) document.getElementById('playingTitle').innerText = title + " - Chapter " + ep;
 
     const mangaView = document.getElementById('mangaView');
     mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Loading high-quality pages...</p>";
@@ -311,7 +327,7 @@ function changeChapter(direction) {
     
     const targetChapter = chapterListCache[currentIndex + direction];
     if (targetChapter) {
-        const title = decodeURIComponent(new URLSearchParams(window.location.search).get('title'));
+        const title = new URLSearchParams(window.location.search).get('title');
         window.location.href = `watch.html?chapterId=${encodeURIComponent(targetChapter.id)}&mangaId=${encodeURIComponent(currentMangaId)}&title=${encodeURIComponent(title)}&ep=${targetChapter.chap}`;
     }
 }
