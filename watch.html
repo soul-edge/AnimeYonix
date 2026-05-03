@@ -1,29 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Playing Video | AnimeYonix</title>
+    <title>MangaYonix - Reader</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
-    <nav class="navbar">
-        <a href="index.html" class="logo">Anime<span>Yonix</span></a>
-        <a href="javascript:history.back()" style="color: white; text-decoration: none;">← Back to Details</a>
-    </nav>
+    <div class="app-container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="logo-container"><h2>Manga<span class="accent">Yonix</span></h2></div>
+            <nav class="sidebar-nav">
+                <a href="index.html"><i class="fas fa-home"></i> Home</a>
+            </nav>
+            <div style="padding: 20px; color: var(--text-muted);">
+                <h3 id="playingTitle" style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 5px;">Loading...</h3>
+            </div>
+        </aside>
 
-    <div class="player-container">
-        <div class="video-wrapper">
-            <iframe id="mainPlayer" src="" allowfullscreen></iframe>
-        </div>
-        <div class="video-info">
-            <h1 id="playingTitle">Loading Title...</h1>
-            <p id="playingEp" style="color: var(--accent); font-weight: bold;">Episode --</p>
-        </div>
+        <!-- MAIN CONTENT / READER ZONE -->
+        <main class="main-content" style="position: relative;">
+            
+            <!-- Click zones for Single Page Mode -->
+            <div id="zone-prev" class="page-nav-zone zone-left" style="display:none;" onclick="prevPage()"></div>
+            <div id="zone-next" class="page-nav-zone zone-right" style="display:none;" onclick="nextPage()"></div>
+            
+            <!-- Where the images actually load -->
+            <div id="mangaView" style="padding-bottom: 100px;"></div>
+
+            <!-- The Floating HUD -->
+            <div class="reader-hud">
+                <button class="hud-btn" onclick="window.history.back()"><i class="fas fa-arrow-left"></i></button>
+                <button class="hud-btn" id="btn-prev-chap" onclick="changeChapter(-1)"><i class="fas fa-step-backward"></i> Prev</button>
+                <button class="hud-btn" id="btn-next-chap" onclick="changeChapter(1)">Next <i class="fas fa-step-forward"></i></button>
+                <div style="width: 1px; height: 20px; background: #333; margin: 0 10px;"></div>
+                <button class="hud-btn active-mode" id="btn-webtoon" onclick="setReaderMode('webtoon')"><i class="fas fa-arrows-alt-v"></i> Webtoon</button>
+                <button class="hud-btn" id="btn-single" onclick="setReaderMode('single')"><i class="fas fa-file"></i> Single</button>
+            </div>
+        </main>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
