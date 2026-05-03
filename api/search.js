@@ -1,7 +1,6 @@
 module.exports = async function (req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     
-    // FIX: Added 'live' to the query parameters
     const { q, mangaId, chapterId, proxyImage, trending, live } = req.query;
 
     const headers = {
@@ -9,29 +8,38 @@ module.exports = async function (req, res) {
         "Referer": "https://mangapill.com/"
     };
 
-    // --- THE GUILLOTINE EXTRACTOR ---
+    // --- THE UPGRADED STRICT EXTRACTOR ---
     function extractCards(html) {
         const results = [];
-        const cards = html.split('href="/manga/'); 
-        
-        for (let i = 1; i < cards.length; i++) {
-            const card = cards[i];
-            
-            const idMatch = card.match(/^([^"]+)"/); 
-            const imgMatch = card.match(/<img[^>]+(?:data-src|src)="([^"]+)"/i);
-            const titleMatch = card.match(/<img[^>]+(?:alt|title)="([^"]+)"/i);
+        // Break the HTML into isolated anchor tag blocks
+        const links = html.split('<a ');
 
-            if (idMatch && imgMatch && titleMatch) {
-                const id = '/manga/' + idMatch[1];
+        for (let link of links) {
+            // Isolate ONLY what is inside this specific link to prevent bleeding
+            const insideLink = link.split('</a>')[0];
+
+            // 1. Must be a base manga link, ignore /chapters/ links
+            const hrefMatch = insideLink.match(/href="(\/manga\/[^"]+)"/);
+            if (!hrefMatch) continue;
+
+            const id = hrefMatch[1];
+
+            // 2. Find the image strictly inside this isolated block
+            const imgMatch = insideLink.match(/<img[^>]+(?:data-src|src)="([^"]+)"/i);
+            const titleMatch = insideLink.match(/<img[^>]+(?:alt|title)="([^"]+)"/i);
+
+            if (imgMatch && titleMatch) {
                 const thumbnail = imgMatch[1];
-                
                 let title = titleMatch[1]
                     .replace(/&#39;/g, "'")
                     .replace(/&quot;/g, '"')
-                    .replace(/&amp;/g, '&');
-                
-                title = title.replace(/^(.+?)(?:\s+\1)+$/, '$1').trim();
+                    .replace(/&amp;/g, '&')
+                    .trim();
 
+                // Clean up: Remove "Chapter X" from titles if MangaPill added it to the image alt text
+                title = title.replace(/\s+Chapter\s+\d+(\.\d+)?$/i, '').trim();
+
+                // Save it!
                 if (!results.find(r => r.id === id)) {
                     results.push({ id, title, thumbnail });
                 }
@@ -55,14 +63,11 @@ module.exports = async function (req, res) {
         
         // --- 2. NEW: REAL-TIME HOMEPAGE SCRAPER ---
         else if (live === 'true') {
-            // Secretly fetch the actual MangaPill homepage
             const response = await fetch(`https://mangapill.com/`, { headers });
             const html = await response.text();
             
-            // Send it through your Guillotine Extractor
             const liveMangaList = extractCards(html);
 
-            // Slice the live data into 3 chunks for your 3 carousels!
             return res.status(200).json({
                 recent: liveMangaList.slice(0, 15),
                 trending: liveMangaList.slice(15, 30),
