@@ -6,7 +6,7 @@
     --text-muted: #a0a0a0;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
 
 body { 
     background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-dark) 100%); 
@@ -17,7 +17,6 @@ body {
 /* --- APP LAYOUT --- */
 .app-container { display: flex; min-height: 100vh; }
 
-/* --- SIDEBAR --- */
 .sidebar {
     width: 240px;
     background-color: var(--bg-panel);
@@ -26,143 +25,107 @@ body {
     border-right: 1px solid #2a2a2a;
     display: flex;
     flex-direction: column;
+    z-index: 100;
 }
 .logo-container { padding: 20px; font-size: 1.5rem; font-weight: bold; border-bottom: 1px solid #2a2a2a; }
-.logo-container .accent { 
-    color: var(--accent); 
-    text-shadow: 0 0 15px rgba(255, 103, 64, 0.6); 
-}
+.logo-container .accent { color: var(--accent); text-shadow: 0 0 15px rgba(255, 103, 64, 0.6); }
 
 .sidebar-nav { padding: 20px 0; display: flex; flex-direction: column; }
 .sidebar-nav a {
-    color: var(--text-muted);
-    text-decoration: none;
-    padding: 15px 25px;
-    font-size: 1.1rem;
-    transition: 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 15px;
+    color: var(--text-muted); text-decoration: none; padding: 15px 25px;
+    font-size: 1.1rem; transition: 0.2s; display: flex; align-items: center; gap: 15px;
 }
 .sidebar-nav a:hover, .sidebar-nav a.active {
-    color: var(--text-main);
-    background-color: rgba(255, 103, 64, 0.1);
-    border-left: 4px solid var(--accent);
+    color: var(--text-main); background-color: rgba(255, 103, 64, 0.1); border-left: 4px solid var(--accent);
 }
 
-/* --- MAIN CONTENT --- */
 .main-content {
     margin-left: 240px; 
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
+    flex-grow: 1; display: flex; flex-direction: column;
 }
 
 /* --- TOP BAR & SEARCH --- */
 .topbar {
-    padding: 20px 40px;
-    display: flex;
-    justify-content: flex-end;
-    background: transparent;
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    padding: 20px 40px; display: flex; justify-content: flex-end;
+    background: transparent; position: sticky; top: 0; z-index: 90;
 }
 .search-container {
-    display: flex;
-    background: var(--bg-panel);
-    border-radius: 8px;
-    overflow: hidden;
-    width: 400px;
-    border: 1px solid #2a2a2a;
+    display: flex; background: var(--bg-panel); border-radius: 8px;
+    overflow: hidden; width: 400px; border: 1px solid #2a2a2a;
 }
-.search-container input {
-    background: transparent;
-    border: none;
-    color: white;
-    padding: 12px 20px;
-    width: 100%;
-    outline: none;
-}
-.search-container button {
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    padding: 0 20px;
-    cursor: pointer;
-    transition: 0.2s;
-}
+.search-container input { background: transparent; border: none; color: white; padding: 12px 20px; width: 100%; outline: none; }
+.search-container button { background: transparent; border: none; color: var(--text-muted); padding: 0 20px; cursor: pointer; transition: 0.2s; }
 .search-container button:hover { color: var(--accent); }
 
 /* --- HERO BANNER --- */
 .hero {
-    height: 250px;
-    margin: 0 40px 40px 40px;
+    height: 250px; margin: 0 40px 40px 40px;
     background: linear-gradient(135deg, rgba(255, 103, 64, 0.15) 0%, var(--bg-panel) 100%);
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    padding: 50px;
-    border-left: 5px solid var(--accent);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border-radius: 12px; display: flex; align-items: center; padding: 50px;
+    border-left: 5px solid var(--accent); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 .hero-content h1 { font-size: 2rem; margin-bottom: 10px; }
 .hero-content p { color: var(--text-muted); font-size: 1.1rem; max-width: 600px; line-height: 1.5; }
 
-/* --- MANGA GRID --- */
+/* --- GRIDS & CAROUSELS --- */
 .content-section { padding: 0 40px 40px 40px; }
 .content-section h2 { margin-bottom: 20px; font-size: 1.5rem; font-weight: 600; }
 
 .grid-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 20px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
+.carousel-container { position: relative; display: flex; align-items: center; }
+.carousel {
+    display: flex; overflow-x: auto; scroll-behavior: smooth; gap: 20px;
+    padding-bottom: 10px; scrollbar-width: none;
 }
+.carousel::-webkit-scrollbar { display: none; }
+.carousel .card { flex: 0 0 180px; } 
 
-.card {
-    background: transparent;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: transform 0.2s;
-    animation: fadeIn 0.5s ease forwards;
+.scroll-btn {
+    position: absolute; z-index: 10; background: rgba(30, 30, 30, 0.8); color: var(--text-main);
+    border: 1px solid var(--accent); border-radius: 50%; width: 40px; height: 40px;
+    cursor: pointer; font-size: 1.2rem; transition: 0.2s;
 }
+.scroll-btn:hover { background: var(--accent); }
+.scroll-left { left: -20px; }
+.scroll-right { right: -20px; }
+
+/* --- CARDS --- */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+.card { background: transparent; border-radius: 8px; cursor: pointer; transition: transform 0.2s; animation: fadeIn 0.5s ease forwards; }
 .card:hover { transform: translateY(-5px); }
-
-.thumbnail-wrapper {
-    width: 100%;
-    aspect-ratio: 2 / 3; 
-    border-radius: 8px;
-    overflow: hidden;
-    position: relative;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-}
-.thumbnail {
-    width: 100%;
-    height: 100%;
-    background-size: cover;
-    background-position: center;
-    transition: 0.3s;
-}
+.thumbnail-wrapper { width: 100%; aspect-ratio: 2 / 3; border-radius: 8px; overflow: hidden; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+.thumbnail { width: 100%; height: 100%; background-size: cover; background-position: center; transition: 0.3s; }
 .card:hover .thumbnail { transform: scale(1.05); }
-
 .info { padding: 10px 0; }
-.manga-title {
-    font-size: 0.95rem;
-    font-weight: 500;
-    color: var(--text-main);
-    display: -webkit-box;
-    -webkit-line-clamp: 2; 
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    line-height: 1.4;
-}
+.manga-title { font-size: 0.95rem; font-weight: 500; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
 
-/* Utilities for details/watch pages */
+/* --- DETAILS PAGE --- */
+.det-layout { display: flex; gap: 40px; margin: 0 40px 40px 40px; }
+.det-poster img { width: 250px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.det-info h1 { font-size: 2.5rem; margin-bottom: 10px; }
+.btn { background: var(--accent); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+.btn:hover { background: #e05530; }
+
 .ep-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 20px; }
 .ep-btn { background: var(--bg-panel); padding: 12px; border-radius: 6px; text-align: center; cursor: pointer; transition: 0.2s; border: 1px solid #2a2a2a; }
 .ep-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+/* --- READER HUD (HEADS UP DISPLAY) --- */
+.reader-hud {
+    position: fixed; bottom: 20px; left: calc(50% + 120px); transform: translateX(-50%);
+    background: rgba(20, 20, 20, 0.95); padding: 15px 30px; border-radius: 50px;
+    display: flex; gap: 20px; align-items: center; border: 1px solid #333; z-index: 1000;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+}
+.hud-btn { background: transparent; color: var(--text-main); border: none; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+.hud-btn:hover { color: var(--accent); }
+.hud-btn.active-mode { color: var(--accent); font-weight: bold; }
+.hud-btn:disabled { color: #555; cursor: not-allowed; }
+
+.page-nav-zone { position: fixed; top: 0; height: 100vh; width: 40vw; z-index: 900; cursor: pointer; }
+.zone-left { left: 240px; }
+.zone-right { right: 0; }
