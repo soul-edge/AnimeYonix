@@ -127,7 +127,7 @@ async function loadLiveHomepage() {
         
         renderGrid(liveData.recent, "Recently Added (Live)", "recentGrid");
         renderGrid(liveData.trending, "Top Trending Right Now", "topRatedGrid");
-        renderGrid(liveData.recommended, "MangaPill Recommendations", "recommendedGrid");
+        renderGrid(liveData.recommended, "MangaYonix Recommendations", "recommendedGrid");
         
     } catch (err) {
         console.error("Live fetch failed", err);
