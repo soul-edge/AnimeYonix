@@ -13,21 +13,19 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 let currentUserUID = null; 
 
-// --- 1.5 AUTH LOGIC ---
+// --- AUTH & PROFILE LOGIC ---
 function login() {
     const provider = new firebase.auth.GoogleAuthProvider();
-    firebase.auth().signInWithPopup(provider)
-        .then((result) => {
-            console.log("Logged in successfully as:", result.user.displayName);
-        })
-        .catch((error) => {
-            console.error("Login failed:", error.message);
-            alert("Login failed: " + error.message);
-        });
+    firebase.auth().signInWithPopup(provider).catch(err => alert("Login failed: " + err.message));
 }
+function logout() { firebase.auth().signOut().then(() => { window.location.href = 'index.html'; }); }
 
-function logout() {
-    firebase.auth().signOut().then(() => { window.location.href = 'index.html'; });
+function showProfile() {
+    document.getElementById('home-view').style.display = 'none';
+    document.getElementById('profile-view').style.display = 'block';
+    document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+    document.getElementById('nav-profile').classList.add('active');
+    loadWishlist();
 }
 
 if (typeof firebase.auth === 'function') {
@@ -40,7 +38,10 @@ if (typeof firebase.auth === 'function') {
             currentUserUID = user.uid;
             if(navLogin) navLogin.style.display = 'none';
             if(navLogout) navLogout.style.display = 'flex'; 
-            if(navProfile) navProfile.style.display = 'flex';
+            if(navProfile) {
+                navProfile.style.display = 'flex';
+                navProfile.onclick = (e) => { e.preventDefault(); showProfile(); };
+            }
         } else {
             currentUserUID = null;
             if(navLogin) navLogin.style.display = 'flex';
@@ -50,61 +51,72 @@ if (typeof firebase.auth === 'function') {
     });
 }
 
-// --- 2. HOMEPAGE & SEARCH ---
-async function loadTopManga() {
-    const grid = document.getElementById('episodeGrid');
-    if (!grid) return;
-    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Loading trending...</p>";
+// --- WISHLIST ENGINE (FIRESTORE) ---
+async function toggleWishlist(mangaId, title, thumb) {
+    if (!currentUserUID) return alert("You must be logged in to save to your Wishlist!");
     
-    try {
-        const response = await fetch('/api/search?trending=true');
-        if (!response.ok) throw new Error("Failed to load trending.");
-        const results = await response.json();
-        renderGrid(results, "Top Trending", "episodeGrid");
-    } catch (error) { 
-        if (grid) grid.innerHTML = `<p style='color: #ff4757; padding-left: 20px;'>${error.message}</p>`;
+    const docRef = db.collection('users').doc(currentUserUID).collection('wishlist').doc(encodeURIComponent(mangaId));
+    const doc = await docRef.get();
+    const btn = document.getElementById('wishlist-btn');
+    
+    if (doc.exists) {
+        await docRef.delete();
+        if(btn) btn.innerHTML = '<i class="far fa-bookmark"></i> Add to Wishlist';
+        alert("Removed from Wishlist");
+    } else {
+        await docRef.set({ id: mangaId, title: title, thumbnail: thumb, addedAt: new Date() });
+        if(btn) btn.innerHTML = '<i class="fas fa-bookmark"></i> Saved to Wishlist';
+        alert("Saved to Wishlist!");
     }
 }
 
-async function loadActionManga() {
-    const grid = document.getElementById('actionGrid');
-    if (!grid) return;
-    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Loading action hits...</p>";
+async function loadWishlist() {
+    if (!currentUserUID) return;
+    const grid = document.getElementById('wishlistGrid');
+    grid.innerHTML = "<p style='color: gray;'>Loading your manga...</p>";
     
     try {
-        const response = await fetch('/api/search?q=action');
-        if (!response.ok) throw new Error("Failed to load action hits.");
+        const snapshot = await db.collection('users').doc(currentUserUID).collection('wishlist').orderBy('addedAt', 'desc').get();
+        if (snapshot.empty) return grid.innerHTML = "<p style='color: gray;'>Your wishlist is empty.</p>";
+        
+        const results = [];
+        snapshot.forEach(doc => results.push(doc.data()));
+        renderGrid(results, "My Wishlist", "wishlistGrid");
+    } catch (err) { grid.innerHTML = "<p style='color: red;'>Error loading wishlist.</p>"; }
+}
+
+async function checkWishlistStatus(mangaId) {
+    if (!currentUserUID) return;
+    const doc = await db.collection('users').doc(currentUserUID).collection('wishlist').doc(encodeURIComponent(mangaId)).get();
+    const btn = document.getElementById('wishlist-btn');
+    if (doc.exists && btn) btn.innerHTML = '<i class="fas fa-bookmark"></i> Saved to Wishlist';
+}
+
+// --- HOMEPAGE LOGIC & CAROUSEL ---
+function scrollCarousel(id, amount) { document.getElementById(id).scrollBy({ left: amount, behavior: 'smooth' }); }
+
+async function fetchSection(query, targetID, title) {
+    const grid = document.getElementById(targetID);
+    if (!grid) return;
+    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Loading...</p>";
+    try {
+        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
         const results = await response.json();
-        renderGrid(results.slice(0, 6), "Action & Adventure Hits", "actionGrid");
-    } catch (error) { 
-        if (grid) grid.innerHTML = `<p style='color: #ff4757; padding-left: 20px;'>${error.message}</p>`;
-    }
+        renderGrid(results.slice(0, 15), title, targetID);
+    } catch (error) { console.error(error); }
 }
 
 async function searchAnimeAPI() { 
     const query = document.getElementById('userSearch').value;
-    if (query.trim() === "") { 
-        loadTopManga(); 
-        loadActionManga();
-        return; 
-    }
+    if (query.trim() === "") return window.location.reload();
     
-    const grid = document.getElementById('episodeGrid');
-    const header = document.querySelector('.content-section h2');
-    const actionSection = document.getElementById('actionGrid');
+    document.getElementById('home-view').innerHTML = `<section class="content-section"><h2>Search Results</h2><div id="searchGrid" class="grid-container"><p style='color: lightgray;'>Searching database...</p></div></section>`;
     
-    if (header) header.innerText = "Search Results";
-    if (actionSection) actionSection.parentElement.style.display = 'none'; // Hide second row when searching
-    if (grid) grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Searching database...</p>";
-
     try {
         const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error("Search failed.");
         const results = await response.json();
-        renderGrid(results, "Search Results", "episodeGrid");
-    } catch (error) { 
-        if (grid) grid.innerHTML = `<p style='color: #ff4757; padding-left: 20px;'>No manga found.</p>`;
-    }
+        renderGrid(results, "Search Results", "searchGrid");
+    } catch (error) { document.getElementById('searchGrid').innerHTML = `<p style='color: #ff4757;'>No manga found.</p>`; }
 }
 
 function renderGrid(mangaArray, sectionTitle, targetID) {
@@ -117,136 +129,182 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
     mangaArray.forEach(manga => {
         const card = document.createElement('div');
         card.className = 'card';
-        
-        const safeImageUrl = `/api/search?proxyImage=${encodeURIComponent(manga.thumbnail)}`;
+        const safeImageUrl = manga.thumbnail.includes('/api/search') ? manga.thumbnail : `/api/search?proxyImage=${encodeURIComponent(manga.thumbnail)}`;
         
         card.innerHTML = `
             <div class="thumbnail-wrapper">
                 <div class="thumbnail" style="background-image: url('${safeImageUrl}');"></div>
             </div>
-            <div class="info">
-                <h3 class="manga-title" title="${manga.title}">${manga.title}</h3>
-            </div>
+            <div class="info"><h3 class="manga-title" title="${manga.title}">${manga.title}</h3></div>
         `;
-        
-        card.onclick = () => { 
-            window.location.href = `details.html?id=${encodeURIComponent(manga.id)}&title=${encodeURIComponent(manga.title)}&thumb=${encodeURIComponent(safeImageUrl)}`; 
-        };
+        card.onclick = () => { window.location.href = `details.html?id=${encodeURIComponent(manga.id)}&title=${encodeURIComponent(manga.title)}&thumb=${encodeURIComponent(safeImageUrl)}`; };
         grid.appendChild(card);
     });
 }
 
-// --- 3. DETAILS & CHAPTERS ---
+// --- DETAILS PAGE ---
 async function loadDetails() {
     const params = new URLSearchParams(window.location.search);
     const mangaId = decodeURIComponent(params.get('id'));
     const title = decodeURIComponent(params.get('title'));
     const thumb = decodeURIComponent(params.get('thumb'));
-    
     if(!mangaId || mangaId === "null") return;
 
-    const detTitle = document.getElementById('det-title');
-    const detThumb = document.getElementById('det-thumb');
-    if (detTitle) detTitle.innerText = title;
-    if (detThumb) detThumb.src = thumb;
+    if (document.getElementById('det-title')) document.getElementById('det-title').innerText = title;
+    if (document.getElementById('det-thumb')) document.getElementById('det-thumb').src = thumb;
+
+    const infoCol = document.querySelector('.det-info');
+    if (infoCol && !document.getElementById('wishlist-btn')) {
+        const wBtn = document.createElement('button');
+        wBtn.id = "wishlist-btn"; wBtn.className = "btn"; wBtn.innerHTML = '<i class="far fa-bookmark"></i> Add to Wishlist';
+        wBtn.style.marginTop = "15px";
+        wBtn.onclick = () => toggleWishlist(mangaId, title, thumb);
+        infoCol.appendChild(wBtn);
+        // Add slight delay to ensure Auth state is loaded before checking wishlist
+        setTimeout(() => checkWishlistStatus(mangaId), 1000); 
+    }
 
     const epList = document.getElementById('ep-list');
-    if (epList) epList.innerHTML = "<p style='color: var(--accent); padding: 20px 0;'>Extracting chapters...</p>";
+    if (!epList) return;
+    epList.innerHTML = "<p style='color: var(--accent); padding: 20px 0;'>Extracting chapters...</p>";
 
     try {
         const response = await fetch(`/api/search?mangaId=${encodeURIComponent(mangaId)}`);
-        if (!response.ok) throw new Error("Backend Scraper Error");
         const data = await response.json();
-
-        const detSyn = document.getElementById('det-syn');
-        const detGenre = document.getElementById('det-genre');
-        if (detSyn) detSyn.innerText = data.details.description;
-        if (detGenre) detGenre.innerText = "GENRE: " + data.details.genres;
+        if (document.getElementById('det-syn')) document.getElementById('det-syn').innerText = data.details.description;
+        if (document.getElementById('det-genre')) document.getElementById('det-genre').innerText = "GENRE: " + data.details.genres;
 
         const chapters = data.chapters;
-        if (epList && chapters.length > 0) {
-            epList.innerHTML = ""; 
-            epList.className = "ep-list"; // Apply grid styling
+        if (chapters.length > 0) {
+            epList.innerHTML = ""; epList.className = "ep-list"; 
             const sortedChapters = chapters.sort((a, b) => a.chap - b.chap);
 
             sortedChapters.forEach(chapter => {
                 const btn = document.createElement('div');
-                btn.className = 'ep-btn';
-                btn.innerText = chapter.title; 
-                
-                btn.onclick = () => {
-                    window.location.href = `watch.html?chapterId=${encodeURIComponent(chapter.id)}&title=${encodeURIComponent(title)}&ep=${chapter.chap}`;
-                };
+                btn.className = 'ep-btn'; btn.innerText = chapter.title; 
+                btn.onclick = () => { window.location.href = `watch.html?chapterId=${encodeURIComponent(chapter.id)}&mangaId=${encodeURIComponent(mangaId)}&title=${encodeURIComponent(title)}&ep=${chapter.chap}`; };
                 epList.appendChild(btn);
             });
-        } else {
-            if (epList) epList.innerHTML = "<p style='color: gray;'>Failed to extract chapters.</p>";
         }
-    } catch (err) {
-        if (epList) epList.innerHTML = `<p style='color: #ff4757; font-weight: bold;'>Error: ${err.message}. Please refresh.</p>`;
+    } catch (err) { epList.innerHTML = `<p style='color: red;'>Error loading.</p>`; }
+}
+
+// --- READER STATE MACHINE ---
+let readerImages = [];
+let currentReadMode = 'webtoon';
+let currentSinglePage = 0;
+let chapterListCache = [];
+let currentChapterId = "";
+let currentMangaId = "";
+
+async function loadMangaReader() {
+    const params = new URLSearchParams(window.location.search);
+    currentChapterId = decodeURIComponent(params.get('chapterId'));
+    currentMangaId = decodeURIComponent(params.get('mangaId'));
+    const title = decodeURIComponent(params.get('title'));
+    
+    if (!currentChapterId) return;
+
+    if (document.getElementById('playingTitle')) document.getElementById('playingTitle').innerText = title + " - Chapter " + params.get('ep');
+
+    const mangaView = document.getElementById('mangaView');
+    mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Loading high-quality pages...</p>";
+
+    try {
+        const res = await fetch(`/api/search?chapterId=${encodeURIComponent(currentChapterId)}`);
+        const data = await res.json();
+        readerImages = data.images; 
+        renderReader();
+    } catch (err) { mangaView.innerHTML = `<p style='color:red; text-align:center;'>Error loading images.</p>`; }
+
+    if (currentMangaId && currentMangaId !== "null") {
+        try {
+            const chapRes = await fetch(`/api/search?mangaId=${encodeURIComponent(currentMangaId)}`);
+            const chapData = await chapRes.json();
+            chapterListCache = chapData.chapters.sort((a, b) => a.chap - b.chap);
+            updateHUDNavigation();
+        } catch (e) { console.error("Could not load chapter list"); }
     }
 }
 
-// --- 4. THE MANGA READER ---
-async function loadMangaReader() {
-    const params = new URLSearchParams(window.location.search);
-    const chapterId = params.get('chapterId');
-    const title = params.get('title');
-    const ep = params.get('ep');
-    
-    if (!chapterId) return;
+function renderReader() {
+    const mangaView = document.getElementById('mangaView');
+    mangaView.innerHTML = ""; 
+    const zoneLeft = document.getElementById('zone-prev');
+    const zoneRight = document.getElementById('zone-next');
 
-    const playingTitle = document.getElementById('playingTitle');
-    const playingEp = document.getElementById('playingEp');
-    if (playingTitle) playingTitle.innerText = decodeURIComponent(title);
-    if (playingEp) playingEp.innerText = "Chapter " + ep;
+    if (currentReadMode === 'webtoon') {
+        if(zoneLeft) zoneLeft.style.display = 'none';
+        if(zoneRight) zoneRight.style.display = 'none';
+        mangaView.style.display = 'block';
 
-    let mangaView = document.getElementById('mangaView');
-    if(!mangaView) {
-        mangaView = document.createElement('div');
-        mangaView.id = "mangaView";
-        mangaView.style.cssText = "width:100%; max-width:900px; margin:0 auto; background: var(--bg-dark);";
-        
-        const container = document.querySelector('.main-content') || document.body;
-        container.appendChild(mangaView);
-    }
-    mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Stealing high-quality pages...</p>";
-    window.scrollTo(0, 0);
-
-    try {
-        const res = await fetch(`/api/search?chapterId=${encodeURIComponent(chapterId)}`);
-        if (!res.ok) throw new Error("Image Scraper Failed");
-        
-        const data = await res.json();
-        const pageFiles = data.images; 
-
-        mangaView.innerHTML = ""; 
-        
-        pageFiles.forEach(imgUrl => {
+        readerImages.forEach(imgUrl => {
             const img = document.createElement('img');
             img.src = `/api/search?proxyImage=${encodeURIComponent(imgUrl)}`; 
-            img.style.cssText = "width:100%; max-width:900px; display:block; margin:0 auto 5px; min-height:400px; background:var(--bg-panel); color:gray; text-align:center; line-height:400px;";
-            img.alt = "Loading page...";
+            img.style.cssText = "width:100%; max-width:900px; display:block; margin:0 auto 5px; background:var(--bg-panel);";
             img.loading = "lazy";
             mangaView.appendChild(img);
         });
+    } else if (currentReadMode === 'single') {
+        if(zoneLeft) zoneLeft.style.display = 'block';
+        if(zoneRight) zoneRight.style.display = 'block';
+        mangaView.style.display = 'flex';
+        mangaView.style.justifyContent = 'center';
+        mangaView.style.minHeight = '80vh';
 
-        const endBtn = document.createElement('button');
-        endBtn.innerText = "Back to Homepage";
-        endBtn.style.cssText = "background: var(--accent); color: white; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; max-width: 200px; margin: 40px auto; display: block; font-weight: bold;";
-        endBtn.onclick = () => window.location.href = `index.html`;
-        mangaView.appendChild(endBtn);
-
-    } catch (err) {
-        mangaView.innerHTML = `<p style='color:red; text-align:center; padding:50px;'>${err.message}. Please refresh.</p>`;
+        const img = document.createElement('img');
+        img.src = `/api/search?proxyImage=${encodeURIComponent(readerImages[currentSinglePage])}`; 
+        img.style.cssText = "max-width:100%; max-height:95vh; object-fit:contain; z-index: 950; position:relative;";
+        
+        const counter = document.createElement('div');
+        counter.innerText = `${currentSinglePage + 1} / ${readerImages.length}`;
+        counter.style.cssText = "position:fixed; top:20px; right:20px; background:rgba(0,0,0,0.8); color:white; padding:5px 15px; border-radius:20px; z-index:1000;";
+        
+        mangaView.appendChild(counter);
+        mangaView.appendChild(img);
+        window.scrollTo(0,0);
     }
 }
 
-// --- 5. INIT ---
+function setReaderMode(mode) {
+    currentReadMode = mode;
+    document.getElementById('btn-webtoon').classList.toggle('active-mode', mode === 'webtoon');
+    document.getElementById('btn-single').classList.toggle('active-mode', mode === 'single');
+    renderReader();
+}
+
+function prevPage() { if (currentSinglePage > 0) { currentSinglePage--; renderReader(); } }
+function nextPage() { 
+    if (currentSinglePage < readerImages.length - 1) { currentSinglePage++; renderReader(); } 
+    else { alert("End of chapter!"); }
+}
+
+function updateHUDNavigation() {
+    const currentIndex = chapterListCache.findIndex(c => c.id === currentChapterId);
+    const btnPrev = document.getElementById('btn-prev-chap');
+    const btnNext = document.getElementById('btn-next-chap');
+    
+    btnPrev.disabled = currentIndex <= 0;
+    btnNext.disabled = currentIndex === -1 || currentIndex >= chapterListCache.length - 1;
+}
+
+function changeChapter(direction) {
+    const currentIndex = chapterListCache.findIndex(c => c.id === currentChapterId);
+    if (currentIndex === -1) return;
+    
+    const targetChapter = chapterListCache[currentIndex + direction];
+    if (targetChapter) {
+        const title = decodeURIComponent(new URLSearchParams(window.location.search).get('title'));
+        window.location.href = `watch.html?chapterId=${encodeURIComponent(targetChapter.id)}&mangaId=${encodeURIComponent(currentMangaId)}&title=${encodeURIComponent(title)}&ep=${targetChapter.chap}`;
+    }
+}
+
+// --- INIT APP ---
 window.onload = function() {
-    if (document.getElementById('episodeGrid')) {
-        loadTopManga();
-        loadActionManga(); 
+    if (document.getElementById('recentGrid')) {
+        fetchSection('a', 'recentGrid', 'Recently Added'); 
+        fetchSection('one piece', 'topRatedGrid', 'Top Rated Masterpieces');
+        fetchSection('action', 'recommendedGrid', 'Recommended For You');
     }
     if (document.getElementById('det-title') || window.location.pathname.includes('details.html')) loadDetails();
     if (new URLSearchParams(window.location.search).get('chapterId')) loadMangaReader();
