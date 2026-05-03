@@ -8,16 +8,13 @@ module.exports = async function (req, res) {
     };
 
     // --- THE GUILLOTINE EXTRACTOR ---
-    // This chops the website into strict, isolated blocks. It is mathematically impossible 
-    // for Manga A's ID to mix with Manga B's image anymore.
     function extractCards(html) {
         const results = [];
-        const cards = html.split('href="/manga/'); // Chop at the exact start of every manga link
+        const cards = html.split('href="/manga/'); 
         
         for (let i = 1; i < cards.length; i++) {
             const card = cards[i];
             
-            // Extract data strictly from within this one chopped block
             const idMatch = card.match(/^([^"]+)"/); 
             const imgMatch = card.match(/<img[^>]+(?:data-src|src)="([^"]+)"/i);
             const titleMatch = card.match(/<img[^>]+(?:alt|title)="([^"]+)"/i);
@@ -26,14 +23,11 @@ module.exports = async function (req, res) {
                 const id = '/manga/' + idMatch[1];
                 const thumbnail = imgMatch[1];
                 
-                // 1. Clean MangaPill's weird HTML formatting
                 let title = titleMatch[1]
                     .replace(/&#39;/g, "'")
                     .replace(/&quot;/g, '"')
                     .replace(/&amp;/g, '&');
                 
-                // 2. Erase the double-text SEO bug using a smart regex
-                // If it says "JoJo Color JoJo Color", it cuts it down to just "JoJo Color"
                 title = title.replace(/^(.+?)(?:\s+\1)+$/, '$1').trim();
 
                 if (!results.find(r => r.id === id)) {
@@ -57,15 +51,21 @@ module.exports = async function (req, res) {
             return res.status(200).send(buffer);
         }
         
-        // --- 2. TRENDING HOMEPAGE ---
+        // --- 2. TRENDING HOMEPAGE (FIXED) ---
         else if (trending) {
-            // FIX: We now fetch the default Search page instead of the Homepage 
-            // so we get pure Series Titles instead of "Chapter 874" updates!
-            const response = await fetch(`https://mangapill.com/search`, { headers });
-            const html = await response.text();
-            
-            const results = extractCards(html).slice(0, 12);
-            return res.status(200).json(results);
+            // Fetch the official Manga Directory instead of the Recent Updates homepage
+            let response = await fetch(`https://mangapill.com/manga`, { headers });
+            let html = await response.text();
+            let results = extractCards(html);
+
+            // FALLBACK: If the directory is ever empty, automatically run a popular search to keep the homepage alive
+            if (results.length === 0) {
+                response = await fetch(`https://mangapill.com/search?q=the`, { headers });
+                html = await response.text();
+                results = extractCards(html);
+            }
+
+            return res.status(200).json(results.slice(0, 12));
         }
 
         // --- 3. SEARCH ---
