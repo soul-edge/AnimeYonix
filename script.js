@@ -112,7 +112,7 @@ async function checkWishlistStatus(mangaId) {
 // --- HOMEPAGE (LIVE SYNC) & SEARCH ---
 function scrollCarousel(id, amount) { document.getElementById(id).scrollBy({ left: amount, behavior: 'smooth' }); }
 
-// NEW: Fetches the live data from your Vercel backend!
+// Fetches the live data from your Vercel backend!
 async function loadLiveHomepage() {
     const recentGrid = document.getElementById('recentGrid');
     if (!recentGrid) return;
@@ -154,12 +154,24 @@ async function searchAnimeAPI() {
     } catch (error) { document.getElementById('searchGrid').innerHTML = `<p style='color: #ff4757;'>No manga found.</p>`; }
 }
 
+// FIXED: Bulletproof Grid Renderer
 function renderGrid(mangaArray, sectionTitle, targetID) {
     const grid = document.getElementById(targetID);
-    const header = grid.parentElement.querySelector('h2');
-    if (header) header.innerText = sectionTitle;
     if(!grid) return;
+
+    // Smart Header Targeter: Finds the section's H2 regardless of layout structure
+    const section = grid.closest('.content-section');
+    if (section) {
+        const header = section.querySelector('h2');
+        if (header) header.innerText = sectionTitle;
+    }
+
     grid.innerHTML = ""; 
+
+    if (!mangaArray || mangaArray.length === 0) {
+        grid.innerHTML = "<p style='color: gray; padding-left: 20px;'>No manga available.</p>";
+        return;
+    }
 
     mangaArray.forEach(manga => {
         const card = document.createElement('div');
