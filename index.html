@@ -1,25 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-<meta name="referrer" content="no-referrer" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AnimeYonix | Stream Premium Anime</title>
-    <link rel="stylesheet" href="style.css">
+    <title>MangaYonix - Read High Quality Manga</title>
+    <link rel="stylesheet" href="style.css?v=MASTER">
+    <!-- This loads the icons for your sidebar -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
     <div class="app-container">
         <!-- THE LEFT SIDEBAR -->
         <aside class="sidebar">
             <div class="logo-container">
-                <h2>Anime<span class="accent">Yonix</span></h2>
+                <h2>Manga<span class="accent">Yonix</span></h2>
             </div>
             <nav class="sidebar-nav">
                 <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
-                <a href="#" id="nav-login"><i class="fas fa-sign-in-alt"></i> Login</a>
+                <a href="#" id="nav-login" onclick="login()"><i class="fas fa-sign-in-alt"></i> Login</a>
                 <a href="#" id="nav-profile" style="display:none;"><i class="fas fa-user"></i> Profile</a>
                 <a href="#" id="nav-logout" style="display:none;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </nav>
@@ -38,22 +41,30 @@
             <!-- HERO BANNER -->
             <section class="hero">
                 <div class="hero-content">
-                    <h1>Read your favorite manga with high-quality scans.</h1>
-                    <p>Ad-free, lightning fast, and always updated.</p>
+                    <h1>Welcome to MangaYonix.</h1>
+                    <p>Read your favorite manga with high-quality scans. Ad-free, lightning fast, and always updated.</p>
                 </div>
             </section>
 
-            <!-- MANGA GRID -->
+            <!-- ROW 1: TRENDING -->
             <section class="content-section">
                 <h2>Top Trending</h2>
                 <div id="episodeGrid" class="grid-container">
                     <!-- Cards will inject here -->
                 </div>
             </section>
+
+            <!-- ROW 2: ACTION HITS -->
+            <section class="content-section">
+                <h2>Action & Adventure Hits</h2>
+                <div id="actionGrid" class="grid-container">
+                    <!-- Cards will inject here -->
+                </div>
+            </section>
         </main>
     </div>
 
-    <!-- Firebase Scripts Here (Keep your existing script tags at the bottom!) -->
-    <script src="script.js?v=PRODESIGN"></script>
+    <!-- Your Master Script -->
+    <script src="script.js?v=MASTER"></script>
 </body>
 </html>
