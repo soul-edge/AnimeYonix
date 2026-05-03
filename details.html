@@ -16,13 +16,21 @@
         <aside class="sidebar">
             <div class="logo-container"><h2>Manga<span class="accent">Yonix</span></h2></div>
             <nav class="sidebar-nav">
-                <a href="index.html"><i class="fas fa-arrow-left"></i> Back to Home</a>
+                <a href="index.html"><i class="fas fa-home"></i> Home</a>
+                <a href="#" id="nav-login" onclick="login()"><i class="fas fa-sign-in-alt"></i> Login</a>
+                <a href="#" id="nav-profile" style="display:none;" onclick="window.location.href='index.html?view=wishlist'"><i class="fas fa-bookmark"></i> Wishlist</a>
+                <a href="#" id="nav-logout" style="display:none;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </nav>
         </aside>
 
         <!-- MAIN CONTENT -->
         <main class="main-content">
-            <header class="topbar"></header>
+            <header class="topbar">
+                <div class="search-container">
+                    <input type="text" id="userSearch" placeholder="Search for manga..." onkeyup="if(event.key === 'Enter') searchAnimeAPI()">
+                    <button onclick="searchAnimeAPI()"><i class="fas fa-search"></i></button>
+                </div>
+            </header>
             
             <div class="det-layout">
                 <div class="det-poster">
@@ -42,6 +50,6 @@
             </section>
         </main>
     </div>
-    <script src="script.js"></script>
+    <script src="script.js?v=FIXLOOP"></script>
 </body>
 </html>
