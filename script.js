@@ -150,12 +150,29 @@ async function loadDetails() {
         if (!searchRes.ok) throw new Error("Backend Scraper Error");
         const searchData = await searchRes.json();
 
-        if (!searchData || searchData.length === 0) {
+      if (!searchData || searchData.length === 0) {
             if (epList) epList.innerHTML = "<p style='color: gray;'>No chapters found.</p>";
             return;
         }
 
-        const mangaId = searchData[0].id;
+        // --- THE "SMART MATCH" ALGORITHM ---
+        // Default to the first result just in case
+        let bestMatch = searchData[0]; 
+        
+        // Strip away all spaces, dashes, and punctuation from the target title
+        const targetClean = title.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+        // Scan MangaPill's results for an exact match
+        for (let item of searchData) {
+            const itemClean = item.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (itemClean === targetClean) {
+                bestMatch = item;
+                break; // Exact match found, stop looking!
+            }
+        }
+        
+        const mangaId = bestMatch.id;
+        // -----------------------------------
 
         // 2. Scrape Chapter List
         if (epList) epList.innerHTML = "<p style='color: var(--accent);'>Compiling chapters...</p>";
