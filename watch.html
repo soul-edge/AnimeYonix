@@ -19,8 +19,8 @@
             <h1 id="playingTitle">Loading...</h1>
             <h2 id="playingEp">Chapter --</h2>
         </div>
+        <!-- Removed the 3 dots, kept the Wishlist! -->
         <button class="r-icon-btn" id="wishlist-btn" onclick="toggleReaderWishlist()"><i class="far fa-bookmark"></i></button>
-        <button class="r-icon-btn"><i class="fas fa-ellipsis-v"></i></button>
     </div>
 
     <!-- MANGA VIEWPORT -->
@@ -41,12 +41,12 @@
             <button class="r-icon-btn nav-arrow" id="btn-next-chap" onclick="changeChapter(1)"><i class="fas fa-step-forward"></i></button>
         </div>
 
-        <!-- Row 2: Settings & Modes -->
+        <!-- Row 2: Modes & Fullscreen -->
         <div class="r-settings-row">
             <button class="r-icon-btn active-mode" id="btn-single" onclick="setReaderMode('single')"><i class="fas fa-tablet-alt"></i></button>
             <button class="r-icon-btn" id="btn-webtoon" onclick="setReaderMode('webtoon')"><i class="fas fa-arrows-alt-v"></i></button>
+            <!-- Removed the dead gear icon -->
             <button class="r-icon-btn" onclick="toggleReaderUI()"><i class="fas fa-expand"></i></button>
-            <button class="r-icon-btn"><i class="fas fa-cog"></i></button>
         </div>
     </div>
 
