@@ -1,12 +1,20 @@
-/* === APP LAYOUT: UPDATED SIDEBAR WITH BACKGROUND === */
+:root {
+    --bg-dark: #121212; --bg-panel: #1e1e1e; --accent: #ff6740; 
+    --text-main: #f0f0f0; --text-muted: #a0a0a0;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; }
+body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-dark) 100%); background-attachment: fixed; color: var(--text-main); }
+
+/* --- APP LAYOUT --- */
 .app-container { display: flex; min-height: 100vh; }
+
 .sidebar { 
     width: 240px; 
-    /* The Magic Part: Dark overlay gradient for text legibility + AOT Wallpaper */
+    /* Seamless AoT Background with dark overlay for text contrast */
     background-image: linear-gradient(180deg, rgba(18, 18, 18, 0.95) 0%, rgba(18, 18, 18, 0.7) 100%), 
                       url('https://mfiles.alphacoders.com/101/thumb-1920-1012768.png');
     background-size: cover;
-    background-position: center top; /* Keeps the characters in view as much as possible on narrow screen */
+    background-position: center top;
     background-repeat: no-repeat;
     
     position: fixed; 
@@ -17,30 +25,150 @@
     z-index: 200; 
     transition: 0.3s; 
 }
+
 .logo-container { 
     padding: 20px; 
     font-size: 1.5rem; 
     font-weight: bold; 
-    /* Make background transparent and remove border for full integration */
-    background: transparent; 
-    border-bottom: none; 
+    background: transparent; /* Transparent to show sidebar image */
+    border-bottom: none; /* Removed border for seamless look */
 }
+
 .logo-container .accent { color: var(--accent); text-shadow: 0 0 15px rgba(255, 103, 64, 0.6); }
+
 .sidebar-nav { padding: 20px 0; display: flex; flex-direction: column; }
-.sidebar-nav a { 
-    color: var(--text-muted); 
-    text-decoration: none; 
-    padding: 15px 25px; 
-    font-size: 1.1rem; 
-    transition: 0.2s; 
-    display: flex; 
-    align-items: center; 
-    gap: 15px; 
-    /* Slightly more opaque background on hover/active for contrast */
-}
+.sidebar-nav a { color: var(--text-muted); text-decoration: none; padding: 15px 25px; font-size: 1.1rem; transition: 0.2s; display: flex; align-items: center; gap: 15px; }
+
 .sidebar-nav a:hover, .sidebar-nav a.active { 
     color: var(--text-main); 
     background-color: rgba(255, 103, 64, 0.2); 
-    border-left: none; /* Removed the line border for cleaner look against image */
+    border-left: none; /* Removed line to keep the image clear */
 }
+
 .main-content { margin-left: 240px; flex-grow: 1; display: flex; flex-direction: column; width: calc(100% - 240px); }
+
+/* --- TOP BAR & SEARCH --- */
+.topbar { padding: 20px 40px; display: flex; justify-content: flex-end; align-items: center; background: transparent; position: sticky; top: 0; z-index: 90; }
+.menu-btn { display: none; background: transparent; border: none; color: var(--text-main); font-size: 1.5rem; cursor: pointer; }
+.search-container { display: flex; background: var(--bg-panel); border-radius: 8px; overflow: hidden; width: 400px; border: 1px solid #2a2a2a; }
+.search-container input { background: transparent; border: none; color: white; padding: 12px 20px; width: 100%; outline: none; }
+.search-container button { background: transparent; border: none; color: var(--text-muted); padding: 0 20px; cursor: pointer; transition: 0.2s; }
+.search-container button:hover { color: var(--accent); }
+
+/* --- HERO & GRIDS --- */
+.hero { 
+    height: 280px; 
+    margin: 0 40px 40px 40px; 
+    /* Solo Leveling Wallpaper */
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0.2)), 
+                url('https://images3.alphacoders.com/134/thumb-1920-1346679.jpg');
+    background-size: cover;
+    background-position: center 25%;
+    background-repeat: no-repeat;
+    
+    border-radius: 12px; 
+    display: flex; 
+    align-items: center; 
+    padding: 50px; 
+    border-left: 5px solid var(--accent); 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); 
+}
+.hero-content h1 { font-size: 2.2rem; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+.hero-content p { color: var(--text-main); font-size: 1.1rem; max-width: 600px; line-height: 1.5; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+
+.content-section { padding: 0 40px 40px 40px; }
+.content-section h2 { margin-bottom: 20px; font-size: 1.5rem; font-weight: 600; }
+.grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 20px; }
+
+/* --- CAROUSEL FIXES --- */
+.carousel-container { position: relative; display: flex; align-items: center; width: 100%; }
+.carousel { display: flex; overflow-x: auto; scroll-behavior: smooth; gap: 20px; padding-bottom: 10px; scrollbar-width: none; -webkit-overflow-scrolling: touch; width: 100%; }
+.carousel::-webkit-scrollbar { display: none; }
+.carousel .card { flex: 0 0 160px; }
+.scroll-btn { position: absolute; z-index: 10; background: rgba(30, 30, 30, 0.9); color: white; border: 1px solid var(--accent); border-radius: 50%; width: 45px; height: 45px; cursor: pointer; font-size: 1.2rem; transition: 0.2s; top: 50%; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; }
+.scroll-btn:hover { background: var(--accent); }
+.scroll-left { left: -15px; }
+.scroll-right { right: -15px; }
+
+/* --- CARDS & DETAILS --- */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+.card { background: transparent; border-radius: 8px; cursor: pointer; transition: transform 0.2s; animation: fadeIn 0.5s ease forwards; }
+.card:hover { transform: translateY(-5px); }
+.thumbnail-wrapper { width: 100%; aspect-ratio: 2 / 3; border-radius: 8px; overflow: hidden; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+.thumbnail { width: 100%; height: 100%; background-size: cover; background-position: center; transition: 0.3s; }
+.card:hover .thumbnail { transform: scale(1.05); }
+.info { padding: 10px 0; }
+.manga-title { font-size: 0.95rem; font-weight: 500; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
+
+.det-layout { display: flex; gap: 40px; margin: 0 40px 40px 40px; }
+.det-poster img { width: 250px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.det-info h1 { font-size: 2.5rem; margin-bottom: 10px; }
+.btn { background: var(--accent); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px;}
+.btn:hover { background: #e05530; }
+.ep-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 20px; }
+.ep-btn { background: var(--bg-panel); padding: 12px; border-radius: 6px; text-align: center; cursor: pointer; transition: 0.2s; border: 1px solid #2a2a2a; }
+.ep-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+/* === MOBILE RESPONSIVENESS MAGIC === */
+@media (max-width: 768px) {
+    .app-container { flex-direction: column; }
+    .sidebar { width: 260px; transform: translateX(-100%); background-position: center; } 
+    .sidebar.mobile-active { transform: translateX(0); } 
+    .main-content { margin-left: 0; width: 100%; }
+    .topbar { padding: 15px 20px; justify-content: space-between; }
+    .menu-btn { display: block; } 
+    .search-container { width: auto; flex-grow: 1; margin-left: 15px; }
+    .hero { 
+        margin: 0 15px 25px 15px; 
+        padding: 30px 20px; 
+        height: auto; 
+        text-align: center; 
+        justify-content: center;
+        background-position: center;
+    }
+    .content-section { padding: 0 15px 30px 15px; }
+    .det-layout { flex-direction: column; margin: 0 15px 30px 15px; align-items: center; text-align: center; }
+    .det-poster img { width: 200px; }
+}
+
+/* =========================================
+   NEW NATIVE READER APP UI
+========================================= */
+.reader-body { background-color: #000; overflow-x: hidden; }
+
+/* Toolbars */
+.reader-topbar, .reader-bottombar {
+    position: fixed; left: 0; right: 0; background: rgba(20, 20, 20, 0.95);
+    z-index: 1000; transition: transform 0.3s ease; backdrop-filter: blur(10px);
+}
+.reader-topbar { top: 0; display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid #333; }
+.reader-bottombar { bottom: 0; display: flex; flex-direction: column; padding: 15px 20px 25px 20px; border-top: 1px solid #333; }
+
+/* Hidden state when reading */
+.ui-hidden .reader-topbar { transform: translateY(-100%); }
+.ui-hidden .reader-bottombar { transform: translateY(100%); }
+
+/* Topbar Typography */
+.r-title-group { flex-grow: 1; margin: 0 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r-title-group h1 { font-size: 1.1rem; color: #fff; margin: 0; font-weight: 600; }
+.r-title-group h2 { font-size: 0.85rem; color: #aaa; margin: 0; font-weight: 400; }
+
+/* Buttons */
+.r-icon-btn { background: transparent; border: none; color: #ddd; font-size: 1.3rem; cursor: pointer; padding: 10px; transition: 0.2s; display: flex; justify-content: center; align-items: center; }
+.r-icon-btn:hover { color: var(--accent); }
+.r-icon-btn.active-mode { color: var(--accent); }
+.nav-arrow { background: rgba(255, 255, 255, 0.1); border-radius: 50%; width: 40px; height: 40px; }
+
+/* Bottom Rows */
+.r-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 20px; }
+.r-settings-row { display: flex; justify-content: space-around; align-items: center; }
+
+/* The Progress Slider */
+.slider-container { display: flex; align-items: center; flex-grow: 1; gap: 15px; color: #ccc; font-size: 0.9rem; font-weight: bold; background: rgba(0,0,0,0.4); padding: 5px 15px; border-radius: 20px;}
+input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; outline: none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 4px; background: white; cursor: pointer; margin-top: -8px; border-radius: 2px;}
+input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #555; border-radius: 2px; }
+
+/* Viewport */
+.reader-viewport { width: 100%; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.reader-viewport img { max-width: 100%; object-fit: contain; cursor: pointer; user-select: none; }
