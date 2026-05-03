@@ -11,20 +11,14 @@ module.exports = async function (req, res) {
     // --- THE UPGRADED STRICT EXTRACTOR ---
     function extractCards(html) {
         const results = [];
-        // Break the HTML into isolated anchor tag blocks
         const links = html.split('<a ');
 
         for (let link of links) {
-            // Isolate ONLY what is inside this specific link to prevent bleeding
             const insideLink = link.split('</a>')[0];
-
-            // 1. Must be a base manga link, ignore /chapters/ links
             const hrefMatch = insideLink.match(/href="(\/manga\/[^"]+)"/);
             if (!hrefMatch) continue;
 
             const id = hrefMatch[1];
-
-            // 2. Find the image strictly inside this isolated block
             const imgMatch = insideLink.match(/<img[^>]+(?:data-src|src)="([^"]+)"/i);
             const titleMatch = insideLink.match(/<img[^>]+(?:alt|title)="([^"]+)"/i);
 
@@ -36,10 +30,12 @@ module.exports = async function (req, res) {
                     .replace(/&amp;/g, '&')
                     .trim();
 
-                // Clean up: Remove "Chapter X" from titles if MangaPill added it to the image alt text
+                // 1. YOUR MAGIC DE-DUPLICATOR IS BACK! (Fixes "Berserk Berserk")
+                title = title.replace(/^(.+?)(?:\s+\1)+$/, '$1').trim();
+                
+                // 2. Clean up "Chapter X" from titles
                 title = title.replace(/\s+Chapter\s+\d+(\.\d+)?$/i, '').trim();
 
-                // Save it!
                 if (!results.find(r => r.id === id)) {
                     results.push({ id, title, thumbnail });
                 }
@@ -61,18 +57,25 @@ module.exports = async function (req, res) {
             return res.status(200).send(buffer);
         }
         
-        // --- 2. NEW: REAL-TIME HOMEPAGE SCRAPER ---
+        // --- 2. NEW: REAL-TIME HOMEPAGE SCRAPER (FIXED GRID POPULATION) ---
         else if (live === 'true') {
-            const response = await fetch(`https://mangapill.com/`, { headers });
-            const html = await response.text();
-            
-            const liveMangaList = extractCards(html);
+            // Grid 1: Fetch the actual homepage for Recent Updates
+            const res1 = await fetch(`https://mangapill.com/`, { headers });
+            const html1 = await res1.text();
+            const recent = extractCards(html1).slice(0, 15);
 
-            return res.status(200).json({
-                recent: liveMangaList.slice(0, 15),
-                trending: liveMangaList.slice(15, 30),
-                recommended: liveMangaList.slice(30, 45)
-            });
+            // Grid 2: Fetch the popular directory for Top Trending
+            const res2 = await fetch(`https://mangapill.com/manga`, { headers });
+            const html2 = await res2.text();
+            const trending = extractCards(html2).slice(0, 15);
+
+            // Grid 3: Fetch an action search for Recommendations
+            const res3 = await fetch(`https://mangapill.com/search?q=action`, { headers });
+            const html3 = await res3.text();
+            const recommended = extractCards(html3).slice(0, 15);
+
+            // Send all 3 full arrays back to the frontend!
+            return res.status(200).json({ recent, trending, recommended });
         }
 
         // --- 3. TRENDING HOMEPAGE (STATIC FALLBACK) ---
