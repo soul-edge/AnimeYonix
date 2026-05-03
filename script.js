@@ -21,14 +21,18 @@ if (typeof firebase.auth === 'function') {
     firebase.auth().onAuthStateChanged(user => {
         const navLogin = document.getElementById('nav-login');
         const navLogout = document.getElementById('nav-logout');
+        const navProfile = document.getElementById('nav-profile');
+
         if (user) {
             currentUserUID = user.uid;
             if(navLogin) navLogin.style.display = 'none';
-            if(navLogout) navLogout.style.display = 'inline';
+            if(navLogout) navLogout.style.display = 'flex'; // Changed to flex for sidebar
+            if(navProfile) navProfile.style.display = 'flex';
         } else {
             currentUserUID = null;
-            if(navLogin) navLogin.style.display = 'inline';
+            if(navLogin) navLogin.style.display = 'flex';
             if(navLogout) navLogout.style.display = 'none';
+            if(navProfile) navProfile.style.display = 'none';
         }
     });
 }
@@ -43,7 +47,7 @@ async function loadTopManga() {
         const response = await fetch('/api/search?trending=true');
         if (!response.ok) throw new Error("Failed to load trending.");
         const results = await response.json();
-        renderGrid(results, "Top Trending Manga", "episodeGrid");
+        renderGrid(results, "Top Trending", "episodeGrid");
     } catch (error) { 
         if (grid) grid.innerHTML = `<p style='color: #ff4757; padding-left: 20px;'>${error.message}</p>`;
     }
@@ -54,7 +58,7 @@ async function searchAnimeAPI() {
     if (query.trim() === "") { loadTopManga(); return; }
     
     const grid = document.getElementById('episodeGrid');
-    const header = document.querySelector('section h2');
+    const header = document.querySelector('.content-section h2');
     if (header) header.innerText = "Search Results";
     if (grid) grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Searching database...</p>";
 
@@ -68,9 +72,10 @@ async function searchAnimeAPI() {
     }
 }
 
+// THE NEW MANGADEX STYLE GRID RENDERER
 function renderGrid(mangaArray, sectionTitle, targetID) {
     const grid = document.getElementById(targetID);
-    const header = document.querySelector('section h2');
+    const header = document.querySelector('.content-section h2');
     if (header && targetID === "episodeGrid") header.innerText = sectionTitle;
     if(!grid) return;
     grid.innerHTML = ""; 
@@ -79,26 +84,28 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
         const card = document.createElement('div');
         card.className = 'card';
         
-        // Pass cover image through proxy
+        // Pass cover image through your Vercel proxy
         const safeImageUrl = `/api/search?proxyImage=${encodeURIComponent(manga.thumbnail)}`;
         
+        // Professional UI: Full cover, title below, no ugly buttons
         card.innerHTML = `
-            <div class="thumbnail" style="background-image: url('${safeImageUrl}');"></div>
+            <div class="thumbnail-wrapper">
+                <div class="thumbnail" style="background-image: url('${safeImageUrl}');"></div>
+            </div>
             <div class="info">
-                <h3>${manga.title}</h3>
-                <button class="btn detail-btn">Read Now</button>
+                <h3 class="manga-title" title="${manga.title}">${manga.title}</h3>
             </div>
         `;
         
-        // Pass the EXACT ID to the details page
-        card.querySelector('.detail-btn').onclick = () => { 
+        // Make the entire card clickable
+        card.onclick = () => { 
             window.location.href = `details.html?id=${encodeURIComponent(manga.id)}&title=${encodeURIComponent(manga.title)}&thumb=${encodeURIComponent(safeImageUrl)}`; 
         };
         grid.appendChild(card);
     });
 }
 
-// --- 3. DETAILS & CHAPTERS (ONE FETCH, NO MIXUPS) ---
+// --- 3. DETAILS & CHAPTERS ---
 async function loadDetails() {
     const params = new URLSearchParams(window.location.search);
     const mangaId = decodeURIComponent(params.get('id'));
@@ -112,10 +119,9 @@ async function loadDetails() {
     document.getElementById('det-thumb').src = thumb;
 
     const epList = document.getElementById('ep-list');
-    if (epList) epList.innerHTML = "<p style='color: var(--accent);'>Extracting data...</p>";
+    if (epList) epList.innerHTML = "<p style='color: var(--accent); padding: 20px 0;'>Extracting chapters...</p>";
 
     try {
-        // Fetch Synopses, Genres, and Chapters in ONE hit
         const response = await fetch(`/api/search?mangaId=${encodeURIComponent(mangaId)}`);
         if (!response.ok) throw new Error("Backend Scraper Error");
         const data = await response.json();
@@ -155,18 +161,8 @@ async function loadMangaReader() {
     const chapterId = params.get('chapterId');
     const title = params.get('title');
     const ep = params.get('ep');
-    const wrapper = document.querySelector('.video-wrapper');
-    const mainPlayer = document.getElementById('mainPlayer');
     
     if (!chapterId) return;
-
-    if (mainPlayer) mainPlayer.remove();
-    if (wrapper) {
-        wrapper.style.paddingBottom = "0";
-        wrapper.style.height = "auto";
-        wrapper.style.background = "transparent";
-        wrapper.style.boxShadow = "none";
-    }
 
     document.getElementById('playingTitle').innerText = decodeURIComponent(title);
     document.getElementById('playingEp').innerText = "Chapter " + ep;
@@ -175,8 +171,11 @@ async function loadMangaReader() {
     if(!mangaView) {
         mangaView = document.createElement('div');
         mangaView.id = "mangaView";
-        mangaView.style.cssText = "width:100%; max-width:900px; margin:0 auto; background:#000;";
-        document.querySelector('.player-container').appendChild(mangaView);
+        mangaView.style.cssText = "width:100%; max-width:900px; margin:0 auto; background: var(--bg-dark);";
+        
+        // Append to wherever your reader container is
+        const container = document.querySelector('.player-container') || document.querySelector('.main-content');
+        container.appendChild(mangaView);
     }
     mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Stealing high-quality pages...</p>";
     window.scrollTo(0, 0);
@@ -193,7 +192,7 @@ async function loadMangaReader() {
         pageFiles.forEach(imgUrl => {
             const img = document.createElement('img');
             img.src = `/api/search?proxyImage=${encodeURIComponent(imgUrl)}`; 
-            img.style.cssText = "width:100%; max-width:900px; display:block; margin:0 auto 5px; min-height:400px; background:#111; color:gray; text-align:center; line-height:400px;";
+            img.style.cssText = "width:100%; max-width:900px; display:block; margin:0 auto 5px; min-height:400px; background:var(--bg-panel); color:gray; text-align:center; line-height:400px;";
             img.alt = "Loading page...";
             img.loading = "lazy";
             mangaView.appendChild(img);
@@ -201,10 +200,7 @@ async function loadMangaReader() {
 
         const endBtn = document.createElement('button');
         endBtn.innerText = "Back to Homepage";
-        endBtn.className = "btn";
-        endBtn.style.maxWidth = "200px";
-        endBtn.style.margin = "40px auto";
-        endBtn.style.display = "block";
+        endBtn.style.cssText = "background: var(--accent); color: white; border: none; padding: 15px 30px; border-radius: 8px; cursor: pointer; max-width: 200px; margin: 40px auto; display: block; font-weight: bold;";
         endBtn.onclick = () => window.location.href = `index.html`;
         mangaView.appendChild(endBtn);
 
