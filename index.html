@@ -11,58 +11,49 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <nav class="navbar">
-        <a href="index.html" class="logo" style="text-decoration: none;">Anime<span>Yonix</span></a>
-        <ul class="nav-links">
-            <li><a href="index.html">Home</a></li>
-            
-            <li id="nav-login"><a href="admin.html" style="color: #ff4757;">Login</a></li>
-            <li id="nav-profile" style="display: none;"><a href="profile.html" style="color: #FFD700; font-weight: bold;">My List</a></li>
-            <li id="nav-admin" style="display: none;"><a href="admin.html" style="color: white;">Dashboard</a></li>
-            <li id="nav-logout" style="display: none;"><a href="#" onclick="logout()" style="color: gray;">Logout</a></li>
-        </ul>
-    </nav>
-
-    <header class="hero">
-        <div class="hero-content">
-            <h1>Welcome to AnimeYonix</h1>
-            <p>Watch your favorite anime with multiple subtitles for free.</p>
-        </div>
-    </header>
-
-    <div class="advanced-filter-container">
-        
-      <input type="text" id="userSearch" placeholder="Search anime..." onchange="searchAnimeAPI()">
-        
-        <div class="filter-dropdowns">
-            <select id="filter-genre" onchange="applyFilters()">
-                <option value="All">All Genres</option>
-                </select>
-            
-            <select id="filter-type" onchange="applyFilters()">
-                <option value="All">All Types</option>
-                <option value="TV">TV Series</option>
-                <option value="Movie">Movie</option>
-                <option value="OVA">OVA / Special</option>
-            </select>
-            
-            <select id="filter-status" onchange="applyFilters()">
-                <option value="All">All Statuses</option>
-                <option value="Ongoing">Ongoing</option>
-                <option value="Completed">Completed</option>
-            </select>
-        </div>
-
-        <div class="filter-letters" id="letterBox">
+    <div class="app-container">
+        <!-- THE LEFT SIDEBAR -->
+        <aside class="sidebar">
+            <div class="logo-container">
+                <h2>Anime<span class="accent">Yonix</span></h2>
             </div>
-        
+            <nav class="sidebar-nav">
+                <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
+                <a href="#" id="nav-login"><i class="fas fa-sign-in-alt"></i> Login</a>
+                <a href="#" id="nav-profile" style="display:none;"><i class="fas fa-user"></i> Profile</a>
+                <a href="#" id="nav-logout" style="display:none;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </nav>
+        </aside>
+
+        <!-- THE MAIN CONTENT -->
+        <main class="main-content">
+            <!-- TOP BAR (Search) -->
+            <header class="topbar">
+                <div class="search-container">
+                    <input type="text" id="userSearch" placeholder="Search for manga..." onkeyup="if(event.key === 'Enter') searchAnimeAPI()">
+                    <button onclick="searchAnimeAPI()"><i class="fas fa-search"></i></button>
+                </div>
+            </header>
+
+            <!-- HERO BANNER -->
+            <section class="hero">
+                <div class="hero-content">
+                    <h1>Read your favorite manga with high-quality scans.</h1>
+                    <p>Ad-free, lightning fast, and always updated.</p>
+                </div>
+            </section>
+
+            <!-- MANGA GRID -->
+            <section class="content-section">
+                <h2>Top Trending</h2>
+                <div id="episodeGrid" class="grid-container">
+                    <!-- Cards will inject here -->
+                </div>
+            </section>
+        </main>
     </div>
 
-    <section>
-        <h2 style="padding: 0 5%; margin-bottom: 20px;">Recent Additions</h2>
-        <div id="episodeGrid" class="grid"></div>
-    </section>
-
-  <script src="script.js?v=HACKER_MODE"></script>
+    <!-- Firebase Scripts Here (Keep your existing script tags at the bottom!) -->
+    <script src="script.js?v=PRODESIGN"></script>
 </body>
 </html>
