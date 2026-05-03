@@ -3,34 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MangaYonix - Read High Quality Manga</title>
-    <link rel="stylesheet" href="style.css?v=MASTER">
-    <!-- This loads the icons for your sidebar -->
+    <title>MangaYonix - Home</title>
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 </head>
 <body>
     <div class="app-container">
-        <!-- THE LEFT SIDEBAR -->
+        <!-- SIDEBAR -->
         <aside class="sidebar">
-            <div class="logo-container">
-                <h2>Manga<span class="accent">Yonix</span></h2>
-            </div>
+            <div class="logo-container"><h2>Manga<span class="accent">Yonix</span></h2></div>
             <nav class="sidebar-nav">
                 <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
                 <a href="#" id="nav-login" onclick="login()"><i class="fas fa-sign-in-alt"></i> Login</a>
-                <a href="#" id="nav-profile" style="display:none;"><i class="fas fa-user"></i> Profile</a>
+                <a href="#" id="nav-profile" style="display:none;"><i class="fas fa-bookmark"></i> Wishlist</a>
                 <a href="#" id="nav-logout" style="display:none;" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </nav>
         </aside>
 
-        <!-- THE MAIN CONTENT -->
+        <!-- MAIN CONTENT -->
         <main class="main-content">
-            <!-- TOP BAR (Search) -->
             <header class="topbar">
                 <div class="search-container">
                     <input type="text" id="userSearch" placeholder="Search for manga..." onkeyup="if(event.key === 'Enter') searchAnimeAPI()">
@@ -38,33 +32,41 @@
                 </div>
             </header>
 
-            <!-- HERO BANNER -->
-            <section class="hero">
-                <div class="hero-content">
-                    <h1>Welcome to MangaYonix.</h1>
-                    <p>Read your favorite manga with high-quality scans. Ad-free, lightning fast, and always updated.</p>
-                </div>
-            </section>
+            <div id="home-view">
+                <section class="hero">
+                    <div class="hero-content">
+                        <h1>Welcome to MangaYonix.</h1>
+                        <p>Read your favorite manga with high-quality scans. Ad-free, lightning fast, and always updated.</p>
+                    </div>
+                </section>
 
-            <!-- ROW 1: TRENDING -->
-            <section class="content-section">
-                <h2>Top Trending</h2>
-                <div id="episodeGrid" class="grid-container">
-                    <!-- Cards will inject here -->
-                </div>
-            </section>
+                <section class="content-section">
+                    <h2>Recently Added</h2>
+                    <div class="carousel-container">
+                        <button class="scroll-btn scroll-left" onclick="scrollCarousel('recentGrid', -600)"><i class="fas fa-chevron-left"></i></button>
+                        <div id="recentGrid" class="carousel"></div>
+                        <button class="scroll-btn scroll-right" onclick="scrollCarousel('recentGrid', 600)"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </section>
 
-            <!-- ROW 2: ACTION HITS -->
-            <section class="content-section">
-                <h2>Action & Adventure Hits</h2>
-                <div id="actionGrid" class="grid-container">
-                    <!-- Cards will inject here -->
-                </div>
-            </section>
+                <section class="content-section">
+                    <h2>Top Rated Masterpieces</h2>
+                    <div id="topRatedGrid" class="grid-container"></div>
+                </section>
+                
+                <section class="content-section">
+                    <h2>Recommended For You</h2>
+                    <div id="recommendedGrid" class="grid-container"></div>
+                </section>
+            </div>
+
+            <!-- WISHLIST VIEW -->
+            <div id="profile-view" style="display: none; padding: 0 40px 40px 40px;">
+                <h2 style="font-size: 2rem; margin-bottom: 30px;"><i class="fas fa-bookmark"></i> My Wishlist</h2>
+                <div id="wishlistGrid" class="grid-container"></div>
+            </div>
         </main>
     </div>
-
-    <!-- Your Master Script -->
-    <script src="script.js?v=MASTER"></script>
+    <script src="script.js"></script>
 </body>
 </html>
