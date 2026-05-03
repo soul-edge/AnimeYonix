@@ -109,18 +109,30 @@ async function checkWishlistStatus(mangaId) {
     } catch(e) { console.error(e); }
 }
 
-// --- HOMEPAGE & SEARCH ---
+// --- HOMEPAGE (LIVE SYNC) & SEARCH ---
 function scrollCarousel(id, amount) { document.getElementById(id).scrollBy({ left: amount, behavior: 'smooth' }); }
 
-async function fetchSection(query, targetID, title) {
-    const grid = document.getElementById(targetID);
-    if (!grid) return;
-    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Loading...</p>";
+// NEW: Fetches the live data from your Vercel backend!
+async function loadLiveHomepage() {
+    const recentGrid = document.getElementById('recentGrid');
+    if (!recentGrid) return;
+    
+    recentGrid.innerHTML = "<p style='color: var(--accent); padding-left: 20px;'>Syncing live database...</p>";
+    document.getElementById('topRatedGrid').innerHTML = "<p style='color: gray; padding-left: 20px;'>Loading...</p>";
+    document.getElementById('recommendedGrid').innerHTML = "<p style='color: gray; padding-left: 20px;'>Loading...</p>";
+    
     try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-        const results = await response.json();
-        renderGrid(results.slice(0, 15), title, targetID);
-    } catch (error) { console.error(error); }
+        const response = await fetch('/api/search?live=true');
+        const liveData = await response.json();
+        
+        renderGrid(liveData.recent, "Recently Added (Live)", "recentGrid");
+        renderGrid(liveData.trending, "Top Trending Right Now", "topRatedGrid");
+        renderGrid(liveData.recommended, "MangaPill Recommendations", "recommendedGrid");
+        
+    } catch (err) {
+        console.error("Live fetch failed", err);
+        recentGrid.innerHTML = `<p style='color: red;'>Failed to connect to live server. Try refreshing.</p>`;
+    }
 }
 
 async function searchAnimeAPI() { 
@@ -211,7 +223,7 @@ async function loadDetails() {
 
 
 // ==========================================
-// THE NEW NATIVE APP READER STATE MACHINE
+// THE NATIVE APP READER STATE MACHINE
 // ==========================================
 let readerImages = [];
 let currentReadMode = 'single'; 
@@ -220,7 +232,7 @@ let chapterListCache = [];
 let currentChapterId = "";
 let currentMangaId = "";
 
-// Swipe Detection Variables
+// Touch Swap Variables
 let touchstartX = 0;
 let touchendX = 0;
 
@@ -289,17 +301,17 @@ function renderReader() {
         img.src = `/api/search?proxyImage=${encodeURIComponent(readerImages[currentSinglePage])}`; 
         img.style.cssText = "width:100%; height:100vh; object-fit:contain; background:#000;";
         
-        // --- THE SMART CLICK ZONES FOR PC & MOBILE ---
+        // --- SMART CLICK ZONES FOR PC & MOBILE ---
         img.onclick = (e) => {
             const screenWidth = window.innerWidth;
             const clickX = e.clientX;
             
             if (clickX < screenWidth * 0.3) {
-                prevPage(); // Click left 30% = Previous Page
+                prevPage(); 
             } else if (clickX > screenWidth * 0.7) {
-                nextPage(); // Click right 30% = Next Page
+                nextPage(); 
             } else {
-                toggleReaderUI(); // Click center 40% = Hide/Show menus
+                toggleReaderUI(); 
             }
         };
         
@@ -311,7 +323,6 @@ function renderReader() {
 
 // --- DESKTOP KEYBOARD CONTROLS ---
 document.addEventListener('keydown', (e) => {
-    // Only intercept keys if we are actively reading a single page
     if (!document.getElementById('mangaView') || currentReadMode !== 'single') return;
     
     if (e.key === 'ArrowRight' || e.key === 'd') nextPage();
@@ -384,9 +395,8 @@ window.onload = function() {
     } else if (urlParams.get('view') === 'wishlist' && document.getElementById('home-view')) {
         setTimeout(showProfile, 500); 
     } else if (document.getElementById('recentGrid')) {
-        fetchSection('a', 'recentGrid', 'Recently Added'); 
-        fetchSection('one piece', 'topRatedGrid', 'Top Rated Masterpieces');
-        fetchSection('action', 'recommendedGrid', 'Recommended For You');
+        // Trigger the Live Synchronized Fetcher
+        loadLiveHomepage();
     }
 
     if (document.getElementById('det-title') || window.location.pathname.includes('details.html')) loadDetails();
