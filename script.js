@@ -214,7 +214,7 @@ async function loadDetails() {
 // THE NEW NATIVE APP READER STATE MACHINE
 // ==========================================
 let readerImages = [];
-let currentReadMode = 'single'; // Default to Single Page Swipe Mode!
+let currentReadMode = 'single'; 
 let currentSinglePage = 0;
 let chapterListCache = [];
 let currentChapterId = "";
@@ -241,7 +241,7 @@ async function loadMangaReader() {
     const mangaView = document.getElementById('mangaView');
     mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Loading high-quality pages...</p>";
 
-    // Initialize Swipe Listener
+    // Initialize Swipe Listener for Mobile
     mangaView.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; }, {passive: true});
     mangaView.addEventListener('touchend', e => {
         touchendX = e.changedTouches[0].screenX;
@@ -288,13 +288,39 @@ function renderReader() {
         const img = document.createElement('img');
         img.src = `/api/search?proxyImage=${encodeURIComponent(readerImages[currentSinglePage])}`; 
         img.style.cssText = "width:100%; height:100vh; object-fit:contain; background:#000;";
-        img.onclick = toggleReaderUI; // Tap to hide toolbars
+        
+        // --- THE SMART CLICK ZONES FOR PC & MOBILE ---
+        img.onclick = (e) => {
+            const screenWidth = window.innerWidth;
+            const clickX = e.clientX;
+            
+            if (clickX < screenWidth * 0.3) {
+                prevPage(); // Click left 30% = Previous Page
+            } else if (clickX > screenWidth * 0.7) {
+                nextPage(); // Click right 30% = Next Page
+            } else {
+                toggleReaderUI(); // Click center 40% = Hide/Show menus
+            }
+        };
         
         mangaView.appendChild(img);
         updateSlider();
         window.scrollTo(0,0);
     }
 }
+
+// --- DESKTOP KEYBOARD CONTROLS ---
+document.addEventListener('keydown', (e) => {
+    // Only intercept keys if we are actively reading a single page
+    if (!document.getElementById('mangaView') || currentReadMode !== 'single') return;
+    
+    if (e.key === 'ArrowRight' || e.key === 'd') nextPage();
+    if (e.key === 'ArrowLeft' || e.key === 'a') prevPage();
+    if (e.key === ' ') { 
+        e.preventDefault(); 
+        toggleReaderUI(); // Spacebar toggles UI
+    }
+});
 
 function updateSlider() {
     const slider = document.getElementById('pageSlider');
