@@ -1,0 +1,6 @@
+{
+  "name": "mangayonix",
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}
