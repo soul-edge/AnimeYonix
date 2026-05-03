@@ -13,6 +13,19 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 let currentUserUID = null; 
 
+// --- 1.5 AUTH LOGIC ---
+function login() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider)
+        .then((result) => {
+            console.log("Logged in successfully as:", result.user.displayName);
+        })
+        .catch((error) => {
+            console.error("Login failed:", error.message);
+            alert("Login failed: " + error.message);
+        });
+}
+
 function logout() {
     firebase.auth().signOut().then(() => { window.location.href = 'index.html'; });
 }
@@ -26,7 +39,7 @@ if (typeof firebase.auth === 'function') {
         if (user) {
             currentUserUID = user.uid;
             if(navLogin) navLogin.style.display = 'none';
-            if(navLogout) navLogout.style.display = 'flex'; // Changed to flex for sidebar
+            if(navLogout) navLogout.style.display = 'flex'; 
             if(navProfile) navProfile.style.display = 'flex';
         } else {
             currentUserUID = null;
@@ -37,7 +50,7 @@ if (typeof firebase.auth === 'function') {
     });
 }
 
-// --- 2. HOMEPAGE & SEARCH (100% MANGAPILL) ---
+// --- 2. HOMEPAGE & SEARCH ---
 async function loadTopManga() {
     const grid = document.getElementById('episodeGrid');
     if (!grid) return;
@@ -53,13 +66,35 @@ async function loadTopManga() {
     }
 }
 
+async function loadActionManga() {
+    const grid = document.getElementById('actionGrid');
+    if (!grid) return;
+    grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Loading action hits...</p>";
+    
+    try {
+        const response = await fetch('/api/search?q=action');
+        if (!response.ok) throw new Error("Failed to load action hits.");
+        const results = await response.json();
+        renderGrid(results.slice(0, 6), "Action & Adventure Hits", "actionGrid");
+    } catch (error) { 
+        if (grid) grid.innerHTML = `<p style='color: #ff4757; padding-left: 20px;'>${error.message}</p>`;
+    }
+}
+
 async function searchAnimeAPI() { 
     const query = document.getElementById('userSearch').value;
-    if (query.trim() === "") { loadTopManga(); return; }
+    if (query.trim() === "") { 
+        loadTopManga(); 
+        loadActionManga();
+        return; 
+    }
     
     const grid = document.getElementById('episodeGrid');
     const header = document.querySelector('.content-section h2');
+    const actionSection = document.getElementById('actionGrid');
+    
     if (header) header.innerText = "Search Results";
+    if (actionSection) actionSection.parentElement.style.display = 'none'; // Hide second row when searching
     if (grid) grid.innerHTML = "<p style='color: lightgray; padding-left: 20px;'>Searching database...</p>";
 
     try {
@@ -72,11 +107,10 @@ async function searchAnimeAPI() {
     }
 }
 
-// THE NEW MANGADEX STYLE GRID RENDERER
 function renderGrid(mangaArray, sectionTitle, targetID) {
     const grid = document.getElementById(targetID);
-    const header = document.querySelector('.content-section h2');
-    if (header && targetID === "episodeGrid") header.innerText = sectionTitle;
+    const header = grid.parentElement.querySelector('h2');
+    if (header) header.innerText = sectionTitle;
     if(!grid) return;
     grid.innerHTML = ""; 
 
@@ -84,10 +118,8 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
         const card = document.createElement('div');
         card.className = 'card';
         
-        // Pass cover image through your Vercel proxy
         const safeImageUrl = `/api/search?proxyImage=${encodeURIComponent(manga.thumbnail)}`;
         
-        // Professional UI: Full cover, title below, no ugly buttons
         card.innerHTML = `
             <div class="thumbnail-wrapper">
                 <div class="thumbnail" style="background-image: url('${safeImageUrl}');"></div>
@@ -97,7 +129,6 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
             </div>
         `;
         
-        // Make the entire card clickable
         card.onclick = () => { 
             window.location.href = `details.html?id=${encodeURIComponent(manga.id)}&title=${encodeURIComponent(manga.title)}&thumb=${encodeURIComponent(safeImageUrl)}`; 
         };
@@ -114,9 +145,10 @@ async function loadDetails() {
     
     if(!mangaId || mangaId === "null") return;
 
-    // Instantly load the Title and Cover Art passed from the homepage
-    document.getElementById('det-title').innerText = title;
-    document.getElementById('det-thumb').src = thumb;
+    const detTitle = document.getElementById('det-title');
+    const detThumb = document.getElementById('det-thumb');
+    if (detTitle) detTitle.innerText = title;
+    if (detThumb) detThumb.src = thumb;
 
     const epList = document.getElementById('ep-list');
     if (epList) epList.innerHTML = "<p style='color: var(--accent); padding: 20px 0;'>Extracting chapters...</p>";
@@ -126,21 +158,21 @@ async function loadDetails() {
         if (!response.ok) throw new Error("Backend Scraper Error");
         const data = await response.json();
 
-        // Populate Metadata
-        document.getElementById('det-syn').innerText = data.details.description;
-        document.getElementById('det-genre').innerText = "GENRE: " + data.details.genres;
+        const detSyn = document.getElementById('det-syn');
+        const detGenre = document.getElementById('det-genre');
+        if (detSyn) detSyn.innerText = data.details.description;
+        if (detGenre) detGenre.innerText = "GENRE: " + data.details.genres;
 
-        // Populate Chapters
         const chapters = data.chapters;
         if (epList && chapters.length > 0) {
             epList.innerHTML = ""; 
+            epList.className = "ep-list"; // Apply grid styling
             const sortedChapters = chapters.sort((a, b) => a.chap - b.chap);
 
             sortedChapters.forEach(chapter => {
                 const btn = document.createElement('div');
                 btn.className = 'ep-btn';
                 btn.innerText = chapter.title; 
-                btn.style.textAlign = "left"; 
                 
                 btn.onclick = () => {
                     window.location.href = `watch.html?chapterId=${encodeURIComponent(chapter.id)}&title=${encodeURIComponent(title)}&ep=${chapter.chap}`;
@@ -164,8 +196,10 @@ async function loadMangaReader() {
     
     if (!chapterId) return;
 
-    document.getElementById('playingTitle').innerText = decodeURIComponent(title);
-    document.getElementById('playingEp').innerText = "Chapter " + ep;
+    const playingTitle = document.getElementById('playingTitle');
+    const playingEp = document.getElementById('playingEp');
+    if (playingTitle) playingTitle.innerText = decodeURIComponent(title);
+    if (playingEp) playingEp.innerText = "Chapter " + ep;
 
     let mangaView = document.getElementById('mangaView');
     if(!mangaView) {
@@ -173,8 +207,7 @@ async function loadMangaReader() {
         mangaView.id = "mangaView";
         mangaView.style.cssText = "width:100%; max-width:900px; margin:0 auto; background: var(--bg-dark);";
         
-        // Append to wherever your reader container is
-        const container = document.querySelector('.player-container') || document.querySelector('.main-content');
+        const container = document.querySelector('.main-content') || document.body;
         container.appendChild(mangaView);
     }
     mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Stealing high-quality pages...</p>";
@@ -211,7 +244,10 @@ async function loadMangaReader() {
 
 // --- 5. INIT ---
 window.onload = function() {
-    if (document.getElementById('episodeGrid')) loadTopManga();
-    if (document.getElementById('det-title')) loadDetails();
+    if (document.getElementById('episodeGrid')) {
+        loadTopManga();
+        loadActionManga(); 
+    }
+    if (document.getElementById('det-title') || window.location.pathname.includes('details.html')) loadDetails();
     if (new URLSearchParams(window.location.search).get('chapterId')) loadMangaReader();
 };
