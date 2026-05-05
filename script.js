@@ -112,26 +112,39 @@ async function checkWishlistStatus(mangaId) {
 // --- HOMEPAGE (LIVE SYNC) & SEARCH ---
 function scrollCarousel(id, amount) { document.getElementById(id).scrollBy({ left: amount, behavior: 'smooth' }); }
 
-// Fetches the live data from your Vercel backend!
+// NEW: Fetches the live scraped data DIRECTLY from Firebase
 async function loadLiveHomepage() {
     const recentGrid = document.getElementById('recentGrid');
     if (!recentGrid) return;
     
     recentGrid.innerHTML = "<p style='color: var(--accent); padding-left: 20px;'>Syncing live database...</p>";
-    document.getElementById('topRatedGrid').innerHTML = "<p style='color: gray; padding-left: 20px;'>Loading...</p>";
-    document.getElementById('recommendedGrid').innerHTML = "<p style='color: gray; padding-left: 20px;'>Loading...</p>";
+    
+    // Clear the old hardcoded sections for now
+    const topRated = document.getElementById('topRatedGrid');
+    const recommended = document.getElementById('recommendedGrid');
+    if(topRated) topRated.closest('.content-section').style.display = 'none';
+    if(recommended) recommended.closest('.content-section').style.display = 'none';
     
     try {
-        const response = await fetch('/api/search?live=true');
-        const liveData = await response.json();
+        // Query the new 'mangas' collection created by your robot!
+        const snapshot = await db.collection('mangas').orderBy('updatedAt', 'desc').limit(20).get();
         
-        renderGrid(liveData.recent, "Recently Added", "recentGrid");
-        renderGrid(liveData.trending, "Top Trending Right Now", "topRatedGrid");
-        renderGrid(liveData.recommended, "MangaYonix Recommendations", "recommendedGrid");
+        const liveData = [];
+        snapshot.forEach(doc => {
+            const data = doc.data();
+            liveData.push({
+                id: data.id,
+                title: data.title,
+                thumbnail: data.image, // Map your new database field to the old one
+                latestChapter: data.latestChapter // Pass the chapter down!
+            });
+        });
+        
+        renderGrid(liveData, "Recently Updated", "recentGrid");
         
     } catch (err) {
         console.error("Live fetch failed", err);
-        recentGrid.innerHTML = `<p style='color: red;'>Failed to connect to live server. Try refreshing.</p>`;
+        recentGrid.innerHTML = `<p style='color: red;'>Failed to load database. Check Firebase rules.</p>`;
     }
 }
 
@@ -154,12 +167,11 @@ async function searchAnimeAPI() {
     } catch (error) { document.getElementById('searchGrid').innerHTML = `<p style='color: #ff4757;'>No manga found.</p>`; }
 }
 
-// FIXED: Bulletproof Grid Renderer
+// FIXED: Bulletproof Grid Renderer with Chapter Support
 function renderGrid(mangaArray, sectionTitle, targetID) {
     const grid = document.getElementById(targetID);
     if(!grid) return;
 
-    // Smart Header Targeter: Finds the section's H2 regardless of layout structure
     const section = grid.closest('.content-section');
     if (section) {
         const header = section.querySelector('h2');
@@ -178,7 +190,10 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
         card.className = 'card';
         const safeImageUrl = manga.thumbnail.includes('/api/search') ? manga.thumbnail : `/api/search?proxyImage=${encodeURIComponent(manga.thumbnail)}`;
         
-        card.innerHTML = `<div class="thumbnail-wrapper"><div class="thumbnail" style="background-image: url('${safeImageUrl}');"></div></div><div class="info"><h3 class="manga-title" title="${manga.title}">${manga.title}</h3></div>`;
+        // Add chapter info if it exists
+        const chapterHtml = manga.latestChapter ? `<div style="color: var(--accent); font-size: 0.8rem; font-weight: bold; margin-top: 5px;">Ch. ${manga.latestChapter}</div>` : '';
+        
+        card.innerHTML = `<div class="thumbnail-wrapper"><div class="thumbnail" style="background-image: url('${safeImageUrl}');"></div></div><div class="info"><h3 class="manga-title" title="${manga.title}">${manga.title}</h3>${chapterHtml}</div>`;
         card.onclick = () => { window.location.href = `details.html?id=${encodeURIComponent(manga.id)}&title=${encodeURIComponent(manga.title)}&thumb=${encodeURIComponent(safeImageUrl)}`; };
         grid.appendChild(card);
     });
