@@ -27,13 +27,16 @@ module.exports = async function (req, res) {
         const scrapedMangas = [];
 
         $('a[href^="/manga/"]').each((index, element) => {
-            const fullLink = $(element).attr('href');   // Example: /manga/8/kingdom
-            const safeDocId = fullLink.split('/')[2];   // Extracts '8' for Firebase
+            const fullLink = $(element).attr('href');   
+            const safeDocId = fullLink.split('/')[2];   
 
             const image = $(element).find('img').attr('data-src') || $(element).find('img').attr('src');
-            const title = $(element).find('img').attr('alt') || $(element).text().trim();
+            
+            let title = $(element).find('img').attr('alt') || $(element).text().trim();
+            // THE ECHO CLEANER
+            title = title.replace(/\s+/g, ' ').trim();
+            title = title.replace(/^(.+?)(?:\s+\1)+$/i, '$1');
 
-            // FIX: Added the 's' to '/chapters/' so it actually finds the real chapter number!
             const chapterLink = $(element).parent().find('a[href*="/chapters/"]').first();
             const chapterText = chapterLink.text().trim();
             const chapterMatch = chapterText.match(/\d+(\.\d+)?/);
@@ -42,8 +45,8 @@ module.exports = async function (req, res) {
             if (fullLink && title && image) {
                 if (!scrapedMangas.find(m => m.docId === safeDocId)) {
                     scrapedMangas.push({
-                        docId: safeDocId,      // Used ONLY for Firebase folder naming
-                        id: fullLink,          // The full path! Used by your Frontend to load the manga
+                        docId: safeDocId,      
+                        id: fullLink,          
                         title: title,
                         image: image,
                         latestChapter: chapterNumber,
@@ -58,8 +61,6 @@ module.exports = async function (req, res) {
         const topMangas = scrapedMangas.slice(0, 30);
 
         topMangas.forEach((manga) => {
-            // We use the safe number for the database document name, 
-            // but save the fullLink inside the document!
             const docRef = mangasCollection.doc(manga.docId);
             batch.set(docRef, manga, { merge: true }); 
         });
