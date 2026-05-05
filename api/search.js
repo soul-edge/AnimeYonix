@@ -37,8 +37,10 @@ module.exports = async function (req, res) {
 
         else if (q) {
             let fetchUrl = `https://mangapill.com/search?q=${encodeURIComponent(q)}`;
+            
+            // THE REAL TRENDING FIX: Fetching MangaPill's Most Popular
             if (q === 'trending') {
-                fetchUrl = `https://mangapill.com/search?q=demon`; 
+                fetchUrl = `https://mangapill.com/search?q=&type=&status=&popular=1`; 
             }
 
             const response = await fetch(fetchUrl, { headers });
@@ -70,18 +72,11 @@ module.exports = async function (req, res) {
             const html = await response.text();
             const $ = cheerio.load(html);
 
-            // --- THE SMART SCANNER FIX ---
             let description = "";
             $('p').each((i, el) => {
                 const text = $(el).text().trim();
-                
-                // Tell the scanner to skip MangaPill's annoying site-wide announcements
                 if (text.toLowerCase().includes("discontinue") || text.toLowerCase().includes("manhwa")) return; 
-                
-                // If it passes the filter and is long enough, it's our synopsis!
-                if (text.length > 50 && !description) {
-                    description = text;
-                }
+                if (text.length > 50 && !description) description = text;
             });
             if (!description) description = "No description available.";
             
@@ -94,10 +89,8 @@ module.exports = async function (req, res) {
             $('#chapters a[href^="/chapters/"]').each((i, el) => {
                 const id = $(el).attr('href');
                 const title = $(el).text().trim();
-                
                 const numMatch = title.match(/(?:Chapter|Ch\.?)\s*(\d+(\.\d+)?)/i) || id.match(/chapter-(\d+(\.\d+)?)/i);
                 const chap = numMatch ? parseFloat(numMatch[1]) : i;
-                
                 if (chap > maxChapter) maxChapter = chap; 
                 chapters.push({ id, title, chap });
             });
