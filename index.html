@@ -29,7 +29,6 @@
 
         <!-- THE MAIN CONTENT -->
         <main class="main-content">
-            <!-- TOP BAR WITH MOBILE MENU BUTTON -->
             <header class="topbar">
                 <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('mobile-active')"><i class="fas fa-bars"></i></button>
                 <div class="search-container">
@@ -38,12 +37,21 @@
                 </div>
             </header>
 
-            <!-- MAIN HOMEPAGE VIEW -->
             <div id="home-view">
                 <section class="hero">
                     <div class="hero-content">
                         <h1>Welcome to MangaYonix.</h1>
                         <p>Read your favorite manga with high-quality scans. Ad-free, lightning fast, and always updated.</p>
+                    </div>
+                </section>
+
+                <!-- NEW: READ HISTORY SECTION -->
+                <section class="content-section" id="history-section" style="display: none;">
+                    <h2><i class="fas fa-history"></i> Continue Reading</h2>
+                    <div class="carousel-container">
+                        <button class="scroll-btn scroll-left" onclick="scrollCarousel('historyGrid', -600)"><i class="fas fa-chevron-left"></i></button>
+                        <div id="historyGrid" class="carousel"></div>
+                        <button class="scroll-btn scroll-right" onclick="scrollCarousel('historyGrid', 600)"><i class="fas fa-chevron-right"></i></button>
                     </div>
                 </section>
 
@@ -56,18 +64,14 @@
                     </div>
                 </section>
 
+                <!-- BROUGHT BACK: TOP RATED MASTERPIECES -->
                 <section class="content-section">
                     <h2>Top Rated Masterpieces</h2>
                     <div id="topRatedGrid" class="grid-container"></div>
                 </section>
                 
-                <section class="content-section">
-                    <h2>Recommended For You</h2>
-                    <div id="recommendedGrid" class="grid-container"></div>
-                </section>
             </div>
 
-            <!-- WISHLIST VIEW (Hidden by default) -->
             <div id="profile-view" style="display: none; padding: 0 40px 40px 40px;">
                 <h2 style="font-size: 2rem; margin-bottom: 30px;"><i class="fas fa-bookmark"></i> My Wishlist</h2>
                 <div id="wishlistGrid" class="grid-container"></div>
@@ -75,7 +79,7 @@
         </main>
     </div>
 
-  <!-- Main Logic Script -->
-<script src="script.js"></script>
+    <!-- Main Logic Script -->
+    <script src="script.js"></script>
 </body>
 </html>
