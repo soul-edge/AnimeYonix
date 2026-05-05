@@ -22,8 +22,14 @@ module.exports = async function (req, res) {
     };
 
     try {
+        // --- THE IMAGE PROXY (Safeguarded) ---
         if (proxyImage) {
-            const response = await fetch(decodeURIComponent(proxyImage), { headers });
+            let targetUrl = decodeURIComponent(proxyImage);
+            // Catch missing https protocols
+            if (targetUrl.startsWith('//')) targetUrl = 'https:' + targetUrl;
+            else if (!targetUrl.startsWith('http')) targetUrl = 'https://mangapill.com' + targetUrl;
+            
+            const response = await fetch(targetUrl, { headers });
             if (!response.ok) throw new Error("Proxy blocked.");
             const buffer = Buffer.from(await response.arrayBuffer());
             res.setHeader('Content-Type', response.headers.get('content-type') || 'image/jpeg');
@@ -31,11 +37,12 @@ module.exports = async function (req, res) {
             return res.status(200).send(buffer);
         }
 
+        // --- SEARCH ENGINE & TRENDING BACKDOOR ---
         else if (q) {
-            // THE TRENDING BACKDOOR: If the query is "trending", fetch popular mangas instead!
             let fetchUrl = `https://mangapill.com/search?q=${encodeURIComponent(q)}`;
+            // FIX: Use a highly popular search term instead of the broken popular=1 flag
             if (q === 'trending') {
-                fetchUrl = `https://mangapill.com/search?q=&popular=1`;
+                fetchUrl = `https://mangapill.com/search?q=demon`; 
             }
 
             const response = await fetch(fetchUrl, { headers });
@@ -59,20 +66,20 @@ module.exports = async function (req, res) {
             });
 
             if (results.length === 0) throw new Error("No manga found.");
-            // If it's the trending list, limit to 15 so it fits your grid perfectly
             return res.status(200).json(q === 'trending' ? results.slice(0, 15) : results);
         } 
 
+        // --- DETAILS & GREEDY DESCRIPTION SCANNER ---
         else if (mangaId) {
             const response = await fetch(`https://mangapill.com${decodeURIComponent(mangaId)}`, { headers });
             const html = await response.text();
             const $ = cheerio.load(html);
 
-            // THE DESCRIPTION FIX: Scans all grey text blocks and takes the first large paragraph
+            // FIX: Greedy Scanner. Finds the first paragraph with more than 50 characters!
             let description = "";
-            $('.text-sm.text-stone-300').each((i, el) => {
+            $('p').each((i, el) => {
                 const text = $(el).text().trim();
-                if (text.length > 40 && !description) description = text;
+                if (text.length > 50 && !description) description = text;
             });
             if (!description) description = "No description available.";
             
