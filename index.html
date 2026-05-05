@@ -14,10 +14,14 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- THE LEFT SIDEBAR -->
+        <!-- THE LEFT SIDEBAR (Now a slide-out overlay!) -->
         <aside class="sidebar">
             <div class="logo-container">
                 <h2>Manga<span class="accent">Yonix</span></h2>
+                <!-- THE NEW CLOSE BUTTON -->
+                <button class="close-btn" onclick="document.querySelector('.sidebar').classList.remove('mobile-active')">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <nav class="sidebar-nav">
                 <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
@@ -30,7 +34,9 @@
         <!-- THE MAIN CONTENT -->
         <main class="main-content">
             <header class="topbar">
-                <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('mobile-active')"><i class="fas fa-bars"></i></button>
+                <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('mobile-active')">
+                    <i class="fas fa-bars"></i>
+                </button>
                 <div class="search-container">
                     <input type="text" id="userSearch" placeholder="Search for manga..." onkeyup="if(event.key === 'Enter') searchAnimeAPI()">
                     <button onclick="searchAnimeAPI()"><i class="fas fa-search"></i></button>
@@ -45,7 +51,6 @@
                     </div>
                 </section>
 
-                <!-- NEW: READ HISTORY SECTION -->
                 <section class="content-section" id="history-section" style="display: none;">
                     <h2><i class="fas fa-history"></i> Continue Reading</h2>
                     <div class="carousel-container">
@@ -56,7 +61,7 @@
                 </section>
 
                 <section class="content-section">
-                    <h2>Recently Added</h2>
+                    <h2>Recently Updated</h2>
                     <div class="carousel-container">
                         <button class="scroll-btn scroll-left" onclick="scrollCarousel('recentGrid', -600)"><i class="fas fa-chevron-left"></i></button>
                         <div id="recentGrid" class="carousel"></div>
@@ -64,12 +69,10 @@
                     </div>
                 </section>
 
-                <!-- BROUGHT BACK: TOP RATED MASTERPIECES -->
                 <section class="content-section">
                     <h2>Top Rated Masterpieces</h2>
                     <div id="topRatedGrid" class="grid-container"></div>
                 </section>
-                
             </div>
 
             <div id="profile-view" style="display: none; padding: 0 40px 40px 40px;">
