@@ -13,7 +13,7 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
 }
 
 .sidebar { 
-    width: 260px; /* Made slightly wider to fit the text button comfortably */
+    width: 250px; 
     background-image: linear-gradient(180deg, rgba(18, 18, 18, 0.95) 0%, rgba(18, 18, 18, 0.7) 100%), 
                       url('https://mfiles.alphacoders.com/101/thumb-1920-1012768.png');
     background-size: cover;
@@ -37,35 +37,32 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
 }
 
 .logo-container { 
-    padding: 20px; 
-    font-size: 1.5rem; 
-    font-weight: bold; 
+    padding: 20px 20px 10px 20px; 
     background: transparent; 
     border-bottom: none; 
     display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
+    flex-direction: column; /* Stacks the arrow above the logo */
+    align-items: flex-start; /* Aligns them flush to the left */
+    gap: 15px; /* Perfect spacing between arrow and 'M' */
+}
+
+.logo-container h2 {
+    font-size: 1.5rem; 
+    font-weight: bold; 
 }
 
 .logo-container .accent { color: var(--accent); text-shadow: 0 0 15px rgba(255, 103, 64, 0.6); }
 
-/* --- TEXT-BASED CLOSE BUTTON --- */
+/* --- THE ARROW CLOSE BUTTON --- */
 .close-btn {
     background: transparent;
     border: none;
     color: var(--text-muted);
-    font-size: 0.95rem; 
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    gap: 6px; 
+    font-size: 1.2rem; 
     cursor: pointer;
     transition: all 0.2s ease;
     z-index: 1002;
-}
-
-.close-btn i {
-    font-size: 0.85rem; 
+    padding: 0; /* Ensures it aligns perfectly with the 'M' below it */
 }
 
 .close-btn:hover {
