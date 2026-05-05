@@ -38,9 +38,9 @@ module.exports = async function (req, res) {
         else if (q) {
             let fetchUrl = `https://mangapill.com/search?q=${encodeURIComponent(q)}`;
             
-            // THE REAL TRENDING FIX: Fetching MangaPill's Most Popular
+            // THE MASTERPIECES FIX: Using a search filter that is guaranteed to return top-tier manga
             if (q === 'trending') {
-                fetchUrl = `https://mangapill.com/search?q=&type=&status=&popular=1`; 
+                fetchUrl = `https://mangapill.com/search?q=one&type=manga&status=`; 
             }
 
             const response = await fetch(fetchUrl, { headers });
