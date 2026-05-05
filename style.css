@@ -7,14 +7,13 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
 
 /* --- APP LAYOUT --- */
 .app-container { 
-    display: block; /* Changed from flex to block to allow full width */
+    display: block; 
     width: 100%;
     min-height: 100vh; 
 }
 
 .sidebar { 
-    width: 240px; 
-    /* Seamless AoT Background with dark overlay for text contrast */
+    width: 250px; 
     background-image: linear-gradient(180deg, rgba(18, 18, 18, 0.95) 0%, rgba(18, 18, 18, 0.7) 100%), 
                       url('https://mfiles.alphacoders.com/101/thumb-1920-1012768.png');
     background-size: cover;
@@ -24,16 +23,15 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
     position: fixed; 
     top: 0;
     left: 0;
-    transform: translateX(-100%); /* Hides it off-screen to the left globally */
+    transform: translateX(-100%); 
     height: 100vh; 
     border-right: 1px solid #2a2a2a; 
     display: flex; 
     flex-direction: column; 
-    z-index: 1000; /* Bumped up so it floats over everything */
+    z-index: 1000; 
     transition: transform 0.3s ease-in-out; 
 }
 
-/* Toggles the slide-in effect */
 .sidebar.mobile-active {
     transform: translateX(0);
 }
@@ -44,9 +42,28 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
     font-weight: bold; 
     background: transparent; 
     border-bottom: none; 
+    position: relative; /* Needed to position the X button perfectly */
 }
 
 .logo-container .accent { color: var(--accent); text-shadow: 0 0 15px rgba(255, 103, 64, 0.6); }
+
+/* THE NEW CLOSE BUTTON */
+.close-btn {
+    position: absolute;
+    top: 22px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: 0.2s;
+    z-index: 1002;
+}
+.close-btn:hover {
+    color: var(--accent);
+    transform: scale(1.1);
+}
 
 .sidebar-nav { padding: 20px 0; display: flex; flex-direction: column; }
 .sidebar-nav a { color: var(--text-muted); text-decoration: none; padding: 15px 25px; font-size: 1.1rem; transition: 0.2s; display: flex; align-items: center; gap: 15px; }
@@ -58,8 +75,8 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
 }
 
 .main-content { 
-    margin-left: 0; /* Removed the sidebar gap */
-    width: 100%;    /* Takes up the whole screen now */
+    margin-left: 0; 
+    width: 100%;    
     flex-grow: 1; 
     display: flex; 
     flex-direction: column; 
@@ -69,7 +86,7 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
 .topbar { 
     padding: 20px 40px; 
     display: flex; 
-    justify-content: space-between; /* Spreads the menu button and search bar apart */
+    justify-content: space-between; 
     align-items: center; 
     background: transparent; 
     position: sticky; 
@@ -77,13 +94,13 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
     z-index: 90; 
 }
 .menu-btn { 
-    display: block; /* Always visible now */
+    display: block; 
     background: transparent; 
     border: none; 
     color: var(--text-main); 
     font-size: 1.5rem; 
     cursor: pointer; 
-    z-index: 1001;
+    z-index: 999;
 }
 .search-container { display: flex; background: var(--bg-panel); border-radius: 8px; overflow: hidden; width: 400px; border: 1px solid #2a2a2a; }
 .search-container input { background: transparent; border: none; color: white; padding: 12px 20px; width: 100%; outline: none; }
@@ -94,7 +111,6 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
 .hero { 
     height: 280px; 
     margin: 0 40px 40px 40px; 
-    /* Solo Leveling Wallpaper */
     background: linear-gradient(to right, rgba(0, 0, 0, 0.85) 30%, rgba(0, 0, 0, 0.2)), 
                 url('https://images3.alphacoders.com/134/thumb-1920-1346679.jpg');
     background-size: cover;
@@ -147,7 +163,7 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
 /* === MOBILE RESPONSIVENESS MAGIC === */
 @media (max-width: 768px) {
     .app-container { flex-direction: column; }
-    .sidebar { width: 260px; background-position: center; } /* transform logic moved up globally */
+    .sidebar { width: 260px; background-position: center; } 
     .topbar { padding: 15px 20px; }
     .search-container { width: auto; flex-grow: 1; margin-left: 15px; }
     .hero { 
@@ -167,40 +183,26 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
    NEW NATIVE READER APP UI
 ========================================= */
 .reader-body { background-color: #000; overflow-x: hidden; }
-
-/* Toolbars */
 .reader-topbar, .reader-bottombar {
     position: fixed; left: 0; right: 0; background: rgba(20, 20, 20, 0.95);
     z-index: 1000; transition: transform 0.3s ease; backdrop-filter: blur(10px);
 }
 .reader-topbar { top: 0; display: flex; align-items: center; padding: 15px 20px; border-bottom: 1px solid #333; }
 .reader-bottombar { bottom: 0; display: flex; flex-direction: column; padding: 15px 20px 25px 20px; border-top: 1px solid #333; }
-
-/* Hidden state when reading */
 .ui-hidden .reader-topbar { transform: translateY(-100%); }
 .ui-hidden .reader-bottombar { transform: translateY(100%); }
-
-/* Topbar Typography */
 .r-title-group { flex-grow: 1; margin: 0 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .r-title-group h1 { font-size: 1.1rem; color: #fff; margin: 0; font-weight: 600; }
 .r-title-group h2 { font-size: 0.85rem; color: #aaa; margin: 0; font-weight: 400; }
-
-/* Buttons */
 .r-icon-btn { background: transparent; border: none; color: #ddd; font-size: 1.3rem; cursor: pointer; padding: 10px; transition: 0.2s; display: flex; justify-content: center; align-items: center; }
 .r-icon-btn:hover { color: var(--accent); }
 .r-icon-btn.active-mode { color: var(--accent); }
 .nav-arrow { background: rgba(255, 255, 255, 0.1); border-radius: 50%; width: 40px; height: 40px; }
-
-/* Bottom Rows */
 .r-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 20px; }
 .r-settings-row { display: flex; justify-content: space-around; align-items: center; }
-
-/* The Progress Slider */
 .slider-container { display: flex; align-items: center; flex-grow: 1; gap: 15px; color: #ccc; font-size: 0.9rem; font-weight: bold; background: rgba(0,0,0,0.4); padding: 5px 15px; border-radius: 20px;}
 input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; outline: none; }
 input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 4px; background: white; cursor: pointer; margin-top: -8px; border-radius: 2px;}
 input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #555; border-radius: 2px; }
-
-/* Viewport */
 .reader-viewport { width: 100%; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .reader-viewport img { max-width: 100%; object-fit: contain; cursor: pointer; user-select: none; }
