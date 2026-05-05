@@ -109,7 +109,7 @@ async function loadLiveHomepage() {
     const historyGrid = document.getElementById('historyGrid');
     const historySection = document.getElementById('history-section');
     
-    // 1. THE READ HISTORY (Loads instantly from LocalStorage)
+    // 1. THE READ HISTORY 
     if (historyGrid && historySection) {
         const history = JSON.parse(localStorage.getItem('mangaHistory') || '[]');
         if (history.length > 0) {
@@ -118,7 +118,7 @@ async function loadLiveHomepage() {
         }
     }
     
-    // 2. RECENT UPDATES (From your Robot's Firebase Database)
+    // 2. RECENT UPDATES 
     if (recentGrid) recentGrid.innerHTML = "<p style='color: var(--accent); padding-left: 20px;'>Syncing live database...</p>";
     try {
         const snapshot = await db.collection('mangas').orderBy('updatedAt', 'desc').limit(20).get();
@@ -130,7 +130,7 @@ async function loadLiveHomepage() {
         renderGrid(liveData, "Recently Updated", "recentGrid");
     } catch (err) { recentGrid.innerHTML = `<p style='color: red;'>Failed to load database.</p>`; }
 
-    // 3. TOP RATED MASTERPIECES (Using our new API backdoor!)
+    // 3. TOP RATED MASTERPIECES
     if (topRatedGrid) topRatedGrid.innerHTML = "<p style='color: gray; padding-left: 20px;'>Loading Masterpieces...</p>";
     try {
         const response = await fetch('/api/search?q=trending');
@@ -175,12 +175,10 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
         const card = document.createElement('div');
         card.className = 'card';
         
-        // FIX 1: Safe Image Proxy Bypass Fix
+        // Image Proxy Bypass Fix
         const safeImageUrl = manga.thumbnail.includes('/api/search') ? manga.thumbnail : `/api/search?proxyImage=${encodeURIComponent(manga.thumbnail)}`;
         
-        // FIX 2: Chapter numbers completely removed from the UI card for a cleaner look
         card.innerHTML = `<div class="thumbnail-wrapper"><div class="thumbnail" style="background-image: url('${safeImageUrl}');"></div></div><div class="info"><h3 class="manga-title" title="${manga.title}">${manga.title}</h3></div>`;
-        
         card.onclick = () => { window.location.href = `details.html?id=${encodeURIComponent(manga.id)}&title=${encodeURIComponent(manga.title)}&thumb=${encodeURIComponent(safeImageUrl)}`; };
         grid.appendChild(card);
     });
@@ -215,7 +213,6 @@ async function loadDetails() {
         const response = await fetch(`/api/search?mangaId=${encodeURIComponent(mangaId)}`);
         const data = await response.json();
         
-        // Populate Description and Genres
         if (document.getElementById('det-syn')) document.getElementById('det-syn').innerText = data.details.description;
         if (document.getElementById('det-genre')) document.getElementById('det-genre').innerText = "GENRE: " + data.details.genres;
 
@@ -260,7 +257,6 @@ async function loadMangaReader() {
         document.getElementById('playingEp').innerText = "Chapter " + ep;
     }
 
-    // THE READ HISTORY MEMORY ENGINE
     if (currentMangaId && title) {
         let history = JSON.parse(localStorage.getItem('mangaHistory') || '[]');
         const currentMangaData = { id: currentMangaId, title: title, thumbnail: thumb, latestChapter: ep };
@@ -386,6 +382,19 @@ function toggleReaderWishlist() {
     const thumb = new URLSearchParams(window.location.search).get('thumb');
     toggleWishlist(currentMangaId, title, thumb);
 }
+
+// --- NEW: SIDEBAR AUTO-CLOSE LOGIC ---
+document.addEventListener('click', (e) => {
+    const sidebar = document.querySelector('.sidebar');
+    const menuBtn = document.querySelector('.menu-btn');
+    
+    // If the sidebar is active, and you click OUTSIDE the sidebar AND the menu button...
+    if (sidebar && sidebar.classList.contains('mobile-active')) {
+        if (!sidebar.contains(e.target) && (!menuBtn || !menuBtn.contains(e.target))) {
+            sidebar.classList.remove('mobile-active'); 
+        }
+    }
+});
 
 // --- INIT APP ---
 window.onload = function() {
