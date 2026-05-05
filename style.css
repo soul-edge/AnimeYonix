@@ -42,27 +42,35 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
     font-weight: bold; 
     background: transparent; 
     border-bottom: none; 
-    position: relative; /* Needed to position the X button perfectly */
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
 }
 
 .logo-container .accent { color: var(--accent); text-shadow: 0 0 15px rgba(255, 103, 64, 0.6); }
 
-/* THE NEW CLOSE BUTTON */
+/* --- PREMIUM ARROW CLOSE BUTTON --- */
 .close-btn {
-    position: absolute;
-    top: 22px;
-    right: 20px;
-    background: transparent;
-    border: none;
-    color: var(--text-muted);
-    font-size: 1.5rem;
+    background: rgba(255, 255, 255, 0.05); /* Subtle glass circle */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+    font-size: 1rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%; /* Makes it a perfect circle */
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    transition: 0.2s;
+    transition: all 0.3s ease;
     z-index: 1002;
 }
 .close-btn:hover {
-    color: var(--accent);
-    transform: scale(1.1);
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    transform: translateX(-4px); /* Slides slightly to the left to hint at closing */
+    box-shadow: 0 0 10px rgba(255, 103, 64, 0.5);
 }
 
 .sidebar-nav { padding: 20px 0; display: flex; flex-direction: column; }
