@@ -6,7 +6,11 @@
 body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-dark) 100%); background-attachment: fixed; color: var(--text-main); }
 
 /* --- APP LAYOUT --- */
-.app-container { display: flex; min-height: 100vh; }
+.app-container { 
+    display: block; /* Changed from flex to block to allow full width */
+    width: 100%;
+    min-height: 100vh; 
+}
 
 .sidebar { 
     width: 240px; 
@@ -18,20 +22,28 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
     background-repeat: no-repeat;
     
     position: fixed; 
+    top: 0;
+    left: 0;
+    transform: translateX(-100%); /* Hides it off-screen to the left globally */
     height: 100vh; 
     border-right: 1px solid #2a2a2a; 
     display: flex; 
     flex-direction: column; 
-    z-index: 200; 
-    transition: 0.3s; 
+    z-index: 1000; /* Bumped up so it floats over everything */
+    transition: transform 0.3s ease-in-out; 
+}
+
+/* Toggles the slide-in effect */
+.sidebar.mobile-active {
+    transform: translateX(0);
 }
 
 .logo-container { 
     padding: 20px; 
     font-size: 1.5rem; 
     font-weight: bold; 
-    background: transparent; /* Transparent to show sidebar image */
-    border-bottom: none; /* Removed border for seamless look */
+    background: transparent; 
+    border-bottom: none; 
 }
 
 .logo-container .accent { color: var(--accent); text-shadow: 0 0 15px rgba(255, 103, 64, 0.6); }
@@ -42,14 +54,37 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
 .sidebar-nav a:hover, .sidebar-nav a.active { 
     color: var(--text-main); 
     background-color: rgba(255, 103, 64, 0.2); 
-    border-left: none; /* Removed line to keep the image clear */
+    border-left: none; 
 }
 
-.main-content { margin-left: 240px; flex-grow: 1; display: flex; flex-direction: column; width: calc(100% - 240px); }
+.main-content { 
+    margin-left: 0; /* Removed the sidebar gap */
+    width: 100%;    /* Takes up the whole screen now */
+    flex-grow: 1; 
+    display: flex; 
+    flex-direction: column; 
+}
 
 /* --- TOP BAR & SEARCH --- */
-.topbar { padding: 20px 40px; display: flex; justify-content: flex-end; align-items: center; background: transparent; position: sticky; top: 0; z-index: 90; }
-.menu-btn { display: none; background: transparent; border: none; color: var(--text-main); font-size: 1.5rem; cursor: pointer; }
+.topbar { 
+    padding: 20px 40px; 
+    display: flex; 
+    justify-content: space-between; /* Spreads the menu button and search bar apart */
+    align-items: center; 
+    background: transparent; 
+    position: sticky; 
+    top: 0; 
+    z-index: 90; 
+}
+.menu-btn { 
+    display: block; /* Always visible now */
+    background: transparent; 
+    border: none; 
+    color: var(--text-main); 
+    font-size: 1.5rem; 
+    cursor: pointer; 
+    z-index: 1001;
+}
 .search-container { display: flex; background: var(--bg-panel); border-radius: 8px; overflow: hidden; width: 400px; border: 1px solid #2a2a2a; }
 .search-container input { background: transparent; border: none; color: white; padding: 12px 20px; width: 100%; outline: none; }
 .search-container button { background: transparent; border: none; color: var(--text-muted); padding: 0 20px; cursor: pointer; transition: 0.2s; }
@@ -112,11 +147,8 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
 /* === MOBILE RESPONSIVENESS MAGIC === */
 @media (max-width: 768px) {
     .app-container { flex-direction: column; }
-    .sidebar { width: 260px; transform: translateX(-100%); background-position: center; } 
-    .sidebar.mobile-active { transform: translateX(0); } 
-    .main-content { margin-left: 0; width: 100%; }
-    .topbar { padding: 15px 20px; justify-content: space-between; }
-    .menu-btn { display: block; } 
+    .sidebar { width: 260px; background-position: center; } /* transform logic moved up globally */
+    .topbar { padding: 15px 20px; }
     .search-container { width: auto; flex-grow: 1; margin-left: 15px; }
     .hero { 
         margin: 0 15px 25px 15px; 
