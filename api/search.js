@@ -1,8 +1,7 @@
 const cheerio = require('cheerio'); 
 const admin = require('firebase-admin');
 
-// --- 1. FIREBASE ADMIN SETUP ---
-// This gives your Search API the same database VIP pass as your Robot
+// --- FIREBASE ADMIN SETUP ---
 if (!admin.apps.length) {
     admin.initializeApp({
         credential: admin.credential.cert({
@@ -44,7 +43,11 @@ module.exports = async function (req, res) {
             $('a[href^="/manga/"]').each((index, element) => {
                 const id = $(element).attr('href');
                 const image = $(element).find('img').attr('data-src') || $(element).find('img').attr('src');
-                const title = $(element).find('img').attr('alt') || $(element).text().trim();
+                
+                let title = $(element).find('img').attr('alt') || $(element).text().trim();
+                // THE ECHO CLEANER
+                title = title.replace(/\s+/g, ' ').trim(); 
+                title = title.replace(/^(.+?)(?:\s+\1)+$/i, '$1');
 
                 if (id && image && title) {
                     if (!results.find(m => m.id === id)) {
@@ -69,7 +72,7 @@ module.exports = async function (req, res) {
             $('a[href*="?genre="]').each((i, el) => genres.push($(el).text().trim()));
             
             const chapters = [];
-            let maxChapter = 0; // We will use this to find the latest chapter number!
+            let maxChapter = 0; 
 
             $('#chapters a[href^="/chapters/"]').each((i, el) => {
                 const id = $(el).attr('href');
@@ -78,7 +81,7 @@ module.exports = async function (req, res) {
                 const numMatch = title.match(/(?:Chapter|Ch\.?)\s*(\d+(\.\d+)?)/i) || id.match(/chapter-(\d+(\.\d+)?)/i);
                 const chap = numMatch ? parseFloat(numMatch[1]) : i;
                 
-                if (chap > maxChapter) maxChapter = chap; // Track highest chapter
+                if (chap > maxChapter) maxChapter = chap; 
                 
                 chapters.push({ id, title, chap });
             });
@@ -86,23 +89,24 @@ module.exports = async function (req, res) {
             // ==========================================
             // THE SILENT SAVE PROTOCOL
             // ==========================================
-            const mangaTitle = $('h1').first().text().trim();
+            let mangaTitle = $('h1').first().text().trim();
+            // Clean the title here just in case the Details page echoes it too
+            mangaTitle = mangaTitle.replace(/\s+/g, ' ').trim(); 
+            mangaTitle = mangaTitle.replace(/^(.+?)(?:\s+\1)+$/i, '$1');
+
             const mangaImage = $('div.container img').first().attr('data-src') || $('img').first().attr('src');
             const safeDocId = decodeURIComponent(mangaId).split('/')[2];
 
-            // If we found the data, save it to Firebase
             if (safeDocId && mangaTitle) {
                 const mangaData = {
                     docId: safeDocId,
                     id: decodeURIComponent(mangaId),
                     title: mangaTitle,
                     image: mangaImage || "",
-                    latestChapter: maxChapter.toString(), // Save the highest chapter we found
-                    updatedAt: admin.firestore.FieldValue.serverTimestamp() // Puts it at the front of your homepage!
+                    latestChapter: maxChapter.toString(),
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp() 
                 };
 
-                // NOTE: We do NOT put 'await' here. This tells Vercel to save it in the background 
-                // so the user doesn't have to wait!
                 db.collection('mangas').doc(safeDocId).set(mangaData, { merge: true })
                   .catch(err => console.error("Firebase Silent Save Error:", err));
             }
