@@ -1,7 +1,6 @@
 const cheerio = require('cheerio'); 
 const admin = require('firebase-admin');
 
-// --- FIREBASE ADMIN SETUP ---
 if (!admin.apps.length) {
     admin.initializeApp({
         credential: admin.credential.cert({
@@ -18,12 +17,11 @@ module.exports = async function (req, res) {
     const { q, mangaId, chapterId, proxyImage } = req.query;
 
     const headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Referer": "https://mangapill.com/"
     };
 
     try {
-        // --- 1. THE IMAGE PROXY ---
         if (proxyImage) {
             const response = await fetch(decodeURIComponent(proxyImage), { headers });
             if (!response.ok) throw new Error("Proxy blocked.");
@@ -33,9 +31,14 @@ module.exports = async function (req, res) {
             return res.status(200).send(buffer);
         }
 
-        // --- 2. SEARCH ENGINE (Live Pass-Through) ---
         else if (q) {
-            const response = await fetch(`https://mangapill.com/search?q=${encodeURIComponent(q)}`, { headers });
+            // THE TRENDING BACKDOOR: If the query is "trending", fetch popular mangas instead!
+            let fetchUrl = `https://mangapill.com/search?q=${encodeURIComponent(q)}`;
+            if (q === 'trending') {
+                fetchUrl = `https://mangapill.com/search?q=&popular=1`;
+            }
+
+            const response = await fetch(fetchUrl, { headers });
             const html = await response.text();
             const $ = cheerio.load(html);
             const results = [];
@@ -45,7 +48,6 @@ module.exports = async function (req, res) {
                 const image = $(element).find('img').attr('data-src') || $(element).find('img').attr('src');
                 
                 let title = $(element).find('img').attr('alt') || $(element).text().trim();
-                // THE ECHO CLEANER
                 title = title.replace(/\s+/g, ' ').trim(); 
                 title = title.replace(/^(.+?)(?:\s+\1)+$/i, '$1');
 
@@ -57,16 +59,22 @@ module.exports = async function (req, res) {
             });
 
             if (results.length === 0) throw new Error("No manga found.");
-            return res.status(200).json(results);
+            // If it's the trending list, limit to 15 so it fits your grid perfectly
+            return res.status(200).json(q === 'trending' ? results.slice(0, 15) : results);
         } 
 
-        // --- 3. DETAILS, CHAPTERS, & THE SILENT SAVE ---
         else if (mangaId) {
             const response = await fetch(`https://mangapill.com${decodeURIComponent(mangaId)}`, { headers });
             const html = await response.text();
             const $ = cheerio.load(html);
 
-            const description = $('p.text-sm.text-stone-300').first().text().trim() || "No description available.";
+            // THE DESCRIPTION FIX: Scans all grey text blocks and takes the first large paragraph
+            let description = "";
+            $('.text-sm.text-stone-300').each((i, el) => {
+                const text = $(el).text().trim();
+                if (text.length > 40 && !description) description = text;
+            });
+            if (!description) description = "No description available.";
             
             const genres = [];
             $('a[href*="?genre="]').each((i, el) => genres.push($(el).text().trim()));
@@ -82,15 +90,10 @@ module.exports = async function (req, res) {
                 const chap = numMatch ? parseFloat(numMatch[1]) : i;
                 
                 if (chap > maxChapter) maxChapter = chap; 
-                
                 chapters.push({ id, title, chap });
             });
 
-            // ==========================================
-            // THE SILENT SAVE PROTOCOL
-            // ==========================================
             let mangaTitle = $('h1').first().text().trim();
-            // Clean the title here just in case the Details page echoes it too
             mangaTitle = mangaTitle.replace(/\s+/g, ' ').trim(); 
             mangaTitle = mangaTitle.replace(/^(.+?)(?:\s+\1)+$/i, '$1');
 
@@ -106,11 +109,8 @@ module.exports = async function (req, res) {
                     latestChapter: maxChapter.toString(),
                     updatedAt: admin.firestore.FieldValue.serverTimestamp() 
                 };
-
-                db.collection('mangas').doc(safeDocId).set(mangaData, { merge: true })
-                  .catch(err => console.error("Firebase Silent Save Error:", err));
+                db.collection('mangas').doc(safeDocId).set(mangaData, { merge: true }).catch(e => console.error(e));
             }
-            // ==========================================
 
             return res.status(200).json({ 
                 details: { description, genres: genres.join(', ') || "Manga" }, 
@@ -118,7 +118,6 @@ module.exports = async function (req, res) {
             });
         }
         
-        // --- 4. IMAGE EXTRACTOR (THE READER) ---
         else if (chapterId) {
             const response = await fetch(`https://mangapill.com${decodeURIComponent(chapterId)}`, { headers });
             const html = await response.text();
@@ -139,7 +138,6 @@ module.exports = async function (req, res) {
         }
 
     } catch (error) {
-        console.error("API Error:", error.message);
         return res.status(500).json({ error: error.message });
     }
 };
