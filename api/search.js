@@ -22,10 +22,8 @@ module.exports = async function (req, res) {
     };
 
     try {
-        // --- THE IMAGE PROXY (Safeguarded) ---
         if (proxyImage) {
             let targetUrl = decodeURIComponent(proxyImage);
-            // Catch missing https protocols
             if (targetUrl.startsWith('//')) targetUrl = 'https:' + targetUrl;
             else if (!targetUrl.startsWith('http')) targetUrl = 'https://mangapill.com' + targetUrl;
             
@@ -37,10 +35,8 @@ module.exports = async function (req, res) {
             return res.status(200).send(buffer);
         }
 
-        // --- SEARCH ENGINE & TRENDING BACKDOOR ---
         else if (q) {
             let fetchUrl = `https://mangapill.com/search?q=${encodeURIComponent(q)}`;
-            // FIX: Use a highly popular search term instead of the broken popular=1 flag
             if (q === 'trending') {
                 fetchUrl = `https://mangapill.com/search?q=demon`; 
             }
@@ -69,17 +65,23 @@ module.exports = async function (req, res) {
             return res.status(200).json(q === 'trending' ? results.slice(0, 15) : results);
         } 
 
-        // --- DETAILS & GREEDY DESCRIPTION SCANNER ---
         else if (mangaId) {
             const response = await fetch(`https://mangapill.com${decodeURIComponent(mangaId)}`, { headers });
             const html = await response.text();
             const $ = cheerio.load(html);
 
-            // FIX: Greedy Scanner. Finds the first paragraph with more than 50 characters!
+            // --- THE SMART SCANNER FIX ---
             let description = "";
             $('p').each((i, el) => {
                 const text = $(el).text().trim();
-                if (text.length > 50 && !description) description = text;
+                
+                // Tell the scanner to skip MangaPill's annoying site-wide announcements
+                if (text.toLowerCase().includes("discontinue") || text.toLowerCase().includes("manhwa")) return; 
+                
+                // If it passes the filter and is long enough, it's our synopsis!
+                if (text.length > 50 && !description) {
+                    description = text;
+                }
             });
             if (!description) description = "No description available.";
             
