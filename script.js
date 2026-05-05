@@ -125,7 +125,7 @@ async function loadLiveHomepage() {
         const liveData = [];
         snapshot.forEach(doc => {
             const data = doc.data();
-            liveData.push({ id: data.id, title: data.title, thumbnail: data.image, latestChapter: data.latestChapter });
+            liveData.push({ id: data.id, title: data.title, thumbnail: data.image });
         });
         renderGrid(liveData, "Recently Updated", "recentGrid");
     } catch (err) { recentGrid.innerHTML = `<p style='color: red;'>Failed to load database.</p>`; }
@@ -174,12 +174,13 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
     mangaArray.forEach(manga => {
         const card = document.createElement('div');
         card.className = 'card';
-        const safeImageUrl = manga.thumbnail.includes('/api/search') || manga.thumbnail.includes('http') ? manga.thumbnail : `/api/search?proxyImage=${encodeURIComponent(manga.thumbnail)}`;
         
-        // Display the chapter number if we have it (either from DB or from History)
-        const chapterHtml = manga.latestChapter ? `<div style="color: var(--accent); font-size: 0.8rem; font-weight: bold; margin-top: 5px;">Ch. ${manga.latestChapter}</div>` : '';
+        // FIX 1: Safe Image Proxy Bypass Fix
+        const safeImageUrl = manga.thumbnail.includes('/api/search') ? manga.thumbnail : `/api/search?proxyImage=${encodeURIComponent(manga.thumbnail)}`;
         
-        card.innerHTML = `<div class="thumbnail-wrapper"><div class="thumbnail" style="background-image: url('${safeImageUrl}');"></div></div><div class="info"><h3 class="manga-title" title="${manga.title}">${manga.title}</h3>${chapterHtml}</div>`;
+        // FIX 2: Chapter numbers completely removed from the UI card for a cleaner look
+        card.innerHTML = `<div class="thumbnail-wrapper"><div class="thumbnail" style="background-image: url('${safeImageUrl}');"></div></div><div class="info"><h3 class="manga-title" title="${manga.title}">${manga.title}</h3></div>`;
+        
         card.onclick = () => { window.location.href = `details.html?id=${encodeURIComponent(manga.id)}&title=${encodeURIComponent(manga.title)}&thumb=${encodeURIComponent(safeImageUrl)}`; };
         grid.appendChild(card);
     });
@@ -213,6 +214,8 @@ async function loadDetails() {
     try {
         const response = await fetch(`/api/search?mangaId=${encodeURIComponent(mangaId)}`);
         const data = await response.json();
+        
+        // Populate Description and Genres
         if (document.getElementById('det-syn')) document.getElementById('det-syn').innerText = data.details.description;
         if (document.getElementById('det-genre')) document.getElementById('det-genre').innerText = "GENRE: " + data.details.genres;
 
@@ -224,7 +227,6 @@ async function loadDetails() {
             sortedChapters.forEach(chapter => {
                 const btn = document.createElement('div');
                 btn.className = 'ep-btn'; btn.innerText = chapter.title; 
-                // Passed 'thumb' directly to the watch URL so the memory engine can grab it!
                 btn.onclick = () => { window.location.href = `watch.html?chapterId=${encodeURIComponent(chapter.id)}&mangaId=${encodeURIComponent(mangaId)}&title=${encodeURIComponent(title)}&ep=${chapter.chap}&thumb=${encodeURIComponent(thumb)}`; };
                 epList.appendChild(btn);
             });
@@ -258,20 +260,14 @@ async function loadMangaReader() {
         document.getElementById('playingEp').innerText = "Chapter " + ep;
     }
 
-    // ==========================================
-    // NEW: READ HISTORY MEMORY ENGINE
-    // Automatically saves the manga to localStorage when you open a chapter
-    // ==========================================
+    // THE READ HISTORY MEMORY ENGINE
     if (currentMangaId && title) {
         let history = JSON.parse(localStorage.getItem('mangaHistory') || '[]');
         const currentMangaData = { id: currentMangaId, title: title, thumbnail: thumb, latestChapter: ep };
-        // Remove it if it exists so we can bump it to the very front of the list
         history = history.filter(m => m.id !== currentMangaId);
         history.unshift(currentMangaData);
-        // Keep only the 15 most recent to prevent memory lag
         localStorage.setItem('mangaHistory', JSON.stringify(history.slice(0, 15)));
     }
-    // ==========================================
 
     const mangaView = document.getElementById('mangaView');
     mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Loading high-quality pages...</p>";
