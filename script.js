@@ -26,7 +26,6 @@ function showProfile() {
     document.getElementById('profile-view').style.display = 'block';
     document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
     document.getElementById('nav-profile').classList.add('active');
-    
     if(document.querySelector('.sidebar')) document.querySelector('.sidebar').classList.remove('mobile-active');
     loadWishlist();
 }
@@ -45,11 +44,9 @@ if (typeof firebase.auth === 'function') {
                 navProfile.style.display = 'flex';
                 if(document.getElementById('home-view')) navProfile.onclick = (e) => { e.preventDefault(); showProfile(); };
             }
-            
             const params = new URLSearchParams(window.location.search);
             if (params.get('id')) checkWishlistStatus(params.get('id'));
             if (params.get('mangaId') && document.getElementById('wishlist-btn')) checkWishlistStatus(params.get('mangaId'));
-
         } else {
             currentUserUID = null;
             if(navLogin) navLogin.style.display = 'flex';
@@ -59,7 +56,7 @@ if (typeof firebase.auth === 'function') {
     });
 }
 
-// --- BULLETPROOF WISHLIST ENGINE ---
+// --- WISHLIST ENGINE ---
 async function toggleWishlist(mangaId, title, thumb) {
     if (!currentUserUID) return alert("You must be logged in to save to your Wishlist!");
     try {
@@ -67,15 +64,12 @@ async function toggleWishlist(mangaId, title, thumb) {
         const docRef = db.collection('users').doc(currentUserUID).collection('wishlist').doc(safeDocId);
         const doc = await docRef.get();
         const btn = document.getElementById('wishlist-btn');
-        
         if (doc.exists) {
             await docRef.delete();
             if(btn) btn.innerHTML = '<i class="far fa-bookmark"></i> Add to Wishlist';
-            alert("Removed from Wishlist");
         } else {
             await docRef.set({ id: mangaId, title: title, thumbnail: thumb, addedAt: new Date() });
             if(btn) btn.innerHTML = '<i class="fas fa-bookmark"></i> Saved to Wishlist';
-            alert("Saved to Wishlist!");
         }
     } catch (error) { alert("Wishlist Error: " + error.message); }
 }
@@ -85,11 +79,9 @@ async function loadWishlist() {
     const grid = document.getElementById('wishlistGrid');
     if(!grid) return;
     grid.innerHTML = "<p style='color: gray;'>Loading your manga...</p>";
-    
     try {
         const snapshot = await db.collection('users').doc(currentUserUID).collection('wishlist').orderBy('addedAt', 'desc').get();
         if (snapshot.empty) return grid.innerHTML = "<p style='color: gray;'>Your wishlist is empty.</p>";
-        
         const results = [];
         snapshot.forEach(doc => results.push(doc.data()));
         renderGrid(results, "My Wishlist", "wishlistGrid");
@@ -103,49 +95,48 @@ async function checkWishlistStatus(mangaId) {
         const doc = await db.collection('users').doc(currentUserUID).collection('wishlist').doc(safeDocId).get();
         const btn = document.getElementById('wishlist-btn');
         if (doc.exists && btn) {
-            btn.innerHTML = '<i class="fas fa-bookmark"></i>';
-            if (btn.innerText.includes('Add')) btn.innerHTML = '<i class="fas fa-bookmark"></i> Saved to Wishlist';
+            btn.innerHTML = '<i class="fas fa-bookmark"></i> Saved to Wishlist';
         }
     } catch(e) { console.error(e); }
 }
 
-// --- HOMEPAGE (LIVE SYNC) & SEARCH ---
+// --- HOMEPAGE & SEARCH ---
 function scrollCarousel(id, amount) { document.getElementById(id).scrollBy({ left: amount, behavior: 'smooth' }); }
 
-// NEW: Fetches the live scraped data DIRECTLY from Firebase
 async function loadLiveHomepage() {
     const recentGrid = document.getElementById('recentGrid');
-    if (!recentGrid) return;
+    const topRatedGrid = document.getElementById('topRatedGrid');
+    const historyGrid = document.getElementById('historyGrid');
+    const historySection = document.getElementById('history-section');
     
-    recentGrid.innerHTML = "<p style='color: var(--accent); padding-left: 20px;'>Syncing live database...</p>";
+    // 1. THE READ HISTORY (Loads instantly from LocalStorage)
+    if (historyGrid && historySection) {
+        const history = JSON.parse(localStorage.getItem('mangaHistory') || '[]');
+        if (history.length > 0) {
+            historySection.style.display = 'block';
+            renderGrid(history, "Continue Reading", "historyGrid");
+        }
+    }
     
-    // Clear the old hardcoded sections for now
-    const topRated = document.getElementById('topRatedGrid');
-    const recommended = document.getElementById('recommendedGrid');
-    if(topRated) topRated.closest('.content-section').style.display = 'none';
-    if(recommended) recommended.closest('.content-section').style.display = 'none';
-    
+    // 2. RECENT UPDATES (From your Robot's Firebase Database)
+    if (recentGrid) recentGrid.innerHTML = "<p style='color: var(--accent); padding-left: 20px;'>Syncing live database...</p>";
     try {
-        // Query the new 'mangas' collection created by your robot!
         const snapshot = await db.collection('mangas').orderBy('updatedAt', 'desc').limit(20).get();
-        
         const liveData = [];
         snapshot.forEach(doc => {
             const data = doc.data();
-            liveData.push({
-                id: data.id,
-                title: data.title,
-                thumbnail: data.image, // Map your new database field to the old one
-                latestChapter: data.latestChapter // Pass the chapter down!
-            });
+            liveData.push({ id: data.id, title: data.title, thumbnail: data.image, latestChapter: data.latestChapter });
         });
-        
         renderGrid(liveData, "Recently Updated", "recentGrid");
-        
-    } catch (err) {
-        console.error("Live fetch failed", err);
-        recentGrid.innerHTML = `<p style='color: red;'>Failed to load database. Check Firebase rules.</p>`;
-    }
+    } catch (err) { recentGrid.innerHTML = `<p style='color: red;'>Failed to load database.</p>`; }
+
+    // 3. TOP RATED MASTERPIECES (Using our new API backdoor!)
+    if (topRatedGrid) topRatedGrid.innerHTML = "<p style='color: gray; padding-left: 20px;'>Loading Masterpieces...</p>";
+    try {
+        const response = await fetch('/api/search?q=trending');
+        const trendingData = await response.json();
+        renderGrid(trendingData, "Top Rated Masterpieces", "topRatedGrid");
+    } catch (err) { topRatedGrid.innerHTML = `<p style='color: red;'>Failed to load popular manga.</p>`; }
 }
 
 async function searchAnimeAPI() { 
@@ -167,7 +158,6 @@ async function searchAnimeAPI() {
     } catch (error) { document.getElementById('searchGrid').innerHTML = `<p style='color: #ff4757;'>No manga found.</p>`; }
 }
 
-// FIXED: Bulletproof Grid Renderer with Chapter Support
 function renderGrid(mangaArray, sectionTitle, targetID) {
     const grid = document.getElementById(targetID);
     if(!grid) return;
@@ -175,22 +165,18 @@ function renderGrid(mangaArray, sectionTitle, targetID) {
     const section = grid.closest('.content-section');
     if (section) {
         const header = section.querySelector('h2');
-        if (header) header.innerText = sectionTitle;
+        if (header && !header.innerHTML.includes('history')) header.innerText = sectionTitle;
     }
 
     grid.innerHTML = ""; 
-
-    if (!mangaArray || mangaArray.length === 0) {
-        grid.innerHTML = "<p style='color: gray; padding-left: 20px;'>No manga available.</p>";
-        return;
-    }
+    if (!mangaArray || mangaArray.length === 0) return grid.innerHTML = "<p style='color: gray; padding-left: 20px;'>No manga available.</p>";
 
     mangaArray.forEach(manga => {
         const card = document.createElement('div');
         card.className = 'card';
-        const safeImageUrl = manga.thumbnail.includes('/api/search') ? manga.thumbnail : `/api/search?proxyImage=${encodeURIComponent(manga.thumbnail)}`;
+        const safeImageUrl = manga.thumbnail.includes('/api/search') || manga.thumbnail.includes('http') ? manga.thumbnail : `/api/search?proxyImage=${encodeURIComponent(manga.thumbnail)}`;
         
-        // Add chapter info if it exists
+        // Display the chapter number if we have it (either from DB or from History)
         const chapterHtml = manga.latestChapter ? `<div style="color: var(--accent); font-size: 0.8rem; font-weight: bold; margin-top: 5px;">Ch. ${manga.latestChapter}</div>` : '';
         
         card.innerHTML = `<div class="thumbnail-wrapper"><div class="thumbnail" style="background-image: url('${safeImageUrl}');"></div></div><div class="info"><h3 class="manga-title" title="${manga.title}">${manga.title}</h3>${chapterHtml}</div>`;
@@ -206,10 +192,7 @@ async function loadDetails() {
     const title = params.get('title');
     const thumb = params.get('thumb');
     
-    if(!mangaId || mangaId === "null") {
-        if (document.getElementById('det-title')) document.getElementById('det-title').innerText = "Error: Manga Not Found";
-        return;
-    }
+    if(!mangaId || mangaId === "null") return;
 
     if (document.getElementById('det-title')) document.getElementById('det-title').innerText = title;
     if (document.getElementById('det-thumb')) document.getElementById('det-thumb').src = thumb;
@@ -241,17 +224,15 @@ async function loadDetails() {
             sortedChapters.forEach(chapter => {
                 const btn = document.createElement('div');
                 btn.className = 'ep-btn'; btn.innerText = chapter.title; 
-                btn.onclick = () => { window.location.href = `watch.html?chapterId=${encodeURIComponent(chapter.id)}&mangaId=${encodeURIComponent(mangaId)}&title=${encodeURIComponent(title)}&ep=${chapter.chap}`; };
+                // Passed 'thumb' directly to the watch URL so the memory engine can grab it!
+                btn.onclick = () => { window.location.href = `watch.html?chapterId=${encodeURIComponent(chapter.id)}&mangaId=${encodeURIComponent(mangaId)}&title=${encodeURIComponent(title)}&ep=${chapter.chap}&thumb=${encodeURIComponent(thumb)}`; };
                 epList.appendChild(btn);
             });
         }
     } catch (err) { epList.innerHTML = `<p style='color: red;'>Error loading chapters.</p>`; }
 }
 
-
-// ==========================================
-// THE NATIVE APP READER STATE MACHINE
-// ==========================================
+// --- READER & MEMORY STATE ---
 let readerImages = [];
 let currentReadMode = 'single'; 
 let currentSinglePage = 0;
@@ -259,7 +240,6 @@ let chapterListCache = [];
 let currentChapterId = "";
 let currentMangaId = "";
 
-// Touch Swap Variables
 let touchstartX = 0;
 let touchendX = 0;
 
@@ -269,6 +249,7 @@ async function loadMangaReader() {
     currentMangaId = params.get('mangaId');
     const title = params.get('title');
     const ep = params.get('ep');
+    const thumb = params.get('thumb') || "";
     
     if (!currentChapterId) { window.location.href = 'index.html'; return; }
     
@@ -277,16 +258,30 @@ async function loadMangaReader() {
         document.getElementById('playingEp').innerText = "Chapter " + ep;
     }
 
+    // ==========================================
+    // NEW: READ HISTORY MEMORY ENGINE
+    // Automatically saves the manga to localStorage when you open a chapter
+    // ==========================================
+    if (currentMangaId && title) {
+        let history = JSON.parse(localStorage.getItem('mangaHistory') || '[]');
+        const currentMangaData = { id: currentMangaId, title: title, thumbnail: thumb, latestChapter: ep };
+        // Remove it if it exists so we can bump it to the very front of the list
+        history = history.filter(m => m.id !== currentMangaId);
+        history.unshift(currentMangaData);
+        // Keep only the 15 most recent to prevent memory lag
+        localStorage.setItem('mangaHistory', JSON.stringify(history.slice(0, 15)));
+    }
+    // ==========================================
+
     const mangaView = document.getElementById('mangaView');
     mangaView.innerHTML = "<p style='color:white; text-align:center; padding:50px;'>Loading high-quality pages...</p>";
 
-    // Initialize Swipe Listener for Mobile
     mangaView.addEventListener('touchstart', e => { touchstartX = e.changedTouches[0].screenX; }, {passive: true});
     mangaView.addEventListener('touchend', e => {
         touchendX = e.changedTouches[0].screenX;
         if (currentReadMode === 'single') {
-            if (touchendX < touchstartX - 50) nextPage(); // Swipe Left
-            if (touchendX > touchstartX + 50) prevPage(); // Swipe Right
+            if (touchendX < touchstartX - 50) nextPage(); 
+            if (touchendX > touchstartX + 50) prevPage(); 
         }
     }, {passive: true});
 
@@ -318,46 +313,33 @@ function renderReader() {
             img.src = `/api/search?proxyImage=${encodeURIComponent(imgUrl)}`; 
             img.style.cssText = "width:100%; max-width:900px; display:block; margin:0 auto; background:#000;";
             img.loading = "lazy";
-            img.onclick = toggleReaderUI; // Tap to hide toolbars
+            img.onclick = toggleReaderUI; 
             mangaView.appendChild(img);
         });
     } else if (currentReadMode === 'single') {
         document.getElementById('pageSlider').disabled = false;
-        
         const img = document.createElement('img');
         img.src = `/api/search?proxyImage=${encodeURIComponent(readerImages[currentSinglePage])}`; 
         img.style.cssText = "width:100%; height:100vh; object-fit:contain; background:#000;";
         
-        // --- SMART CLICK ZONES FOR PC & MOBILE ---
         img.onclick = (e) => {
             const screenWidth = window.innerWidth;
             const clickX = e.clientX;
-            
-            if (clickX < screenWidth * 0.3) {
-                prevPage(); 
-            } else if (clickX > screenWidth * 0.7) {
-                nextPage(); 
-            } else {
-                toggleReaderUI(); 
-            }
+            if (clickX < screenWidth * 0.3) prevPage(); 
+            else if (clickX > screenWidth * 0.7) nextPage(); 
+            else toggleReaderUI(); 
         };
-        
         mangaView.appendChild(img);
         updateSlider();
         window.scrollTo(0,0);
     }
 }
 
-// --- DESKTOP KEYBOARD CONTROLS ---
 document.addEventListener('keydown', (e) => {
     if (!document.getElementById('mangaView') || currentReadMode !== 'single') return;
-    
     if (e.key === 'ArrowRight' || e.key === 'd') nextPage();
     if (e.key === 'ArrowLeft' || e.key === 'a') prevPage();
-    if (e.key === ' ') { 
-        e.preventDefault(); 
-        toggleReaderUI(); // Spacebar toggles UI
-    }
+    if (e.key === ' ') { e.preventDefault(); toggleReaderUI(); }
 });
 
 function updateSlider() {
@@ -370,18 +352,13 @@ function updateSlider() {
     }
 }
 
-function jumpToPage(val) {
-    currentSinglePage = parseInt(val);
-    renderReader();
-}
-
+function jumpToPage(val) { currentSinglePage = parseInt(val); renderReader(); }
 function setReaderMode(mode) {
     currentReadMode = mode;
     document.getElementById('btn-webtoon').classList.toggle('active-mode', mode === 'webtoon');
     document.getElementById('btn-single').classList.toggle('active-mode', mode === 'single');
     renderReader();
 }
-
 function toggleReaderUI() { document.body.classList.toggle('ui-hidden'); }
 function prevPage() { if (currentSinglePage > 0) { currentSinglePage--; renderReader(); } }
 function nextPage() { 
@@ -403,29 +380,28 @@ function changeChapter(direction) {
     const targetChapter = chapterListCache[currentIndex + direction];
     if (targetChapter) {
         const title = new URLSearchParams(window.location.search).get('title');
-        window.location.href = `watch.html?chapterId=${encodeURIComponent(targetChapter.id)}&mangaId=${encodeURIComponent(currentMangaId)}&title=${encodeURIComponent(title)}&ep=${targetChapter.chap}`;
+        const thumb = new URLSearchParams(window.location.search).get('thumb');
+        window.location.href = `watch.html?chapterId=${encodeURIComponent(targetChapter.id)}&mangaId=${encodeURIComponent(currentMangaId)}&title=${encodeURIComponent(title)}&ep=${targetChapter.chap}&thumb=${encodeURIComponent(thumb)}`;
     }
 }
 
 function toggleReaderWishlist() {
     const title = new URLSearchParams(window.location.search).get('title');
-    toggleWishlist(currentMangaId, title, "");
+    const thumb = new URLSearchParams(window.location.search).get('thumb');
+    toggleWishlist(currentMangaId, title, thumb);
 }
 
 // --- INIT APP ---
 window.onload = function() {
     const urlParams = new URLSearchParams(window.location.search);
-    
     if (urlParams.get('search') && document.getElementById('home-view')) {
         document.getElementById('userSearch').value = urlParams.get('search');
         searchAnimeAPI();
     } else if (urlParams.get('view') === 'wishlist' && document.getElementById('home-view')) {
         setTimeout(showProfile, 500); 
     } else if (document.getElementById('recentGrid')) {
-        // Trigger the Live Synchronized Fetcher
         loadLiveHomepage();
     }
-
     if (document.getElementById('det-title') || window.location.pathname.includes('details.html')) loadDetails();
     if (new URLSearchParams(window.location.search).get('chapterId')) loadMangaReader();
 };
