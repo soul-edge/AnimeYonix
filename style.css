@@ -13,7 +13,7 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
 }
 
 .sidebar { 
-    width: 250px; 
+    width: 260px; /* Made slightly wider to fit the text button comfortably */
     background-image: linear-gradient(180deg, rgba(18, 18, 18, 0.95) 0%, rgba(18, 18, 18, 0.7) 100%), 
                       url('https://mfiles.alphacoders.com/101/thumb-1920-1012768.png');
     background-size: cover;
@@ -49,28 +49,28 @@ body { background: radial-gradient(circle at top center, #1a1a1a 0%, var(--bg-da
 
 .logo-container .accent { color: var(--accent); text-shadow: 0 0 15px rgba(255, 103, 64, 0.6); }
 
-/* --- PREMIUM ARROW CLOSE BUTTON --- */
+/* --- TEXT-BASED CLOSE BUTTON --- */
 .close-btn {
-    background: rgba(255, 255, 255, 0.05); /* Subtle glass circle */
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: var(--text-main);
-    font-size: 1rem;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%; /* Makes it a perfect circle */
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.95rem; 
+    font-weight: 500;
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 6px; 
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     z-index: 1002;
 }
+
+.close-btn i {
+    font-size: 0.85rem; 
+}
+
 .close-btn:hover {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
-    transform: translateX(-4px); /* Slides slightly to the left to hint at closing */
-    box-shadow: 0 0 10px rgba(255, 103, 64, 0.5);
+    color: var(--accent); 
+    transform: translateX(-4px); 
 }
 
 .sidebar-nav { padding: 20px 0; display: flex; flex-direction: column; }
