@@ -38,9 +38,13 @@ module.exports = async function (req, res) {
         else if (q) {
             let fetchUrl = `https://mangapill.com/search?q=${encodeURIComponent(q)}`;
             
-            // THE MASTERPIECES FIX: Using a search filter that is guaranteed to return top-tier manga
-            if (q === 'trending') {
-                fetchUrl = `https://mangapill.com/search?q=one&type=manga&status=`; 
+            // THE RECENT FIX: Scrape MangaPill's actual live homepage for real updates
+            if (q === 'recent') {
+                fetchUrl = `https://mangapill.com/`; 
+            }
+            // THE MASTERPIECES FIX: Search with an empty string to get their default popular catalog (No more "One" spam!)
+            else if (q === 'trending') {
+                fetchUrl = `https://mangapill.com/search?q=`; 
             }
 
             const response = await fetch(fetchUrl, { headers });
@@ -48,6 +52,7 @@ module.exports = async function (req, res) {
             const $ = cheerio.load(html);
             const results = [];
 
+            // This Cheerio selector safely grabs manga covers from BOTH the homepage and search pages
             $('a[href^="/manga/"]').each((index, element) => {
                 const id = $(element).attr('href');
                 const image = $(element).find('img').attr('data-src') || $(element).find('img').attr('src');
@@ -64,7 +69,8 @@ module.exports = async function (req, res) {
             });
 
             if (results.length === 0) throw new Error("No manga found.");
-            return res.status(200).json(q === 'trending' ? results.slice(0, 15) : results);
+            // Return top 15 results to keep the grid clean
+            return res.status(200).json(results.slice(0, 15));
         } 
 
         else if (mangaId) {
