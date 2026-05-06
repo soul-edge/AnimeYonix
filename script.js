@@ -100,12 +100,12 @@ async function checkWishlistStatus(mangaId) {
 function scrollCarousel(id, amount) { document.getElementById(id).scrollBy({ left: amount, behavior: 'smooth' }); }
 
 async function loadLiveHomepage() {
+    const popularGrid = document.getElementById('popularGrid');
     const recentGrid = document.getElementById('recentGrid');
-    const topRatedGrid = document.getElementById('topRatedGrid');
     const historyGrid = document.getElementById('historyGrid');
     const historySection = document.getElementById('history-section');
     
-    // 1. CONTINUE READING (Read History)
+    // 1. CONTINUE READING
     const history = JSON.parse(localStorage.getItem('mangaHistory') || '[]');
     if (history.length > 0 && historyGrid && historySection) {
         historySection.style.display = 'block';
@@ -114,21 +114,21 @@ async function loadLiveHomepage() {
         historySection.style.display = 'none';
     }
     
-    // 2. RECENTLY UPDATED (Live from API instead of Firebase)
-    if (recentGrid) recentGrid.innerHTML = "<p style='color: var(--accent); padding-left: 20px;'>Loading latest chapters...</p>";
-    try {
-        const response = await fetch('/api/search?q=recent');
-        const recentData = await response.json();
-        renderGrid(recentData, "Recently Updated", "recentGrid");
-    } catch (err) { if (recentGrid) recentGrid.innerHTML = `<p style='color: red;'>Failed to load recent updates.</p>`; }
-
-    // 3. TOP RATED MASTERPIECES (Live API Search)
-    if (topRatedGrid) topRatedGrid.innerHTML = "<p style='color: gray; padding-left: 20px;'>Loading Masterpieces...</p>";
+    // 2. POPULAR MANGAS (Top Carousel)
+    if (popularGrid) popularGrid.innerHTML = "<p style='color: var(--accent); padding-left: 20px;'>Loading popular manga...</p>";
     try {
         const response = await fetch('/api/search?q=trending');
         const trendingData = await response.json();
-        renderGrid(trendingData, "Top Rated Masterpieces", "topRatedGrid");
-    } catch (err) { if (topRatedGrid) topRatedGrid.innerHTML = `<p style='color: red;'>Failed to load popular manga.</p>`; }
+        renderGrid(trendingData, "Popular Mangas", "popularGrid");
+    } catch (err) { if (popularGrid) popularGrid.innerHTML = `<p style='color: red;'>Failed to load popular manga.</p>`; }
+
+    // 3. RECENT CHAPTERS (Bottom Grid)
+    if (recentGrid) recentGrid.innerHTML = "<p style='color: gray; padding-left: 20px;'>Loading latest chapters...</p>";
+    try {
+        const response = await fetch('/api/search?q=recent');
+        const recentData = await response.json();
+        renderGrid(recentData, "Recent Chapters", "recentGrid");
+    } catch (err) { if (recentGrid) recentGrid.innerHTML = `<p style='color: red;'>Failed to load recent updates.</p>`; }
 }
 
 function renderGrid(mangaArray, sectionTitle, targetID) {
@@ -354,7 +354,7 @@ window.onload = function() {
     if (urlParams.get('search') && document.getElementById('home-view')) {
         document.getElementById('userSearch').value = urlParams.get('search');
         searchAnimeAPI();
-    } else if (document.getElementById('recentGrid')) {
+    } else if (document.getElementById('popularGrid')) {
         loadLiveHomepage();
     }
     if (window.location.pathname.includes('details.html')) loadDetails();
