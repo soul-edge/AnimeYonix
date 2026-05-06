@@ -22,6 +22,7 @@ module.exports = async function (req, res) {
     };
 
     try {
+        // --- 1. IMAGE PROXY ---
         if (proxyImage) {
             let targetUrl = decodeURIComponent(proxyImage);
             if (targetUrl.startsWith('//')) targetUrl = 'https:' + targetUrl;
@@ -35,16 +36,20 @@ module.exports = async function (req, res) {
             return res.status(200).send(buffer);
         }
 
+        // --- 2. SEARCH & HOMEPAGE GRIDS ---
         else if (q) {
             let fetchUrl = `https://mangapill.com/search?q=${encodeURIComponent(q)}`;
             
-            // THE RECENT FIX: Scrape MangaPill's actual live homepage for real updates
+            // RECENT UPDATES: Scrapes MangaPill's live homepage
             if (q === 'recent') {
                 fetchUrl = `https://mangapill.com/`; 
             }
-            // THE MASTERPIECES FIX: Search with an empty string to get their default popular catalog (No more "One" spam!)
+            
+            // MASTERPIECES: Randomly selects a power-keyword for diverse, rotating manga grids
             else if (q === 'trending') {
-                fetchUrl = `https://mangapill.com/search?q=`; 
+                const powerWords = ["hero", "dragon", "god", "soul", "king", "black", "blood", "death", "moon", "star", "night", "sword", "magic", "demon"];
+                const randomWord = powerWords[Math.floor(Math.random() * powerWords.length)];
+                fetchUrl = `https://mangapill.com/search?q=${randomWord}`; 
             }
 
             const response = await fetch(fetchUrl, { headers });
@@ -52,7 +57,6 @@ module.exports = async function (req, res) {
             const $ = cheerio.load(html);
             const results = [];
 
-            // This Cheerio selector safely grabs manga covers from BOTH the homepage and search pages
             $('a[href^="/manga/"]').each((index, element) => {
                 const id = $(element).attr('href');
                 const image = $(element).find('img').attr('data-src') || $(element).find('img').attr('src');
@@ -69,10 +73,22 @@ module.exports = async function (req, res) {
             });
 
             if (results.length === 0) throw new Error("No manga found.");
-            // Return top 15 results to keep the grid clean
-            return res.status(200).json(results.slice(0, 15));
+
+            // --- THE FIX: Smart Slicing ---
+            let finalData = results;
+            
+            if (q === 'recent') {
+                // Skip the top 15 "Featured" manga on their homepage to reach the actual "Recent" grid
+                finalData = results.slice(15, 35); 
+            } else if (q === 'trending') {
+                // Keep just the top 15 for the random Masterpiece search
+                finalData = results.slice(0, 15);
+            }
+
+            return res.status(200).json(finalData);
         } 
 
+        // --- 3. DETAILS EXTRACTION ---
         else if (mangaId) {
             const response = await fetch(`https://mangapill.com${decodeURIComponent(mangaId)}`, { headers });
             const html = await response.text();
@@ -126,6 +142,7 @@ module.exports = async function (req, res) {
             });
         }
         
+        // --- 4. READER IMAGES ---
         else if (chapterId) {
             const response = await fetch(`https://mangapill.com${decodeURIComponent(chapterId)}`, { headers });
             const html = await response.text();
