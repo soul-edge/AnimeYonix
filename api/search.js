@@ -40,7 +40,6 @@ module.exports = async function (req, res) {
         else if (q) {
             let fetchUrl = `https://mangapill.com/search?q=${encodeURIComponent(q)}`;
             
-            // Fetch the homepage directly for BOTH Recent and Trending!
             if (q === 'recent' || q === 'trending') {
                 fetchUrl = `https://mangapill.com/`; 
             }
@@ -52,14 +51,17 @@ module.exports = async function (req, res) {
 
             $('a[href^="/manga/"]').each((index, element) => {
                 const id = $(element).attr('href');
-                let title = $(element).text().trim() || $(element).find('img').attr('alt') || '';
-                title = title.replace(/\s+/g, ' ').trim();
+                
+                // --- THE TITLE DUPLICATION FIX ---
+                // 1. Grab the clean title from the image 'alt' tag first
+                let title = $(element).find('img').attr('alt') || $(element).text().trim() || '';
+                title = title.replace(/\s+/g, ' ').trim(); 
+                
+                // 2. The Magic Regex: If the title repeats (e.g., "Berserk Berserk"), cut it down to "Berserk"
+                title = title.replace(/^(.+?)(?:\s+\1)+$/i, '$1');
 
-                // Look for the image inside the link (Standard for Search/Featured)
                 let image = $(element).find('img').attr('data-src') || $(element).find('img').attr('src');
                 
-                // Indestructible Fallback for "Recent Updates" Grid
-                // If the image isn't inside the title link, climb the DOM tree to find it in the parent card!
                 if (!image) {
                     let currentParent = $(element).parent();
                     for (let i = 0; i < 4; i++) {
@@ -72,7 +74,6 @@ module.exports = async function (req, res) {
                     }
                 }
 
-                // Push to results if valid
                 if (id && image && title && title.length > 1 && !image.includes('avatar')) {
                     if (!results.find(m => m.id === id)) {
                         results.push({ id, title, thumbnail: image });
@@ -82,16 +83,12 @@ module.exports = async function (req, res) {
 
             if (results.length === 0) throw new Error("No manga found.");
 
-            // --- THE PERFECT SPLIT ---
             let finalData = results;
             if (q === 'recent') {
-                // Skip the top 15 "Featured" manga on their homepage to grab the actual "Recent Chapters" grid below it!
                 finalData = results.length > 15 ? results.slice(15, 35) : results;
             } else if (q === 'trending') {
-                // Grab ONLY the top 15 "Featured" manga for the Masterpieces row!
                 finalData = results.slice(0, 15);
             } else {
-                // Standard search results limit
                 finalData = results.slice(0, 20);
             }
 
@@ -129,6 +126,7 @@ module.exports = async function (req, res) {
 
             let mangaTitle = $('h1').first().text().trim();
             mangaTitle = mangaTitle.replace(/\s+/g, ' ').trim(); 
+            // Apply the deduplication magic to the Details page title too!
             mangaTitle = mangaTitle.replace(/^(.+?)(?:\s+\1)+$/i, '$1');
 
             const mangaImage = $('div.container img').first().attr('data-src') || $('img').first().attr('src');
