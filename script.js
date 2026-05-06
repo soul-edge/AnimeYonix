@@ -105,7 +105,7 @@ async function loadLiveHomepage() {
     const historyGrid = document.getElementById('historyGrid');
     const historySection = document.getElementById('history-section');
     
-    // 1. HISTORY (Read History)
+    // 1. CONTINUE READING (Read History)
     const history = JSON.parse(localStorage.getItem('mangaHistory') || '[]');
     if (history.length > 0 && historyGrid && historySection) {
         historySection.style.display = 'block';
@@ -114,17 +114,13 @@ async function loadLiveHomepage() {
         historySection.style.display = 'none';
     }
     
-    // 2. RECENTLY UPDATED (Firestore)
-    if (recentGrid) recentGrid.innerHTML = "<p style='color: var(--accent); padding-left: 20px;'>Syncing live database...</p>";
+    // 2. RECENTLY UPDATED (Live from API instead of Firebase)
+    if (recentGrid) recentGrid.innerHTML = "<p style='color: var(--accent); padding-left: 20px;'>Loading latest chapters...</p>";
     try {
-        const snapshot = await db.collection('mangas').orderBy('updatedAt', 'desc').limit(20).get();
-        const liveData = [];
-        snapshot.forEach(doc => {
-            const data = doc.data();
-            liveData.push({ id: data.id, title: data.title, thumbnail: data.image });
-        });
-        renderGrid(liveData, "Recently Updated", "recentGrid");
-    } catch (err) { if (recentGrid) recentGrid.innerHTML = `<p style='color: red;'>Failed to load database.</p>`; }
+        const response = await fetch('/api/search?q=recent');
+        const recentData = await response.json();
+        renderGrid(recentData, "Recently Updated", "recentGrid");
+    } catch (err) { if (recentGrid) recentGrid.innerHTML = `<p style='color: red;'>Failed to load recent updates.</p>`; }
 
     // 3. TOP RATED MASTERPIECES (Live API Search)
     if (topRatedGrid) topRatedGrid.innerHTML = "<p style='color: gray; padding-left: 20px;'>Loading Masterpieces...</p>";
