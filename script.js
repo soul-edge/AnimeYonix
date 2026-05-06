@@ -196,13 +196,25 @@ async function loadDetails() {
         const data = await response.json();
         if (document.getElementById('det-syn')) document.getElementById('det-syn').innerText = data.details.description;
         if (document.getElementById('det-genre')) document.getElementById('det-genre').innerText = "GENRE: " + data.details.genres;
+        
         const chapters = data.chapters;
         if (chapters.length > 0) {
             epList.innerHTML = ""; epList.className = "ep-list"; 
             const sortedChapters = chapters.sort((a, b) => a.chap - b.chap);
+            
+            // Get the list of chapters the user has already read
+            const readChapters = JSON.parse(localStorage.getItem('readChapters') || '[]');
+
             sortedChapters.forEach(chapter => {
                 const btn = document.createElement('div');
-                btn.className = 'ep-btn'; btn.innerText = chapter.title; 
+                btn.className = 'ep-btn'; 
+                btn.innerText = chapter.title; 
+                
+                // Dim the button if the user has already read this chapter
+                if (readChapters.includes(chapter.id)) {
+                    btn.classList.add('read');
+                }
+
                 btn.onclick = () => { window.location.href = `watch.html?chapterId=${encodeURIComponent(chapter.id)}&mangaId=${encodeURIComponent(mangaId)}&title=${encodeURIComponent(title)}&ep=${chapter.chap}&thumb=${encodeURIComponent(thumb)}`; };
                 epList.appendChild(btn);
             });
@@ -231,6 +243,13 @@ async function loadMangaReader() {
     if (document.getElementById('playingTitle')) {
         document.getElementById('playingTitle').innerText = title;
         document.getElementById('playingEp').innerText = "Chapter " + ep;
+    }
+
+    // --- MARK CHAPTER AS READ MEMORY ---
+    let readChapters = JSON.parse(localStorage.getItem('readChapters') || '[]');
+    if (!readChapters.includes(currentChapterId)) {
+        readChapters.push(currentChapterId);
+        localStorage.setItem('readChapters', JSON.stringify(readChapters));
     }
 
     // --- READ HISTORY ENGINE ---
