@@ -40,16 +40,9 @@ module.exports = async function (req, res) {
         else if (q) {
             let fetchUrl = `https://mangapill.com/search?q=${encodeURIComponent(q)}`;
             
-            // RECENT UPDATES: Scrapes MangaPill's live homepage
-            if (q === 'recent') {
+            // Fetch the homepage directly for BOTH Recent and Trending!
+            if (q === 'recent' || q === 'trending') {
                 fetchUrl = `https://mangapill.com/`; 
-            }
-            
-            // MASTERPIECES: Randomly selects a power-keyword for diverse, rotating manga grids
-            else if (q === 'trending') {
-                const powerWords = ["hero", "dragon", "god", "soul", "king", "black", "blood", "death", "moon", "star", "night", "sword", "magic", "demon"];
-                const randomWord = powerWords[Math.floor(Math.random() * powerWords.length)];
-                fetchUrl = `https://mangapill.com/search?q=${randomWord}`; 
             }
 
             const response = await fetch(fetchUrl, { headers });
@@ -59,13 +52,28 @@ module.exports = async function (req, res) {
 
             $('a[href^="/manga/"]').each((index, element) => {
                 const id = $(element).attr('href');
-                const image = $(element).find('img').attr('data-src') || $(element).find('img').attr('src');
-                
-                let title = $(element).find('img').attr('alt') || $(element).text().trim();
-                title = title.replace(/\s+/g, ' ').trim(); 
-                title = title.replace(/^(.+?)(?:\s+\1)+$/i, '$1');
+                let title = $(element).text().trim() || $(element).find('img').attr('alt') || '';
+                title = title.replace(/\s+/g, ' ').trim();
 
-                if (id && image && title) {
+                // Look for the image inside the link (Standard for Search/Featured)
+                let image = $(element).find('img').attr('data-src') || $(element).find('img').attr('src');
+                
+                // Indestructible Fallback for "Recent Updates" Grid
+                // If the image isn't inside the title link, climb the DOM tree to find it in the parent card!
+                if (!image) {
+                    let currentParent = $(element).parent();
+                    for (let i = 0; i < 4; i++) {
+                        const foundImg = currentParent.find('img');
+                        if (foundImg.length > 0) {
+                            image = foundImg.attr('data-src') || foundImg.attr('src');
+                            break;
+                        }
+                        currentParent = currentParent.parent();
+                    }
+                }
+
+                // Push to results if valid
+                if (id && image && title && title.length > 1 && !image.includes('avatar')) {
                     if (!results.find(m => m.id === id)) {
                         results.push({ id, title, thumbnail: image });
                     }
@@ -74,15 +82,17 @@ module.exports = async function (req, res) {
 
             if (results.length === 0) throw new Error("No manga found.");
 
-            // --- THE FIX: Smart Slicing ---
+            // --- THE PERFECT SPLIT ---
             let finalData = results;
-            
             if (q === 'recent') {
-                // Skip the top 15 "Featured" manga on their homepage to reach the actual "Recent" grid
-                finalData = results.slice(15, 35); 
+                // Skip the top 15 "Featured" manga on their homepage to grab the actual "Recent Chapters" grid below it!
+                finalData = results.length > 15 ? results.slice(15, 35) : results;
             } else if (q === 'trending') {
-                // Keep just the top 15 for the random Masterpiece search
+                // Grab ONLY the top 15 "Featured" manga for the Masterpieces row!
                 finalData = results.slice(0, 15);
+            } else {
+                // Standard search results limit
+                finalData = results.slice(0, 20);
             }
 
             return res.status(200).json(finalData);
