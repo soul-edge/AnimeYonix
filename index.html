@@ -7,17 +7,16 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script src="https://pl29845787.effectivecpmnetwork.com/22/63/cf/2263cf99b40ab8cedafc748a669987d1.js"></script>
 </head>
 <body>
     <div class="app-container">
-        <!-- THE LEFT SIDEBAR -->
         <aside class="sidebar">
             <div class="logo-container">
-                <!-- JUST THE ARROW, POSITIONED ABOVE THE LOGO -->
                 <button class="close-btn" onclick="document.querySelector('.sidebar').classList.remove('mobile-active')">
                     <i class="fas fa-chevron-left"></i>
                 </button>
@@ -31,7 +30,6 @@
             </nav>
         </aside>
 
-        <!-- THE MAIN CONTENT -->
         <main class="main-content">
             <header class="topbar">
                 <button class="menu-btn" onclick="document.querySelector('.sidebar').classList.toggle('mobile-active')">
@@ -60,7 +58,6 @@
                     </div>
                 </section>
 
-                <!-- TOP ROW: POPULAR MANGAS -->
                 <section class="content-section">
                     <h2>Popular manga</h2>
                     <div class="carousel-container">
@@ -70,7 +67,6 @@
                     </div>
                 </section>
 
-                <!-- BOTTOM ROW: RECENT CHAPTERS -->
                 <section class="content-section">
                     <h2>recent chapters</h2>
                     <div id="recentGrid" class="grid-container"></div>
@@ -84,7 +80,6 @@
         </main>
     </div>
 
-    <!-- Main Logic Script -->
     <script src="script.js"></script>
 </body>
 </html>
