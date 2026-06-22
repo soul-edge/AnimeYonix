@@ -13,10 +13,6 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 let currentUserUID = null; 
 
-// --- CLOUDFLARE PROXY CONFIG ---
-// Replace this with your actual Cloudflare Worker URL when you deploy it
-const CLOUDFLARE_PROXY = "https://your-worker.workers.dev/?img=";
-
 // --- AUTH & PROFILE ---
 function login() {
     const provider = new firebase.auth.GoogleAuthProvider();
@@ -135,37 +131,19 @@ async function loadLiveHomepage() {
     } catch (err) { if (recentGrid) recentGrid.innerHTML = `<p style='color: red;'>Failed to load recent updates.</p>`; }
 }
 
-// --- BULLETPROOF RENDER ENGINE ---
 function renderGrid(mangaArray, sectionTitle, targetID) {
     const grid = document.getElementById(targetID);
-    if (!grid) return;
+    if(!grid) return;
     grid.innerHTML = ""; 
-    
-    if (!mangaArray || !Array.isArray(mangaArray) || mangaArray.length === 0) {
-        grid.innerHTML = "<p style='color: gray; padding-left: 20px;'>No manga found right now.</p>";
-        return;
-    }
+    if (!mangaArray || mangaArray.length === 0) return grid.innerHTML = "<p style='color: gray; padding-left: 20px;'>No manga found.</p>";
 
     mangaArray.forEach(manga => {
-        try {
-            const card = document.createElement('div');
-            card.className = 'card';
-            
-            const thumb = manga.thumbnail || "";
-            const safeImageUrl = (typeof thumb === 'string' && thumb.includes('workers.dev')) 
-                ? thumb 
-                : `${CLOUDFLARE_PROXY}${encodeURIComponent(thumb)}`;
-            
-            card.innerHTML = `<div class="thumbnail-wrapper"><div class="thumbnail" style="background-image: url('${safeImageUrl}');"></div></div><div class="info"><h3 class="manga-title" title="${manga.title || 'Unknown'}">${manga.title || 'Unknown'}</h3></div>`;
-            
-            card.onclick = () => { 
-                window.location.href = `details.html?id=${encodeURIComponent(manga.id || '')}&title=${encodeURIComponent(manga.title || '')}&thumb=${encodeURIComponent(safeImageUrl)}`; 
-            };
-            
-            grid.appendChild(card);
-        } catch (e) {
-            console.error("Error rendering card:", e);
-        }
+        const card = document.createElement('div');
+        card.className = 'card';
+        const safeImageUrl = manga.thumbnail.includes('/api/search') ? manga.thumbnail : `/api/search?proxyImage=${encodeURIComponent(manga.thumbnail)}`;
+        card.innerHTML = `<div class="thumbnail-wrapper"><div class="thumbnail" style="background-image: url('${safeImageUrl}');"></div></div><div class="info"><h3 class="manga-title" title="${manga.title}">${manga.title}</h3></div>`;
+        card.onclick = () => { window.location.href = `details.html?id=${encodeURIComponent(manga.id)}&title=${encodeURIComponent(manga.title)}&thumb=${encodeURIComponent(safeImageUrl)}`; };
+        grid.appendChild(card);
     });
 }
 
@@ -224,6 +202,7 @@ async function loadDetails() {
             epList.innerHTML = ""; epList.className = "ep-list"; 
             const sortedChapters = chapters.sort((a, b) => a.chap - b.chap);
             
+            // Get the list of chapters the user has already read
             const readChapters = JSON.parse(localStorage.getItem('readChapters') || '[]');
 
             sortedChapters.forEach(chapter => {
@@ -231,6 +210,7 @@ async function loadDetails() {
                 btn.className = 'ep-btn'; 
                 btn.innerText = chapter.title; 
                 
+                // Dim the button if the user has already read this chapter
                 if (readChapters.includes(chapter.id)) {
                     btn.classList.add('read');
                 }
@@ -265,12 +245,14 @@ async function loadMangaReader() {
         document.getElementById('playingEp').innerText = "Chapter " + ep;
     }
 
+    // --- MARK CHAPTER AS READ MEMORY ---
     let readChapters = JSON.parse(localStorage.getItem('readChapters') || '[]');
     if (!readChapters.includes(currentChapterId)) {
         readChapters.push(currentChapterId);
         localStorage.setItem('readChapters', JSON.stringify(readChapters));
     }
 
+    // --- READ HISTORY ENGINE ---
     if (currentMangaId && title) {
         let history = JSON.parse(localStorage.getItem('mangaHistory') || '[]');
         const currentMangaData = { id: currentMangaId, title: title, thumbnail: thumb, latestChapter: ep };
@@ -303,13 +285,12 @@ function renderReader() {
     const mangaView = document.getElementById('mangaView');
     if (!mangaView) return;
     mangaView.innerHTML = ""; 
-    
     if (currentReadMode === 'webtoon') {
         const slider = document.getElementById('pageSlider');
         if (slider) slider.disabled = true;
         readerImages.forEach(imgUrl => {
             const img = document.createElement('img');
-            img.src = `${CLOUDFLARE_PROXY}${encodeURIComponent(imgUrl)}`; 
+            img.src = `/api/search?proxyImage=${encodeURIComponent(imgUrl)}`; 
             img.style.cssText = "width:100%; max-width:900px; display:block; margin:0 auto; background:#000;";
             img.loading = "lazy";
             img.onclick = toggleReaderUI; 
@@ -319,7 +300,7 @@ function renderReader() {
         const slider = document.getElementById('pageSlider');
         if (slider) slider.disabled = false;
         const img = document.createElement('img');
-        img.src = `${CLOUDFLARE_PROXY}${encodeURIComponent(readerImages[currentSinglePage])}`; 
+        img.src = `/api/search?proxyImage=${encodeURIComponent(readerImages[currentSinglePage])}`; 
         img.style.cssText = "width:100%; height:100vh; object-fit:contain; background:#000;";
         img.onclick = (e) => {
             const clickX = e.clientX;
@@ -343,7 +324,6 @@ function updateSlider() {
     }
 }
 
-// --- HELPER FUNCTIONS ---
 function jumpToPage(val) { currentSinglePage = parseInt(val); renderReader(); }
 function setReaderMode(mode) {
     currentReadMode = mode;
@@ -358,3 +338,44 @@ function prevPage() { if (currentSinglePage > 0) { currentSinglePage--; renderRe
 function nextPage() { if (currentSinglePage < readerImages.length - 1) { currentSinglePage++; renderReader(); } }
 
 function updateHUDNavigation() {
+    const currentIndex = chapterListCache.findIndex(c => c.id === currentChapterId);
+    const btnPrev = document.getElementById('btn-prev-chap');
+    const btnNext = document.getElementById('btn-next-chap');
+    if(btnPrev) btnPrev.style.opacity = currentIndex <= 0 ? '0.3' : '1';
+    if(btnNext) btnNext.style.opacity = (currentIndex === -1 || currentIndex >= chapterListCache.length - 1) ? '0.3' : '1';
+}
+
+function changeChapter(direction) {
+    const currentIndex = chapterListCache.findIndex(c => c.id === currentChapterId);
+    if (currentIndex === -1) return;
+    const targetChapter = chapterListCache[currentIndex + direction];
+    if (targetChapter) {
+        const title = new URLSearchParams(window.location.search).get('title');
+        const thumb = new URLSearchParams(window.location.search).get('thumb');
+        window.location.href = `watch.html?chapterId=${encodeURIComponent(targetChapter.id)}&mangaId=${encodeURIComponent(currentMangaId)}&title=${encodeURIComponent(title)}&ep=${targetChapter.chap}&thumb=${encodeURIComponent(thumb)}`;
+    }
+}
+
+// --- SIDEBAR AUTO-CLOSE LOGIC ---
+document.addEventListener('click', (e) => {
+    const sidebar = document.querySelector('.sidebar');
+    const menuBtn = document.querySelector('.menu-btn');
+    if (sidebar && sidebar.classList.contains('mobile-active')) {
+        if (!sidebar.contains(e.target) && (!menuBtn || !menuBtn.contains(e.target))) {
+            sidebar.classList.remove('mobile-active'); 
+        }
+    }
+});
+
+// --- INIT APP ---
+window.onload = function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('search') && document.getElementById('home-view')) {
+        document.getElementById('userSearch').value = urlParams.get('search');
+        searchAnimeAPI();
+    } else if (document.getElementById('popularGrid')) {
+        loadLiveHomepage();
+    }
+    if (window.location.pathname.includes('details.html')) loadDetails();
+    if (window.location.pathname.includes('watch.html')) loadMangaReader();
+};
